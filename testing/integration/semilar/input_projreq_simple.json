@@ -1,0 +1,6 @@
+{"requirements":[
+    {"id":"QM-1"},
+    {"id":"QM-2"},
+    {"id":"QM-3"}],
+"projects":[
+    {"name":"Bug report","id":"QM","specifiedRequirements":["QM-1","QM-2","QM-3"]}]}

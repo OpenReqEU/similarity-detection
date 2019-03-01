@@ -1,0 +1,7 @@
+{"requirements":[
+    {"id":"NOTDB-1"},
+    {"id":"NOTDB-2"},
+    {"id":"NOTDB-3"}],
+"projects":[
+    {"name":"Bug report","id":"QM","specifiedRequirements":["NOTDB-1","NOTDB-2","NOTDB-3"]}]}
+
