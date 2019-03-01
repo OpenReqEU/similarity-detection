@@ -6,8 +6,8 @@ _This service was created as a result of the OpenReq project funded by the Europ
 
 The component is based in Semilar semantic similarity library. The aim of the API is to calculate the similarity score between multiple pairs of requirements.
 
-Semilar reference: 
-Rus, V., Lintean, M., Banjade, R., Niraula, N., and Stefanescu, D. (2013). SEMILAR: The Semantic Similarity Toolkit. Proceedings of the 51st Annual Meeting of the Association for Computational Linguistics, August 4-9, 2013, Sofia, Bulgaria. 
+Semilar reference:
+Rus, V., Lintean, M., Banjade, R., Niraula, N., and Stefanescu, D. (2013). SEMILAR: The Semantic Similarity Toolkit. Proceedings of the 51st Annual Meeting of the Association for Computational Linguistics, August 4-9, 2013, Sofia, Bulgaria.
 
 ## Technical description
 
@@ -67,12 +67,12 @@ Steps to configure the service:
 	- en-pos-perceptron.bin
 	- en-sent.bin
 	- en-token.bin
-	
+
 2. Download the Semilar.jar from http://deeptutor2.memphis.edu/Semilar-Web/public/semilar-api.html and save it in $ServiceDirectory/SemilarApi/Semilar-1.0.jar
 
 3. Download the JWI (MIT Java Wordnet Interface) from https://projects.csail.mit.edu/jwi/ and save it in $ServiceDirectory/SemilarApi/WordNet-JWI/edu.mit.jwi_2.1.5.jar (change filename if it is not the same)
 
-4. Download and install 8 JDK and last Maven version. 
+4. Download and install 8 JDK and last Maven version.
 
 4. Open a terminal in $ServiceDirectory and copy-paste "mvn install:install-file -Dfile=SemilarAPI/Semilar-1.0.jar -DgroupId=org.semilar -DartifactId=semilar -Dversion=1.0 -Dpackaging=jar -DgeneratePom=true"
 
@@ -99,7 +99,9 @@ Check API details [here](http://217.172.12.199:9404/swagger-ui.html).
 
 ### Sources
 
-http://www.semanticsimilarity.org/
+- Rus, V., Lintean, M., Banjade, R., Niraula, N., and Stefanescu, D. (2013). SEMILAR: The Semantic Similarity Toolkit. Proceedings of the 51st Annual Meeting of the Association for Computational Linguistics, August 4-9, 2013, Sofia, Bulgaria. [Available here](http://deeptutor2.memphis.edu/Semilar-Web/public/downloads/ACL-13.SEMILAR.DEMO.pdf)
+
+- Semantic Similarity tool. [Available Here](http://www.semanticsimilarity.org/)
 
 ## How to contribute
 
@@ -107,4 +109,4 @@ See OpenReq project contribution [guidelines](https://github.com/OpenReqEU/OpenR
 
 ## License
 
-Free use of this software is granted under the terms of the EPL version 2 (EPL2.0).
+Free use of this software is granted under the terms of the [EPL version 2 (EPL2.0)](https://www.eclipse.org/legal/epl-2.0/)
