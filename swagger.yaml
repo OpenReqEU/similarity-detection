@@ -1,0 +1,329 @@
+swagger: '2.0'
+info:
+  description: '<p>The component is based in <a href="http://deeptutor2.memphis.edu/Semilar-Web/public/downloads/ACL-13.SEMILAR.DEMO.pdf">Semilar</a> semantic similarity library. The aim of the API is to calculate the similarity score between multiple pairs of requirements.</p><p>There are three different types of operations: </p><ul><li>ReqReq: Compares two requirements</li><li>ReqProj: Compares between a list of requirements and a set of requirements</li><li>Proj: Compares all possible pairs of requirements from a set of requirements</li></ul><p> Also there are two ways to compare requirements. The default method consists in comparing the name of the requirements. The other way lies in comparing the name and the text of the requirements and return the maximum of the two.</p><p>The component needs to preprocess the requirements before doing any comparison. The operation AddReqs is responsible for that work. We use opennlp library in preprocessing requirements </p><p>All the operations in this service are asynchronous. It is necessary to write a server URL as parameter in all of them. The result of the operation will be returned to that url. All operations follow the same pattern:</p><ol><li>The client calls the operation with all necessary parameters</li><li>The service receives the request and checks the main conditions</li><li>The service returns if the client request has been accepted or not and closes the connection<ul><li>(httpStatus!=200) The request has not been accepted. The message body contains the exception cause.</li><li>(httpStatus==200) The request has been accepted. The similarity calculation runs in the background. The message body contains the request identifier i.e. <em>{"id": "1548924677975_523"}</em></li></ul><li>When the calculation finishes (only if the request has been accepted) the service opens a connection with the server url specified as parameter.<br>It sends a multipart file with a JSON object and an InputStream. The JSON object contains the information about the request and the InputStream contains the resulting body.<br>Example of JSON object: <em> {"success":"true","id":"1548924677975_523","operation":"Proj"} </em>. Shows if the request has been successful, the request identifier and the name of the request operation.<ul><li>(success==false) The InputStream contains the exception cause.</li><li>(success==true) The InputStream contains the result of the operation.</li></ul></li></ol><p>The API uses UTF-8 charset. Also, it uses the OpenReq format for input and output JSONs (it is specified in the Models section).</p>'
+  title: SIMILARITY DETECTION COMPONENT
+  contact:
+    name: UPC-GESSI (OPENReq)
+    url: 'http://openreq.eu/'
+  license:
+    name: License
+host: '217.172.12.199:9404'
+basePath: /
+tags:
+  - name: Similarity detection Service
+    description: API related to similarity detection
+  - name: rest-api-controller
+    description: Rest Api Controller
+paths:
+  /upc/similarity-detection/DB/AddReqs:
+    post:
+      tags:
+        - rest-api-controller
+      summary: Preprocess a set of requirements
+      description: 'Processes the input requirements and saves them. It is necessary to compute the similarity score of any pair of requirements. The processing of large requirements can take a long time. The resulting input stream is not useful. If already exists another requirement with the same id in the database, it is replaced by the new one.<br><br> Example: <em> {"result":"Success!"} </em>'
+      operationId: addRequirementsUsingPOST
+      consumes:
+        - application/json
+      produces:
+        - '*/*'
+      parameters:
+        - in: body
+          name: input
+          description: OpenreqJson with requirements
+          required: true
+          schema:
+            $ref: '#/definitions/Requirements'
+        - name: url
+          in: query
+          description: The url where the result of the operation will be returned
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: 'http://localhost:9406/upload/Test'
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: object
+        '410':
+          description: Not Found
+        '411':
+          description: Bad request
+        '511':
+          description: Component Error
+      deprecated: false
+  /upc/similarity-detection/Project:
+    post:
+      tags:
+        - rest-api-controller
+      summary: Similarity comparison between the requirements of one project
+      description: 'The resulting input stream contains an array of dependencies with the similarity dependencies among all the pairs of the requirements of the selected project. Every dependency will only be returned if doesn''t exist another similar or duplicate dependency between the two requirements.<br> <br> Example: <em> {"dependencies":[{"toid":"QM-2","dependency_type":"similar","dependency_score":0.6666667,"description":["Similarity-Semilar"],"fromid":"QM-1","status":"proposed"},{"toid":"QM-3","dependency_type":"similar","dependency_score":0.4,"description":["Similarity-Semilar"],"fromid":"QM-1","status":"proposed"},{"toid":"QM-3","dependency_type":"similar","dependency_score":0.4,"description":["Similarity-Semilar"],"fromid":"QM-2","status":"proposed"}]} </em>'
+      operationId: simProjectUsingPOST
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: compare
+          in: query
+          description: Use text attribute in comparison?
+          required: false
+          type: string
+          allowEmptyValue: false
+          x-example: 'false'
+        - in: body
+          name: json
+          description: OpenreqJson with the project and the project's requirements
+          required: true
+          schema:
+            $ref: '#/definitions/JsonProject'
+        - name: project
+          in: query
+          description: Id of the project to compare
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: SQ
+        - name: threshold
+          in: query
+          description: Float between 0 and 1 that establishes the minimum similarity score that the added dependencies should have
+          required: true
+          type: number
+          format: float
+          allowEmptyValue: false
+          x-example: 0.3
+        - name: url
+          in: query
+          description: The url where the result of the operation will be returned
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: 'http://localhost:9406/upload/Test'
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: object
+        '410':
+          description: Not Found
+        '411':
+          description: Bad request
+        '510':
+          description: Internal Error
+        '511':
+          description: Component Error
+      deprecated: false
+  /upc/similarity-detection/ReqProject:
+    post:
+      tags:
+        - rest-api-controller
+      summary: Similarity comparison between a set of requirements and all the requirements of a specific project
+      description: The resulting input stream contains an array of dependencies with the similarity dependencies between the selected requirements and all the requirements of the project specified. Every dependency will only be returned if doesn't exist another similar or duplicate dependency between the two requirements.
+      operationId: simReqProjectUsingPOST
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: compare
+          in: query
+          description: Use text attribute in comparison?
+          required: false
+          type: string
+          allowEmptyValue: false
+          x-example: 'false'
+        - in: body
+          name: json
+          description: Json with requirements
+          required: true
+          schema:
+            $ref: '#/definitions/JsonProject'
+        - name: project
+          in: query
+          description: Id of the project to compare
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: SM
+        - name: req
+          in: query
+          description: Ids of the requirements to compare
+          required: true
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+          allowEmptyValue: false
+        - name: threshold
+          in: query
+          description: Float between 0 and 1 that establishes the minimum similarity score that the added dependencies should have
+          required: true
+          type: number
+          format: float
+          allowEmptyValue: false
+          x-example: 0.3
+        - name: url
+          in: query
+          description: The url where the result of the operation will be returned
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: 'http://localhost:9406/upload/Test'
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: object
+        '410':
+          description: Not Found
+        '411':
+          description: Bad request
+        '510':
+          description: Internal Error
+        '511':
+          description: Component Error
+      deprecated: false
+  /upc/similarity-detection/ReqReq:
+    post:
+      tags:
+        - rest-api-controller
+      summary: Similarity comparison between two requirements
+      description: '<p>The resulting input stream contains an array of dependencies with the similarity dependency between the two selected requirements. The dependency is only returned if doesn''t exist another similar or duplicate dependency between the two requirements.</p><p> <br> Example:<em> {"dependencies":[{"toid":"QM-2","dependency_type":"similar","dependency_score":0.6666667,"description":["Similarity-Semilar"],"fromid":"QM-1","status":"proposed"}]}</em> </p>'
+      operationId: simReqReqUsingPOST
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: compare
+          in: query
+          description: Use text attribute in comparison?
+          required: false
+          type: string
+          allowEmptyValue: false
+          x-example: 'false'
+        - in: body
+          name: json
+          description: OpenreqJson with the two requirements
+          required: true
+          schema:
+            $ref: '#/definitions/JsonReqReq'
+        - name: req1
+          in: query
+          description: Id of the first requirement to compare
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: SQ-132
+        - name: req2
+          in: query
+          description: Id of the second requirement to compare
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: SQ-98
+        - name: url
+          in: query
+          description: The url where the result of the operation will be returned
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: 'http://localhost:9406/upload/Test'
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: object
+        '410':
+          description: Not Found
+        '411':
+          description: Bad request
+        '511':
+          description: Component Error
+      deprecated: false
+definitions:
+  Dependency:
+    type: object
+    properties:
+      dependency_score:
+        type: number
+        format: float
+      dependency_type:
+        type: string
+      description:
+        type: array
+        items:
+          type: string
+      fromid:
+        type: string
+      status:
+        type: string
+      toid:
+        type: string
+    title: Dependency
+    description: 'A dependency with fromid, toid, dependency_type, status, description (component) and dependency_score'
+  JsonProject:
+    type: object
+    properties:
+      dependencies:
+        type: array
+        items:
+          $ref: '#/definitions/Dependency'
+      projects:
+        type: array
+        items:
+          $ref: '#/definitions/Project'
+      requirements:
+        type: array
+        items:
+          $ref: '#/definitions/Requirement'
+    title: JsonProject
+    description: 'OpenReqJson with requirements, projects and dependencies'
+  JsonReqReq:
+    type: object
+    properties:
+      dependencies:
+        type: array
+        items:
+          $ref: '#/definitions/Dependency'
+      requirements:
+        type: array
+        items:
+          $ref: '#/definitions/Requirement'
+    title: JsonReqReq
+    description: OpenReqJson with requirements and dependencies
+  Project:
+    type: object
+    properties:
+      id:
+        type: string
+      specifiedRequirements:
+        type: array
+        items:
+          type: string
+    title: Project
+    description: 'A project with id, name and requirements'
+  Requirement:
+    type: object
+    properties:
+      created_at:
+        type: integer
+        format: int64
+      id:
+        type: string
+      name:
+        type: string
+      text:
+        type: string
+    title: Requirement
+    description: A requirement with id and text
+  Requirements:
+    type: object
+    properties:
+      requirements:
+        type: array
+        items:
+          $ref: '#/definitions/Requirement'
+    title: Requirements
+    description: OpenReqJson with requirements
+
