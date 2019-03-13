@@ -109,6 +109,7 @@ public class Requirement implements Serializable {
     }
 
     private String clean_text(String text, int clean) {
+        text = text.replaceAll("_", "");
         if (clean == 0) return text;
         else if (clean == 1) {
 
