@@ -86,14 +86,14 @@ Steps to run the service:
 
 3. (only if you wanna use the auxiliary client) Open a terminal and copy-paste "sh run_restservice.sh". Wait for an exit like this: u.s.restserviceapi.RestServiceApplication  : Started RestServiceApplication
 
-4. Go to http://localhost:9404/swagger-ui.html#/ to see the swagger generated. You can use the component through the swagger or through http connections to the endpoints indicated in the documentation. You can go to http://localhost:9406/swagger-ui.html#/ to use the auxiliary client.
+4. Go to https://api.openreq.eu/similarity-detection/swagger-ui.html to see the swagger generated. You can use the component through the swagger or through http connections to the endpoints indicated in the documentation.
 
 
 ### How to use it
 
-All requests must be sent to "http://localhost:9404/upc/similarity-detection/". The service expects a JSON with OpenReqJson format. At this moment the service provides 3 different functionalities with 1 auxiliary operation.
+All requests must be sent to "https://api.openreq.eu/similarity-detection/". The service expects a JSON with OpenReqJson format. At this moment the service provides 3 different functionalities with 1 auxiliary operation.
 
-Check API details [here](http://217.172.12.199:9404/swagger-ui.html).
+Check API details [here](https://api.openreq.eu/similarity-detection/swagger-ui.html).
 
 ### Notes for developers
 
