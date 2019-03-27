@@ -37,7 +37,7 @@ All the operations in this service are asynchronous. It is necessary to write a 
 		3.1.(httpStatus!=200) The request has not been accepted. The message body contains the exception cause.
 		3.2.(httpStatus==200) The request has been accepted. The similarity calculation runs in the background. The message body contains the request identifier i.e. {"id": "1548924677975_523"}
 	4.When the calculation finishes (only if the request has been accepted) the service opens a connection with the server url specified as parameter.
-	It sends a multipart file with a JSON object and an InputStream. The JSON object contains the information about the request and the InputStream contains the resulting body.
+	It sends a multipart file with a JSON object (named "info") and an InputStream (named "result"). The JSON object contains the information about the request and the InputStream contains the resulting body.
 	Example of JSON object: {"success":"true","id":"1548924677975_523","operation":"Proj"} . Shows if the request has been successful, the request identifier and the name of the request operation.
 		4.1.(success==false) The InputStream contains the exception cause.
 		4.2.(success==true) The InputStream contains the result of the operation.
