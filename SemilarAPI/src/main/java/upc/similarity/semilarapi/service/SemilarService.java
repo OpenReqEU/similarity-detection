@@ -14,5 +14,7 @@ public interface SemilarService {
 
     public List<Dependency> simReqProject(String organization, String req, List<String> project_reqs) throws Exception;
 
+    public List<Dependency> simProject(String organization, List<String> project_reqs) throws Exception;
+
     public void clearDB() throws SQLException;
 }

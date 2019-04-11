@@ -43,29 +43,14 @@ public class SemilarAdapter extends ComponentAdapter{
     }
 
     @Override
-    public void similarityProject(String compare, float treshold, String filename, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException, BadRequestException {
+    public List<Dependency> simProject(String organization, List<String> reqs) throws InternalErrorException, BadRequestException {
 
-        /*JSONArray reqs_json = list_requirements_to_JSON(requirements);
-        JSONArray deps_json = list_dependencies_to_JSON(dependencies);
+        JSONArray json_to_send = new JSONArray();
+        for (String aux: reqs) json_to_send.put(aux);
 
-        JSONObject json_to_send = new JSONObject();
-        json_to_send.put("requirements",reqs_json);
-        json_to_send.put("dependencies",deps_json);
-
-        connection_component(URL + "ProjSim?compare=" + compare + "&threshold=" + treshold + "&filename=" + filename,json_to_send);*/
-    }
-
-    @Override
-    public void similarityCluster(String type, String compare, float treshold, String filename, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException, BadRequestException {
-
-        /*JSONArray reqs_json = list_requirements_to_JSON(requirements);
-        JSONArray deps_json = list_dependencies_to_JSON(dependencies);
-
-        JSONObject json_to_send = new JSONObject();
-        json_to_send.put("requirements",reqs_json);
-        json_to_send.put("dependencies",deps_json);
-
-        connection_component(URL + "ClusterSim?compare=" + compare + "&threshold=" + treshold + "&filename=" + filename + "&type=" + type,json_to_send);*/
+        String response = connection_component(URL + "SimProject?organization=" + organization, json_to_send);
+        JSONArray array = new JSONArray(response);
+        return JSON_to_list_dependencies(array);
     }
 
     public void buildModel(String organization, boolean compare, List<Requirement> requirements) throws InternalErrorException, BadRequestException {

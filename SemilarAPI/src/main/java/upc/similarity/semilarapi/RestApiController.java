@@ -58,6 +58,17 @@ public class RestApiController {
         }
     }
 
+    @RequestMapping(value = "/upc/Semilar/SimProject", method = RequestMethod.POST)
+    public ResponseEntity<?> simProject(@RequestParam("organization") String organization,
+                                        @RequestBody List<String> project_reqs) {
+        try {
+            return new ResponseEntity<>(semilarService.simProject(organization,project_reqs),HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(e,HttpStatus.valueOf(500));
+        }
+    }
+
     @RequestMapping(value = "/upc/Semilar/Clear", method = RequestMethod.DELETE)
     public ResponseEntity<?> clearDB() {
         try {

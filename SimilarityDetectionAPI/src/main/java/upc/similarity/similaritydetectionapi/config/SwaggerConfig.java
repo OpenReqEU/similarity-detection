@@ -57,7 +57,7 @@ public class SwaggerConfig {
                 .apiInfo(apiInfo())
                 .pathMapping("/")
                 .select()
-                .paths(PathSelectors.regex("/upc/similarity-detection/BuildModel|/upc/similarity-detection/Project|/upc/similarity-detection/SimReqProject|/upc/similarity-detection/SimReqReq"))
+                .paths(PathSelectors.regex("/upc/similarity-detection/BuildModel|/upc/similarity-detection/SimProject|/upc/similarity-detection/SimReqProject|/upc/similarity-detection/SimReqReq"))
                 .apis(RequestHandlerSelectors.basePackage("upc.similarity.similaritydetectionapi")).paths(PathSelectors.regex("/upc.*"))
                 .build().tags(new Tag("Similarity detection Service", "API related to similarity detection"));
     }

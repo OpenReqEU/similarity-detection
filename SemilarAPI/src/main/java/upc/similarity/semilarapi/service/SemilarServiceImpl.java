@@ -81,6 +81,25 @@ public class SemilarServiceImpl implements SemilarService {
     }
 
     @Override
+    public List<Dependency> simProject(String organization, List<String> project_reqs) throws Exception {
+        show_time("start");
+        List<Dependency> result = new ArrayList<>();
+        Model model = modelDAO.getModel(organization);
+        for (int i = 0; i < project_reqs.size(); ++i) {
+            String req1 = project_reqs.get(i);
+            if (!model.getModel().containsKey(req1)) throw new BadRequestException("The requirement with id " + req1 + " is not present in the model loaded form the database");
+            for (int j = i + 1; j < project_reqs.size(); ++j) {
+                String req2 = project_reqs.get(j);
+                if (!model.getModel().containsKey(req2)) throw new BadRequestException("The requirement with id " + req2 + " is not present in the model loaded form the database");
+                double score = cosine(model.getModel(),req1,req2);
+                result.add(new Dependency(score,req1,req2,status,dependency_type,component));
+            }
+        }
+        show_time("finish");
+        return result;
+    }
+
+    @Override
     public void clearDB() throws SQLException {
         modelDAO.clearDB();
     }

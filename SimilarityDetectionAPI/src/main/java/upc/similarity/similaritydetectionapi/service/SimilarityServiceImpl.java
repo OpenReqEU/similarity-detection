@@ -1,7 +1,5 @@
 package upc.similarity.similaritydetectionapi.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -19,9 +17,7 @@ import upc.similarity.similaritydetectionapi.adapter.ComponentAdapter;
 import upc.similarity.similaritydetectionapi.adapter.SemilarAdapter;
 import upc.similarity.similaritydetectionapi.entity.Dependency;
 import upc.similarity.similaritydetectionapi.entity.Project;
-import upc.similarity.similaritydetectionapi.entity.input_output.Result_id;
 import upc.similarity.similaritydetectionapi.entity.input_output.JsonProject;
-import upc.similarity.similaritydetectionapi.entity.input_output.JsonReqReq;
 import upc.similarity.similaritydetectionapi.entity.Requirement;
 import upc.similarity.similaritydetectionapi.entity.input_output.Requirements;
 import upc.similarity.similaritydetectionapi.exception.*;
@@ -37,7 +33,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     private static String path = "../testing/output/";
     private static String component = "Semilar";
 
-    //TODO remove repeated code
+
 
 
     //Main operations
@@ -58,9 +54,11 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public Result_id simProj(String project, String compare, float threshold, String url, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
+    public List<Dependency> simProject(String organization, String project_id, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
 
-        return null;
+        ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdpapter(Component.valueOf(component));
+        Project project = search_project(project_id,input.getProjects());
+        return componentAdapter.simProject(organization,project.getSpecifiedRequirements());
     }
 
     @Override

@@ -27,10 +27,7 @@ public abstract class ComponentAdapter {
 
     public abstract List<Dependency> simReqProject(String organization, String req, List<String> reqs) throws InternalErrorException, BadRequestException, NotFoundException;
 
-    public abstract void similarityProject(String compare, float treshold, String filename, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException, BadRequestException, NotFoundException;
-
-    public abstract void similarityCluster(String type, String compare, float treshold, String filename, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException, BadRequestException, NotFoundException;
-
+    public abstract List<Dependency> simProject(String organization, List<String> reqs) throws InternalErrorException, BadRequestException, NotFoundException;
 
     //auxiliary operations
     protected String connection_component(String URL, JSONArray json) throws InternalErrorException, BadRequestException {
