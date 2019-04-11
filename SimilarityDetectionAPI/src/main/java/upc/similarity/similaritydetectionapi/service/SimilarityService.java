@@ -13,9 +13,9 @@ public interface SimilarityService {
 
     public List<Dependency> simReqReq(String organization, String req1, String req2) throws BadRequestException, InternalErrorException, NotFoundException;
 
-    public List<Dependency> simReqProj(String organiation, String req, String project, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException;
+    public List<Dependency> simReqProject(String organization, double threshold, int max_number, String req, String project, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException;
 
-    public List<Dependency> simProject(String organization, String project, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException;
+    public List<Dependency> simProject(String organization, double threshold, int max_number, String project, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException;
 
     public void clearDB() throws InternalErrorException, BadRequestException, NotFoundException;
 }

@@ -58,11 +58,13 @@ public class RestApiController {
             @ApiResponse(code=510, message = "Internal Error"),
             @ApiResponse(code=511, message = "Component Error")})
     public ResponseEntity<?> simReqProject(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+                                           @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
+                                           @ApiParam(value="Maximum number of dependencies in the output", required = true, example = "5") @RequestParam("max_number") int max_number,
                                            @ApiParam(value="Id of the requirement to compare", required = true, example = "SQ-132") @RequestParam("req") String req,
                                            @ApiParam(value="Id of the project to compare", required = true, example = "SM") @RequestParam("project") String project,
                                            @ApiParam(value="OpenReqJson with the project", required = true) @RequestBody JsonProject input) {
         try {
-            return new ResponseEntity<>(similarityService.simReqProj(organization,req,project,input), HttpStatus.OK);
+            return new ResponseEntity<>(similarityService.simReqProject(organization,threshold,max_number,req,project,input), HttpStatus.OK);
         } catch (BadRequestException e) {
             return getResponseBadRequest(e);
         } catch (NotFoundException e) {
@@ -83,10 +85,12 @@ public class RestApiController {
             @ApiResponse(code=510, message = "Internal Error"),
             @ApiResponse(code=511, message = "Component Error")})
     public ResponseEntity<?> simProject(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+                                        @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
+                                        @ApiParam(value="Maximum number of dependencies in the output", required = true, example = "5") @RequestParam("max_number") int max_number,
                                         @ApiParam(value="Id of the project to compare", required = true, example = "SQ") @RequestParam("project") String project,
                                         @ApiParam(value="OpenReqJson with the project", required = true) @RequestBody JsonProject input) {
         try {
-            return new ResponseEntity<>(similarityService.simProject(organization,project,input), HttpStatus.OK);
+            return new ResponseEntity<>(similarityService.simProject(organization,threshold,max_number,project,input), HttpStatus.OK);
         } catch (BadRequestException e) {
             return getResponseBadRequest(e);
         } catch (NotFoundException e) {

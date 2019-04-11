@@ -46,19 +46,22 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public List<Dependency> simReqProj(String organization, String req, String project_id, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
+    public List<Dependency> simReqProject(String organization, double threshold, int max_number, String req, String project_id, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
 
+        if (threshold < 0 || threshold > 1) throw new BadRequestException("Threshold must be a number between 0 and 1");
         ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdpapter(Component.valueOf(component));
         Project project = search_project(project_id,input.getProjects());
-        return componentAdapter.simReqProject(organization,req,project.getSpecifiedRequirements());
+        List<Dependency> response = componentAdapter.simReqProject(organization,req,project.getSpecifiedRequirements());
+        return sort_dependencies(response,max_number,threshold);
     }
 
     @Override
-    public List<Dependency> simProject(String organization, String project_id, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
+    public List<Dependency> simProject(String organization, double threshold, int max_number, String project_id, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
 
         ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdpapter(Component.valueOf(component));
         Project project = search_project(project_id,input.getProjects());
-        return componentAdapter.simProject(organization,project.getSpecifiedRequirements());
+        List<Dependency> response = componentAdapter.simProject(organization,project.getSpecifiedRequirements());
+        return sort_dependencies(response,max_number,threshold);
     }
 
     @Override
@@ -81,6 +84,31 @@ public class SimilarityServiceImpl implements SimilarityService {
 
 
     //Auxiliary operations
+
+    private List<Dependency> sort_dependencies(List<Dependency> dependencies, int max_num, double threshold) {
+
+        List<Dependency> result = new ArrayList<>();
+
+        dependencies.sort(new Comparator<Dependency>() {
+            @Override
+            public int compare(Dependency o1, Dependency o2) {
+                if (o1.getDependency_score() < o2.getDependency_score()) return 1;
+                else if (o1.getDependency_score() > o2.getDependency_score()) return -1;
+                return 0;
+            }
+        });
+
+        if (max_num <= 0 || max_num > dependencies.size()) max_num = dependencies.size();
+
+        boolean correct = true;
+        for (int i = 0; correct && i < max_num; i++) {
+            Dependency dependency = dependencies.get(i);
+            if (dependency.getDependency_score() < threshold) correct = false;
+            else result.add(dependency);
+        }
+
+        return result;
+    }
 
     private List<Requirement> search_requirements(List<String> req, List<Requirement> requirements) throws NotFoundException {
 
