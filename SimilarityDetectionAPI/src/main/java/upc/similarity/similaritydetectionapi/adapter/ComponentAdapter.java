@@ -13,10 +13,7 @@ import org.json.JSONObject;
 import upc.similarity.similaritydetectionapi.entity.Dependency;
 import upc.similarity.similaritydetectionapi.entity.Requirement;
 import upc.similarity.similaritydetectionapi.entity.input_output.Requirements;
-import upc.similarity.similaritydetectionapi.exception.BadRequestException;
-import upc.similarity.similaritydetectionapi.exception.ComponentException;
-import upc.similarity.similaritydetectionapi.exception.DKProException;
-import upc.similarity.similaritydetectionapi.exception.NotFoundException;
+import upc.similarity.similaritydetectionapi.exception.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,9 +23,9 @@ public abstract class ComponentAdapter {
 
 
     //main operations
-    public abstract void similarity(String compare, Requirement req1, Requirement req2, String filename, List<Dependency> dependencies) throws ComponentException, BadRequestException, NotFoundException;
+    public abstract List<Dependency> simReqReq(String organization, String req1, String req2) throws InternalErrorException, BadRequestException, NotFoundException;
 
-    public abstract void similarityReqProject(String compare, float treshold, String filename, List<Requirement> requirements, List<Requirement> project_requirements, List<Dependency> dependencies) throws ComponentException, BadRequestException, NotFoundException;
+    public abstract List<Dependency> simReqProject(String organization, String req, List<String> reqs) throws InternalErrorException, BadRequestException, NotFoundException;
 
     public abstract void similarityProject(String compare, float treshold, String filename, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException, BadRequestException, NotFoundException;
 
@@ -36,11 +33,11 @@ public abstract class ComponentAdapter {
 
 
     //auxiliary operations
-    protected void connection_component(String URL, JSONObject json) throws ComponentException, BadRequestException {
+    protected String connection_component(String URL, JSONArray json) throws InternalErrorException, BadRequestException {
 
         HttpClient httpclient = HttpClients.createDefault();
         HttpPost httppost = new HttpPost(URL);
-        httppost.setEntity(new StringEntity(json.toString(), ContentType.APPLICATION_JSON));
+        if (json != null) httppost.setEntity(new StringEntity(json.toString(), ContentType.APPLICATION_JSON));
 
         int httpStatus = 200;
         String json_response = "";
@@ -56,13 +53,15 @@ public abstract class ComponentAdapter {
         }
 
         if (httpStatus != 200) check_excepcions(httpStatus,json_response);
+
+        return json_response;
     }
 
-    protected abstract void throw_component_exception(Exception e, String message) throws ComponentException;
+    protected abstract void throw_component_exception(Exception e, String message) throws InternalErrorException;
 
-    protected abstract void check_excepcions(int status, String response) throws ComponentException, BadRequestException;
+    protected abstract void check_excepcions(int status, String response) throws InternalErrorException, BadRequestException;
 
-    protected List<Dependency> JSON_to_dependencies(JSONObject json) throws ComponentException {
+    protected List<Dependency> JSON_to_dependencies(JSONObject json) throws InternalErrorException {
 
         ObjectMapper mapper = new ObjectMapper();
         List<Dependency> dependencies = new ArrayList<>();
@@ -73,7 +72,7 @@ public abstract class ComponentAdapter {
                 dependencies.add(mapper.readValue(json_deps.getJSONObject(i).toString(), Dependency.class));
             }
         } catch (Exception e) {
-            throw new DKProException("Error manipulating the input json");
+            throw new InternalErrorException("Error manipulating the input json");
         }
 
         return dependencies;
@@ -99,6 +98,14 @@ public abstract class ComponentAdapter {
         }
 
         return json_deps;
+    }
+
+    protected List<Dependency> JSON_to_list_dependencies(JSONArray array) {
+        List<Dependency> result = new ArrayList<>();
+        for (int i = 0; i < array.length(); ++i) {
+            result.add(new Dependency(array.getJSONObject(i)));
+        }
+        return result;
     }
 
 }

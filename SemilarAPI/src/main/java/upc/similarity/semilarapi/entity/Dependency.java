@@ -1,5 +1,4 @@
 package upc.similarity.semilarapi.entity;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -7,11 +6,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-//Class use to represent dependencies between requirements
+//Class used to represent dependencies between requirements
 public class Dependency implements Serializable {
 
     @JsonProperty(value="dependency_score")
-    private float dependency_score;
+    private double dependency_score;
     @JsonProperty(value="fromid")
     private String fromid;
     @JsonProperty(value="toid")
@@ -27,7 +26,7 @@ public class Dependency implements Serializable {
         description = new ArrayList<>();
     }
 
-    public Dependency(Float dependency_score, String fromid, String toid, String status, String dependency_type, String component) {
+    public Dependency(double dependency_score, String fromid, String toid, String status, String dependency_type, String component) {
         this.dependency_score = dependency_score;
         this.fromid = fromid;
         this.toid = toid;
@@ -37,21 +36,65 @@ public class Dependency implements Serializable {
         description.add(component);
     }
 
-    public String getToid() {
-        return toid;
+    /*
+    Get
+     */
+
+    public double getDependency_score() {
+        return dependency_score;
     }
 
     public String getFromid() {
         return fromid;
     }
 
+    public String getToid() {
+        return toid;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
     public String getDependency_type() {
         return dependency_type;
     }
 
-    public float getDependency_score() {
-        return dependency_score;
+    public List<String> getDescription() {
+        return description;
     }
+
+    /*
+    Set
+     */
+
+    public void setDependency_score(double dependency_score) {
+        this.dependency_score = dependency_score;
+    }
+
+    public void setFromid(String fromid) {
+        this.fromid = fromid;
+    }
+
+    public void setToid(String toid) {
+        this.toid = toid;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public void setDependency_type(String dependency_type) {
+        this.dependency_type = dependency_type;
+    }
+
+    public void setDescription(List<String> description) {
+        this.description = description;
+    }
+
+    /*
+    Auxiliary operations
+     */
 
     public String print_json() {
 

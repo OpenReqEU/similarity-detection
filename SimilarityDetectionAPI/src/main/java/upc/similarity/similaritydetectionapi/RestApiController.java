@@ -38,23 +38,17 @@ public class RestApiController {
     // Req - Req
 
     @CrossOrigin
-    @RequestMapping(value = "/ReqReq", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Similarity comparison between two requirements", notes = "<p>The resulting input stream contains an array of dependencies with the similarity dependency between the two selected requirements." +
-            " The dependency is only returned if doesn't exist another similar or duplicate dependency between the two requirements.</p>" +
-            "<p> <br> Example:<em> {\"dependencies\":[{\"toid\":\"QM-2\",\"dependency_type\":\"similar\",\"dependency_score\":0.6666667,\"description\":[\"Similarity-Semilar\"],\"fromid\":\"QM-1\",\"status\":\"proposed\"}]}</em> </p>")
+    @RequestMapping(value = "/SimReqReq", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Similarity comparison between two requirements", notes = "")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=410, message = "Not Found"),
             @ApiResponse(code=411, message = "Bad request"),
             @ApiResponse(code=511, message = "Component Error")})
-    public ResponseEntity<?> simReqReq(@ApiParam(value="Id of the first requirement to compare", required = true, example = "SQ-132") @RequestParam("req1") String req1,
-                                       @ApiParam(value="Id of the second requirement to compare", required = true, example = "SQ-98") @RequestParam("req2") String req2,
-                                       @ApiParam(value="Use text attribute in comparison?", required = false, example = "false") @RequestParam("compare") String compare,
-                                       @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/Test") @RequestParam("url") String url,
-                                       @ApiParam(value="OpenreqJson with the two requirements", required = true) @RequestBody JsonReqReq json) {
+    public ResponseEntity<?> simReqReq(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+                                       @ApiParam(value="Id of the first requirement to compare", required = true, example = "SQ-132") @RequestParam("req1") String req1,
+                                       @ApiParam(value="Id of the second requirement to compare", required = true, example = "SQ-98") @RequestParam("req2") String req2) {
         try {
-            url_ok(url);
-            if (compare == null) compare = "false";
-            return new ResponseEntity<>(similarityService.simReqReq(req1, req2, compare, url, json), HttpStatus.OK);
+            return new ResponseEntity<>(similarityService.simReqReq(organization,req1,req2), HttpStatus.OK);
         } catch (BadRequestException e) {
             return getResponseBadRequest(e);
         } catch (NotFoundException e) {
@@ -67,24 +61,19 @@ public class RestApiController {
     // Req - Project
 
     @CrossOrigin
-    @RequestMapping(value = "/ReqProject", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Similarity comparison between a set of requirements and all the requirements of a specific project", notes = "The resulting input stream contains an array of dependencies with the similarity dependencies" +
-            " between the selected requirements and all the requirements of the project specified. Every dependency will only be returned if doesn't exist another similar or duplicate dependency between the two requirements.")
+    @RequestMapping(value = "/SimReqProject", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Similarity comparison between a requirement and all the requirements of a specific project", notes = "")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=410, message = "Not Found"),
             @ApiResponse(code=411, message = "Bad request"),
             @ApiResponse(code=510, message = "Internal Error"),
             @ApiResponse(code=511, message = "Component Error")})
-    public ResponseEntity<?> simReqProject(@ApiParam(value="Ids of the requirements to compare", required = true, example = "SQ-132") @RequestParam("req") List<String> req,
+    public ResponseEntity<?> simReqProject(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+                                           @ApiParam(value="Id of the requirement to compare", required = true, example = "SQ-132") @RequestParam("req") String req,
                                            @ApiParam(value="Id of the project to compare", required = true, example = "SM") @RequestParam("project") String project,
-                                           @ApiParam(value="Use text attribute in comparison?", required = false, example = "false") @RequestParam("compare") String compare,
-                                           @ApiParam(value="Float between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.3") @RequestParam("threshold") Float threshold,
-                                           @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/Test") @RequestParam("url") String url,
-                                           @ApiParam(value="Json with requirements", required = true) @RequestBody JsonProject json) {
+                                           @ApiParam(value="OpenReqJson with the project", required = true) @RequestBody JsonProject input) {
         try {
-            url_ok(url);
-            if (compare == null) compare = "false";
-            return new ResponseEntity<>(similarityService.simReqProj(req,project,compare,threshold,url,json), HttpStatus.OK);
+            return new ResponseEntity<>(similarityService.simReqProj(organization,req,project,input), HttpStatus.OK);
         } catch (BadRequestException e) {
             return getResponseBadRequest(e);
         } catch (NotFoundException e) {
@@ -128,25 +117,24 @@ public class RestApiController {
     // DB
 
     @CrossOrigin
-    @RequestMapping(value = "/DB/AddReqs", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Preprocess a set of requirements", notes = "Processes the input requirements and saves them. It is necessary to compute the similarity score of any pair of requirements. The processing of large requirements can take a long time." +
-            " The resulting input stream is not useful. If already exists another requirement with the same id in the database, it is replaced by the new one.<br>" +
-            "<br> Example: <em> {\"result\":\"Success!\"} </em>")
+    @RequestMapping(value = "/BuildModel", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Builds model", notes = "")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=410, message = "Not Found"),
             @ApiResponse(code=411, message = "Bad request"),
             @ApiResponse(code=511, message = "Component Error")})
-    public ResponseEntity<?> addRequirements(@ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/Test") @RequestParam("url") String url,
-                                             @ApiParam(value="OpenreqJson with requirements", required = true, example = "SQ-132") @RequestBody Requirements input) {
+    public ResponseEntity<?> buildModel(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+                                             @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
+                                             @ApiParam(value="OpenreqJson with requirements", required = true) @RequestBody Requirements input) {
         try {
-            url_ok(url);
-            return new ResponseEntity<>(similarityService.addRequirements(input,url),HttpStatus.OK);
-        } catch (ComponentException e) {
-            return getComponentError(e);
+            similarityService.buildModel(organization,compare,input);
+            return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (BadRequestException e) {
             return getResponseBadRequest(e);
         } catch (NotFoundException e) {
             return getResponseNotFound(e);
+        } catch (InternalErrorException e) {
+            return getInternalError(e);
         }
     }
 
@@ -206,27 +194,6 @@ public class RestApiController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    @CrossOrigin
-    @RequestMapping(value = "/Clusters", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Clusters")
-    public ResponseEntity<?> clusters(@ApiParam(value="Id of the project to compare", required = true, example = "SQ") @RequestParam("project") String project,
-                                      @ApiParam(value="Use text attribute in comparison?", required = false, example = "false") @RequestParam("compare") String compare,
-                                      @ApiParam(value="Algorithm type", required = false, example = "all/one") @RequestParam("type") String type,
-                                      @ApiParam(value="Float between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.3") @RequestParam("threshold") float threshold,
-                                      @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/Test") @RequestParam("url") String url,
-                                      @ApiParam(value="OpenreqJson with the project and the project's requirements", required = true, example = "SQ-132") @RequestBody JsonProject json) {
-
-        try {
-            url_ok(url);
-            if (compare == null) compare = "false";
-            if (type == null) type = "all";
-            return new ResponseEntity<>(similarityService.simCluster(project,compare,threshold,url,type,json),HttpStatus.OK);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-        //TODO improve exception handling
-    }
 
     /*
     auxiliary operations

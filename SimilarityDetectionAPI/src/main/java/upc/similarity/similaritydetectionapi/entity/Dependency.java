@@ -28,7 +28,7 @@ public class Dependency implements Serializable {
     @JsonProperty(value="status")
     private String status;
     @JsonProperty(value="dependency_score")
-    private Float dependency_score;
+    private double dependency_score;
     @JsonProperty(value="description")
     private List<String> description;
     private Map<String, Object> optional = new HashMap<>();
@@ -48,7 +48,18 @@ public class Dependency implements Serializable {
         this.description = new ArrayList<>();
     }
 
-    public Dependency(Float dependency_score, String fromid, String toid, String dependency_type, String status, String component) {
+    public Dependency(JSONObject json) {
+        this.dependency_score = json.getDouble("dependency_score");
+        this.fromid = json.getString("fromid");
+        this.toid = json.getString("toid");
+        this.dependency_type = json.getString("dependency_type");
+        this.status = json.getString("status");
+        JSONArray array = json.getJSONArray("description");
+        this.description = new ArrayList<>();
+        this.description.add(array.getString(0));
+    }
+
+    public Dependency(double dependency_score, String fromid, String toid, String dependency_type, String status, String component) {
         this.dependency_score = dependency_score;
         this.fromid = fromid;
         this.toid = toid;
@@ -58,7 +69,7 @@ public class Dependency implements Serializable {
         this.description.add(component);
     }
 
-    public Dependency(Float dependency_score, String fromid, String toid, String dependency_type, String status, List<String> description) {
+    public Dependency(double dependency_score, String fromid, String toid, String dependency_type, String status, List<String> description) {
         this.dependency_score = dependency_score;
         this.fromid = fromid;
         this.toid = toid;
@@ -95,7 +106,7 @@ public class Dependency implements Serializable {
         return json;
     }
 
-    public Float getDependency_score() {
+    public double getDependency_score() {
         return dependency_score;
     }
 

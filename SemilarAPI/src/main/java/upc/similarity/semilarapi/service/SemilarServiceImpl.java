@@ -1,57 +1,33 @@
 package upc.similarity.semilarapi.service;
 
-import org.json.JSONArray;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
-import semilar.config.ConfigManager;
-import semilar.sentencemetrics.GreedyComparer;
-import semilar.tools.StopWords;
-import semilar.tools.semantic.WordNetSimilarity;
-import semilar.wordmetrics.WNWordMetric;
-import upc.similarity.semilarapi.config.Configuration;
-import upc.similarity.semilarapi.dao.RequirementDAO;
+import upc.similarity.semilarapi.dao.modelDAO;
 import upc.similarity.semilarapi.dao.SQLiteDAO;
 import upc.similarity.semilarapi.entity.*;
-import upc.similarity.semilarapi.entity.input.PairReq;
-import upc.similarity.semilarapi.entity.input.ProjOp;
-import upc.similarity.semilarapi.entity.input.ReqProjOp;
-import upc.similarity.semilarapi.entity.input.RequirementId;
 import upc.similarity.semilarapi.exception.BadRequestException;
-import upc.similarity.semilarapi.exception.InternalErrorException;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.io.*;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ForkJoinPool;
+
+import static java.lang.StrictMath.sqrt;
 
 @Service("semilarService")
 public class SemilarServiceImpl implements SemilarService {
-    
-    static {
-        ConfigManager.setSemilarDataRootFolder("./Models/");
-        wnMetricLin = new WNWordMetric(WordNetSimilarity.WNSimMeasure.LIN, false);
-        stopWords = new StopWords();
-        number_threads = Configuration.getInstance().getNumber_threads();
-    }
 
-    private static WNWordMetric wnMetricLin;
-    private RequirementDAO requirementDAO = getValue();
-    private String component = "Similarity-Semilar";
+    private static Double cutoffParameter=-1.0;
+    private static String component = "Similarity-UPC";
+    private static String status = "proposed";
+    private static String dependency_type = "duplicates";
+    private modelDAO modelDAO = getValue();
 
-    private static int number_threads;
-    //private static final GreedyComparer greedyComparerWNLin = new GreedyComparer(wnMetricLin, 0.3f, true);
-    private static StopWords stopWords;
-    private static final GreedyComparer greedyComparerWNLin = new GreedyComparer(wnMetricLin,stopWords,0.3f, true, "NONE","AVERAGE",false,true,false,true,true,false, false);
-
-    private RequirementDAO getValue() {
+    private modelDAO getValue() {
         try {
             return new SQLiteDAO();
         }
@@ -61,407 +37,52 @@ public class SemilarServiceImpl implements SemilarService {
         return null;
     }
 
-    //Similarity
-    @Override
-    public void similarity(String compare, String filename, PairReq input) throws SQLException, BadRequestException, InternalErrorException {
-
-        RequirementId req1 = input.getReq1();
-        RequirementId req2 = input.getReq2();
-        if (req1.getId() == null || req2.getId() == null) throw new BadRequestException("One requirement has id equal to null");
-        if (req1.getId().equals(req2.getId())) throw new BadRequestException("The requirements to be compared have the same id");
-        Requirement r1 = requirementDAO.getRequirement(req1.getId());
-        Requirement r2 = requirementDAO.getRequirement(req2.getId());
-        ComparisonBetweenSentences comparer = new ComparisonBetweenSentences(greedyComparerWNLin,compare,0,false,component);
-        if (comparer.existsDependency(r1.getId(),r2.getId(),input.getDependencies())) throw new BadRequestException("Already exists another similar or duplicate dependency between the same requirements");
-        float result = comparer.compare_two_requirements(r1, r2);
-        Dependency aux = new Dependency(result,req1.getId(),req2.getId(),"proposed","similar",component);
-
-        //TODO improve this part
-        Path p = Paths.get("../testing/output/"+filename);
-        String s = System.lineSeparator() + "{\"dependencies\": [";
-
-        write_to_file(s,p);
-
-        s = System.lineSeparator() + aux.print_json();
-
-        write_to_file(s,p);
-
-        s = System.lineSeparator() + "]}";
-
-        write_to_file(s,p);
-    }
 
     @Override
-    public void similarityReqProj(String compare, float threshold, String filename, ReqProjOp input) throws InternalErrorException {
-
-        List<RequirementId> requirements = input.getRequirements();
-        List<RequirementId> project_requirements = input.getProject_requirements();
-
-        List<Requirement> requirements_loaded = new ArrayList<>();
-        List<Requirement> project_requirements_loaded = new ArrayList<>();
-
-        for (RequirementId aux: requirements) {
-            try {
-                requirements_loaded.add(requirementDAO.getRequirement(aux.getId()));
-            } catch (SQLException e) {
-                //nothing
-            }
-        }
-
-        for (RequirementId aux: project_requirements) {
-            try {
-                project_requirements_loaded.add(requirementDAO.getRequirement(aux.getId()));
-            } catch (SQLException e) {
-                //nothing
-            }
-        }
-
-        ComparisonBetweenSentences comparer = new ComparisonBetweenSentences(greedyComparerWNLin,compare,threshold,true,component);
-
-        Path p = Paths.get("../testing/output/"+filename);
-        String s = System.lineSeparator() + "{\"dependencies\": [";
-
-        write_to_file(s,p);
-
-        boolean firsttimeComa = true;
-        int cont = 0;
-        String result = "";
-
-        for (int i = 0; i < requirements_loaded.size(); ++i) {
-            System.out.println(requirements_loaded.size() - i);
-            Requirement req1 = requirements_loaded.get(i);
-            for (Requirement req2 : project_requirements_loaded) {
-                Dependency aux = comparer.compare_two_requirements_dep(req1,req2);
-                if (aux != null) {
-                    if (aux.getDependency_score() >= threshold && !comparer.existsDependency(aux.getFromid(), aux.getToid(),input.getDependencies())) {
-                        s = System.lineSeparator() + aux.print_json();
-                        if (!firsttimeComa) s = "," + s;
-                        firsttimeComa = false;
-                        result = result.concat(s);
-                        ++cont;
-                        if (cont >= 5000) {
-                            write_to_file(result,p);
-                            result = "";
-                            cont = 0;
-                        }
-                    }
-                }
-            }
-            project_requirements_loaded.add(req1);
-        }
-
-        if (!result.equals("")) write_to_file(result,p);
-
-        s = System.lineSeparator() + "]}";
-        write_to_file(s,p);
-    }
-
-    @Override
-    public void similarityProj(String compare, float threshold, String filename, ProjOp input) throws InternalErrorException {
-
-        int cont_left = 0;
-        int max = input.getRequirements().size()*input.getRequirements().size()/2;
-        int per = 0;
-
+    public void buildModel(String compare, String organization, List<Requirement> reqs) throws SQLException, Exception {
         show_time("start");
-
-        List<RequirementId> requirements = input.getRequirements();
-
-        //load reqs from db
-        List<Requirement> requirements_loaded = new ArrayList<>();
-        for (RequirementId aux: requirements) {
-            try {
-                requirements_loaded.add(requirementDAO.getRequirement(aux.getId()));
-            } catch (SQLException e) {
-                //nothing
-            }
-        }
-
-        Path p = Paths.get("../testing/output/"+filename);
-        String s = System.lineSeparator() + "{\"dependencies\": [";
-
-        write_to_file(s,p);
-
-        ComparisonBetweenSentences comparer = new ComparisonBetweenSentences(greedyComparerWNLin,compare,threshold,true,component);
-
-        boolean firsttimeComa = true;
-        int cont = 0;
-        String result = "";
-
-
-        for (int i = 0; i < requirements_loaded.size(); i++) {
-            cont_left += requirements_loaded.size() - i - 1;
-            int aux_left = cont_left*100/max;
-            if (aux_left >= per + 10) {
-                per = aux_left;
-                show_time(aux_left+"%");
-            }
-            System.out.println(requirements_loaded.size() - i);
-            Requirement req1 = requirements_loaded.get(i);
-            for (int j = i + 1; j < requirements_loaded.size(); j++) {
-                Requirement req2 = requirements_loaded.get(j);
-                Dependency aux = comparer.compare_two_requirements_dep(req1,req2);
-                if (aux != null) {
-                    if (aux.getDependency_score() >= threshold && !comparer.existsDependency(aux.getFromid(), aux.getToid(), input.getDependencies())) {
-                        s = System.lineSeparator() + aux.print_json();
-                        if (!firsttimeComa) s = "," + s;
-                        firsttimeComa = false;
-                        result = result.concat(s);
-                        ++cont;
-                        if (cont >= 5000) {
-                            write_to_file(result, p);
-                            result = "";
-                            cont = 0;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (!result.equals("")) write_to_file(result,p);
-
-        s = System.lineSeparator() + "]}";
-        write_to_file(s,p);
-
+        Map<String, Integer> corpusFrequency = new HashMap<>();
+        List<String> text = new ArrayList<>();
+        List<String> ids = new ArrayList<>();
+        buildCorpus(compare,reqs,text,ids);
+        Map<String, Map<String, Double>> model = extractKeywords(text,ids,corpusFrequency);
+        modelDAO.saveModel(organization,new Model(model,corpusFrequency));
         show_time("finish");
     }
 
     @Override
-    public void similarityProj_Large(String compare, float threshold, String filename, ProjOp input) throws InternalErrorException{
-
+    public List<Dependency> simReqReq(String organization, String req1, String req2) throws Exception {
         show_time("start");
-
-        List<RequirementId> requirements = input.getRequirements();
-
-        //load reqs from db
-        List<Requirement> requirements_loaded = new ArrayList<>();
-        for (RequirementId aux: requirements) {
-            try {
-                requirements_loaded.add(requirementDAO.getRequirement(aux.getId()));
-            } catch (SQLException e) {
-                //nothing
-            }
-        }
-
-        Path p = Paths.get("../testing/output/"+filename);
-        String s = System.lineSeparator() + "{\"dependencies\": [";
-
-        write_to_file(s,p);
-
-        ForkJoinPool commonPool = new ForkJoinPool(number_threads);
-        LargeProjTask customRecursiveTask = new LargeProjTask(number_threads,threshold,0,number_threads,compare,requirements_loaded,input.getDependencies(),new_comparer(),p);
-        commonPool.execute(customRecursiveTask);
-        customRecursiveTask.join();
-
-        delete_last_comma("../testing/output/"+filename);
-
-        s = System.lineSeparator() + "]}";
-        write_to_file(s,p);
-
+        List<Dependency> result = new ArrayList<>();
+        Model model = modelDAO.getModel(organization);
+        if (!model.getModel().containsKey(req1)) throw new BadRequestException("The requirement with id " + req1 + " is not present in the model loaded form the database");
+        if (!model.getModel().containsKey(req2)) throw new BadRequestException("The requirement with id " + req2 + " is not present in the model loaded form the database");
+        double score = cosine(model.getModel(),req1,req2);
+        result.add(new Dependency(score,req1,req2,status,dependency_type,component));
         show_time("finish");
+        return result;
     }
 
     @Override
-    public void similarityCluster(String compare, float threshold, String filename, String type, ProjOp input) throws InternalErrorException, BadRequestException {
-
+    public List<Dependency> simReqProject(String organization, String req, List<String> project_reqs) throws Exception {
         show_time("start");
-
-        ComparisonBetweenSentences comparer = new ComparisonBetweenSentences(greedyComparerWNLin,compare,threshold,false,component);
-        List<Cluster> clusters = new ArrayList<>();
-        List<RequirementId> requirements = input.getRequirements();
-
-        //load reqs form db
-        List<Requirement> requirements_loaded = new ArrayList<>();
-        for (RequirementId aux: requirements) {
-            try {
-                requirements_loaded.add(requirementDAO.getRequirement(aux.getId()));
-            } catch (SQLException e) {
-                //e.printStackTrace();
-                //nothing
+        List<Dependency> result = new ArrayList<>();
+        Model model = modelDAO.getModel(organization);
+        if (!model.getModel().containsKey(req)) throw new BadRequestException("The requirement with id " + req + " is not present in the model loaded form the database");
+        for (String req2: project_reqs) {
+            if (!req.equals(req2)) {
+                if (!model.getModel().containsKey(req2)) throw new BadRequestException("The requirement with id " + req2 + " is not present in the model loaded form the database");
+                double score = cosine(model.getModel(),req,req2);
+                result.add(new Dependency(score,req,req2,status,dependency_type,component));
             }
-        }
-
-        if (requirements_loaded.size() <= 0) throw new BadRequestException("Input without requirements or without preprocessed requirements");
-
-        requirements = null;
-
-        Path p = Paths.get("../testing/output/"+filename);
-        String s = System.lineSeparator() + "{\"dependencies\": [";
-
-        write_to_file(s,p);
-
-
-        int i = 0;
-
-        if (!exist_clusters()) {
-            List<Req_with_score> aux_list = new ArrayList<>();
-            aux_list.add(new Req_with_score(requirements_loaded.get(0),threshold));
-            Cluster aux_cluster = new Cluster(requirements_loaded.get(0),aux_list);
-            clusters.add(aux_cluster);
-            ++i;
-        }
-
-        while (i < requirements_loaded.size()) {
-            Requirement requirement = requirements_loaded.get(i);
-            System.out.println(i);
-            ++i;
-            float max = 0.0f;
-            Cluster max_cluster = null;
-            for (Cluster cluster: clusters) {
-                float value = 0.0f;
-                if (type.equals("all")) value = compare_requirement_cluster(cluster,requirement,comparer);
-                else value = compare_requirement_cluster_only_one(cluster,requirement,comparer);
-                if (value > max) {
-                    max = value;
-                    max_cluster = cluster;
-                }
-            }
-            if (max > threshold && max_cluster != null) {
-                max_cluster.addReq(requirement,max);
-            } else {
-                List<Req_with_score> aux_list = new ArrayList<>();
-                aux_list.add(new Req_with_score(requirement,0));
-                Cluster new_cluster = new Cluster(requirement,aux_list);
-                clusters.add(new_cluster);
-            }
-        }
-
-        show_time("finish1");
-        System.out.println("number of clusters: "+clusters.size());
-
-        int cont = 0;
-        int number_clusters = 0;
-        String result = "";
-        boolean write_something = false;
-        for (Cluster cluster: clusters) {
-            if (cluster.getSpecifiedRequirements().size() > 1) {
-                ++number_clusters;
-                List<Req_with_score> reqs = cluster.getSpecifiedRequirements();
-                for (Req_with_score req : reqs) {
-                    if (!req.getRequirement().getId().equals(cluster.getReq_older().getId())) {
-                        result = result.concat(System.lineSeparator() + create_dependency(req, cluster.getReq_older().getId()) + ",");
-                        ++cont;
-                        write_something = true;
-                        if (cont > 2500) write_to_file(result, p);
-                    }
-                }
-            }
-        }
-
-        System.out.println("not empty clusters: " + number_clusters);
-
-        if (cont > 0) {
-            write_to_file(result,p);
-            write_something = true;
-        }
-
-        if (write_something) delete_last_comma("../testing/output/"+filename);
-
-        s = System.lineSeparator() + "]}";
-        write_to_file(s,p);
-
-        aux_return_cluster(clusters);
-
-
-        show_time("finish2");
-    }
-
-    private void aux_return_cluster(List<Cluster> clusters) throws InternalErrorException {
-
-        String filename = "result_aux_clusters";
-        Path p = Paths.get("../testing/output/"+filename);
-
-        for (Cluster cluster: clusters) {
-            List<Req_with_score> req_with_scores = cluster.getSpecifiedRequirements();
-            for (Req_with_score score: req_with_scores) {
-                Requirement requirement = score.getRequirement();
-                String write = requirement.getId() + " " + requirement.getName() + " " + requirement.getText() +  System.lineSeparator();
-                write_to_file(write,p);
-            }
-            String write = "----------------------------------------------------------";
-            write_to_file(write,p);
-        }
-
-        String filename1 = "result_aux_clusters.json";
-        Path p1 = Paths.get("../testing/output/"+filename1);
-
-        JSONObject json = new JSONObject();
-        JSONArray clusters_json = new JSONArray();
-        for (Cluster cluster: clusters) {
-            JSONObject cluster_json = new JSONObject();
-            JSONArray specifiedReqs = new JSONArray();
-            List<Req_with_score> req_with_scores = cluster.getSpecifiedRequirements();
-            for (Req_with_score req: req_with_scores) {
-                specifiedReqs.put(req.getRequirement().getId());
-            }
-            cluster_json.put("specifiedReqs",specifiedReqs);
-            clusters_json.put(cluster_json);
-        }
-        json.put("clusters",clusters_json);
-        write_to_file(json.toString(),p1);
-    }
-
-
-    private void delete_last_comma(String path) throws InternalErrorException{
-        try {
-            RandomAccessFile f = new RandomAccessFile(path, "rw");
-            long length = f.length() - 1;
-            f.setLength(length);
-            f.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new InternalErrorException(e.getMessage());
-        }
-    }
-
-
-
-    @Override
-    public JSONObject testing(String compare, String filename, PairReq input) throws SQLException, BadRequestException {
-
-        RequirementId req1 = input.getReq1();
-        RequirementId req2 = input.getReq2();
-        if (req1.getId() == null || req2.getId() == null) throw new BadRequestException("One requirement has id equal to null");
-        if (req1.getId().equals(req2.getId())) throw new BadRequestException("The requirements to be compared have the same id");
-        Requirement r1 = requirementDAO.getRequirement(req1.getId());
-        Requirement r2 = requirementDAO.getRequirement(req2.getId());
-        ComparisonBetweenSentences comparer = new ComparisonBetweenSentences(greedyComparerWNLin,compare, 0,false,component);
-        if (comparer.existsDependency(r1.getId(),r2.getId(),input.getDependencies())) throw new BadRequestException("Already exists another similar or duplicate dependency between the same requirements");
-        float result = comparer.compare_two_requirements(r1,r2);
-        Dependency aux = new Dependency(result,req1.getId(),req2.getId(),"proposed","similar",component);
-
-        JSONObject finish = new JSONObject();
-        try {
-            finish.put("result", aux.getDependency_score());
-        } catch (Exception e) {
-            finish.put("result", 0);
-        }
-        return finish;
-    }
-
-    //Database
-    @Override
-    public void savePreprocessed(List<Requirement> reqs) throws SQLException {
-        show_time("start");
-        int i = 0;
-        int aux_main = 0;
-        for (Requirement r : reqs) {
-            System.out.println(reqs.size() - i);
-            int aux = i * 100 / reqs.size();
-            if (aux >= aux_main + 10) {
-                aux_main = aux;
-                show_time(aux+"%");
-            }
-            r.compute_sentence();
-            requirementDAO.savePreprocessed(r);
-            ++i;
         }
         show_time("finish");
+        return result;
     }
 
     @Override
     public void clearDB() throws SQLException {
-        requirementDAO.clearDB();
+        modelDAO.clearDB();
     }
 
 
@@ -471,48 +92,6 @@ public class SemilarServiceImpl implements SemilarService {
     /*
     auxiliary operations
      */
-
-    private String create_dependency(Req_with_score req, String fromid) {
-
-        JSONObject result = new JSONObject();
-        result.put("dependency_score",req.getScore());
-        result.put("fromid",fromid);
-        result.put("toid",req.getRequirement().getId());
-        result.put("status","proposed");
-        result.put("dependency_type","similar");
-        JSONArray description = new JSONArray();
-        description.put(component);
-        result.put("description",description);
-
-        return result.toString();
-    }
-
-    private float compare_requirement_cluster(Cluster cluster, Requirement requirement, ComparisonBetweenSentences comparer) {
-
-        List<Req_with_score> cluster_requirements = cluster.getSpecifiedRequirements();
-        float max = 0.0f;
-        for (Req_with_score aux_requirement: cluster_requirements) {
-            Requirement cluster_requirement = aux_requirement.getRequirement();
-            Dependency aux = comparer.compare_two_requirements_dep(requirement,cluster_requirement);
-            float value = 0.0f;
-            if (aux != null) value = aux.getDependency_score();
-            if (value > max) max = value;
-        }
-        return max;
-    }
-
-    private float compare_requirement_cluster_only_one(Cluster cluster, Requirement requirement, ComparisonBetweenSentences comparer) {
-
-        Requirement cluster_requirement = cluster.getReq_older();
-        Dependency aux = comparer.compare_two_requirements_dep(requirement,cluster_requirement);
-        float value = 0.0f;
-        if (aux != null) value = aux.getDependency_score();
-        return value;
-    }
-
-    private boolean exist_clusters() {
-        return false;
-    }
 
     private void show_time(String text) {
         LocalDateTime now = LocalDateTime.now();
@@ -524,41 +103,121 @@ public class SemilarServiceImpl implements SemilarService {
         System.out.println(text + " -- " + hour + ":" + minute + "  " + month + "/" + day + "/" + year);
     }
 
-    private void write_to_file(String text, Path p) throws InternalErrorException {
-        try (BufferedWriter writer = Files.newBufferedWriter(p, StandardOpenOption.APPEND)) {
-            writer.write(text);
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-            throw new InternalErrorException("Write start to file fail");
+    private void buildCorpus(String compare, List<Requirement> requirements, List<String> array_text, List<String> array_ids) throws BadRequestException {
+        for (Requirement requirement: requirements) {
+            if (requirement.getId() == null) throw new BadRequestException("There is a requirement without id.");
+            array_ids.add(requirement.getId());
+            String text = "";
+            if (requirement.getName() != null) text = text.concat(requirement.getName() + ".");
+            if ((compare.equals("true")) && (requirement.getText() != null)) text = text.concat(requirement.getText());
+            array_text.add(text);
         }
     }
 
-    private Path new_path(int number, String filename) throws InternalErrorException {
-        try {
-            File file = new File("../testing/output/"+filename+"_"+number);
-            if (file.createNewFile()) {
-                System.out.println("file.txt File Created in Project root directory");
-            } else System.out.println("File file.txt already exists in project root directory");
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new InternalErrorException("Error creating file");
+
+
+    private Map<String, Map<String, Double>> extractKeywords(List<String> corpus, List<String> ids, Map<String, Integer> corpusFrequency) throws Exception {
+        List<List<String>> docs = new ArrayList<List<String>>();
+        for (String s : corpus) {
+            docs.add(englishAnalyze(s));
         }
-        return Paths.get("../testing/output/"+filename+"_"+number);
+        List<List<String>> processed=preProcess(docs);
+        return tfIdf(processed,ids,corpusFrequency);
+
     }
 
-    private GreedyComparer new_comparer() {
+    private Map<String,Map<String, Double>> tfIdf(List<List<String>> docs, List<String> corpus, Map<String, Integer> corpusFrequency) {
+        Map<String,Map<String, Double>> tfidfComputed = new HashMap<String,Map<String, Double>>();
+        List<Map<String, Integer>> wordBag = new ArrayList<Map<String, Integer>>();
+        for (List<String> doc : docs) {
+            wordBag.add(tf(doc,corpusFrequency));
+        }
+        Integer i = 0;
+        for (List<String> doc : docs) {
+            HashMap<String, Double> aux = new HashMap<String, Double>();
+            for (String s : doc) {
+                Double idf = idf(docs.size(), corpusFrequency.get(s));
+                Integer tf = wordBag.get(i).get(s);
+                Double tfidf = idf * tf;
+                if (tfidf>=cutoffParameter) aux.put(s, tfidf);
+            }
+            tfidfComputed.put(corpus.get(i),aux);
+            ++i;
+        }
+        return tfidfComputed;
+    }
 
-        GreedyComparer greedyComparerWNLin = new GreedyComparer(wnMetricLin, 0.3f, true);
+    private double idf(Integer size, Integer frequency) {
+        return Math.log(size / frequency+1);
+    }
 
-        Requirement aux1 = new Requirement();
-        aux1.setName("testing");
-        Requirement aux2 = new Requirement();
-        aux2.setName("just waiting for an answer");
-        aux1.compute_sentence();
-        aux2.compute_sentence();
 
-        greedyComparerWNLin.computeSimilarity(aux1.getSentence_name(), aux2.getSentence_name());
+    private List<List<String>> preProcess(List<List<String>> corpus) throws Exception {
+        return corpus;
+    }
 
-        return greedyComparerWNLin;
+    private List<String> englishAnalyze(String text) throws IOException {
+        Analyzer analyzer = CustomAnalyzer.builder()
+                .withTokenizer("standard")
+                .addTokenFilter("lowercase")
+                .addTokenFilter("commongrams")
+                .addTokenFilter("porterstem")
+                .addTokenFilter("stop")
+                .build();
+        return analyze(text, analyzer);
+    }
+
+    private List<String> analyze(String text, Analyzer analyzer) throws IOException {
+        List<String> result = new ArrayList<String>();
+        TokenStream tokenStream = analyzer.tokenStream(null, new StringReader(text));
+        CharTermAttribute attr = tokenStream.addAttribute(CharTermAttribute.class);
+        tokenStream.reset();
+        while (tokenStream.incrementToken()) {
+            result.add(attr.toString());
+        }
+        Integer i = 0;
+        return result;
+    }
+
+    private Map<String, Integer> tf(List<String> doc, Map<String, Integer> corpusFrequency) {
+        Map<String, Integer> frequency = new HashMap<String, Integer>();
+        for (String s : doc) {
+            if (frequency.containsKey(s)) frequency.put(s, frequency.get(s) + 1);
+            else {
+                frequency.put(s, 1);
+                if (corpusFrequency.containsKey(s)) corpusFrequency.put(s, corpusFrequency.get(s) + 1);
+                else corpusFrequency.put(s, 1);
+            }
+
+        }
+        return frequency;
+    }
+
+    public double cosine(Map<String, Map<String, Double>> res, String a, String b) {
+        double cosine=0.0;
+        Map<String,Double> wordsA=res.get(a);
+        Map<String,Double> wordsB=res.get(b);
+        System.out.println(wordsA.keySet());
+        System.out.println(wordsB.keySet());
+        Set<String> intersection= new HashSet<String>(wordsA.keySet());
+        intersection.retainAll(wordsB.keySet());
+        for (String s: intersection) {
+            Double forA=wordsA.get(s);
+            Double forB=wordsB.get(s);
+            cosine+=forA*forB;
+        }
+        Double normA=norm(wordsA);
+        Double normB=norm(wordsB);
+
+        cosine=cosine/(normA*normB);
+        return cosine;
+    }
+
+    public Double norm(Map<String, Double> wordsB) {
+        double norm=0.0;
+        for (String s:wordsB.keySet()) {
+            norm+=wordsB.get(s)*wordsB.get(s);
+        }
+        return sqrt(norm);
     }
 }
