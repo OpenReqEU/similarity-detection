@@ -1,6 +1,7 @@
 package upc.similarity.semilarapi.dao;
 
 import upc.similarity.semilarapi.entity.Model;
+import upc.similarity.semilarapi.exception.BadRequestException;
 
 import java.sql.*;
 
@@ -53,7 +54,7 @@ public class SQLiteDAO implements modelDAO {
     }
 
     @Override
-    public Model getModel(String organization) throws SQLException {
+    public Model getModel(String organization) throws SQLException, BadRequestException {
         try {
             c = DriverManager.getConnection(db_url);
             PreparedStatement ps;
@@ -67,7 +68,7 @@ public class SQLiteDAO implements modelDAO {
                 String corpusF = rs.getString("corpusF");
                 return new Model(model,corpusF);
             } else {
-                throw new SQLException("The organization with the " + organization + " name does not have any model in the database");
+                throw new BadRequestException("The organization " + organization + " does not have any model in the database");
             }
         } finally {
             c.close();
@@ -78,7 +79,7 @@ public class SQLiteDAO implements modelDAO {
 
     @Override
     public void clearDB() throws SQLException {
-        c = DriverManager.getConnection("jdbc:sqlite:../semilar.db");
+        c = DriverManager.getConnection(db_url);
         PreparedStatement ps;
         ps = c.prepareStatement("DELETE FROM models");
         ps.execute();

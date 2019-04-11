@@ -10,6 +10,7 @@ import upc.similarity.semilarapi.dao.modelDAO;
 import upc.similarity.semilarapi.dao.SQLiteDAO;
 import upc.similarity.semilarapi.entity.*;
 import upc.similarity.semilarapi.exception.BadRequestException;
+import upc.similarity.semilarapi.exception.InternalErrorException;
 
 import java.io.*;
 import java.sql.SQLException;
@@ -39,24 +40,33 @@ public class SemilarServiceImpl implements SemilarService {
 
 
     @Override
-    public void buildModel(String compare, String organization, List<Requirement> reqs) throws SQLException, Exception {
+    public void buildModel(String compare, String organization, List<Requirement> reqs) throws BadRequestException, InternalErrorException {
         show_time("start");
         Map<String, Integer> corpusFrequency = new HashMap<>();
         List<String> text = new ArrayList<>();
         List<String> ids = new ArrayList<>();
         buildCorpus(compare,reqs,text,ids);
         Map<String, Map<String, Double>> model = extractKeywords(text,ids,corpusFrequency);
-        modelDAO.saveModel(organization,new Model(model,corpusFrequency));
+        try {
+            modelDAO.saveModel(organization, new Model(model, corpusFrequency));
+        } catch (SQLException e) {
+            throw new InternalErrorException("Error while saving the new model to the database");
+        }
         show_time("finish");
     }
 
     @Override
-    public List<Dependency> simReqReq(String organization, String req1, String req2) throws Exception {
+    public List<Dependency> simReqReq(String organization, String req1, String req2) throws BadRequestException, InternalErrorException {
         show_time("start");
         List<Dependency> result = new ArrayList<>();
-        Model model = modelDAO.getModel(organization);
-        if (!model.getModel().containsKey(req1)) throw new BadRequestException("The requirement with id " + req1 + " is not present in the model loaded form the database");
-        if (!model.getModel().containsKey(req2)) throw new BadRequestException("The requirement with id " + req2 + " is not present in the model loaded form the database");
+        Model model = null;
+        try {
+            model = modelDAO.getModel(organization);
+        } catch (SQLException e) {
+            throw new InternalErrorException("Error while loading the model from the database");
+        }
+        if (!model.getModel().containsKey(req1)) throw new BadRequestException("The requirement with id \"" + req1 + "\" is not present in the model loaded form the database");
+        if (!model.getModel().containsKey(req2)) throw new BadRequestException("The requirement with id \"" + req2 + "\" is not present in the model loaded form the database");
         double score = cosine(model.getModel(),req1,req2);
         result.add(new Dependency(score,req1,req2,status,dependency_type,component));
         show_time("finish");
@@ -64,14 +74,19 @@ public class SemilarServiceImpl implements SemilarService {
     }
 
     @Override
-    public List<Dependency> simReqProject(String organization, String req, List<String> project_reqs) throws Exception {
+    public List<Dependency> simReqProject(String organization, String req, List<String> project_reqs) throws BadRequestException, InternalErrorException {
         show_time("start");
         List<Dependency> result = new ArrayList<>();
-        Model model = modelDAO.getModel(organization);
-        if (!model.getModel().containsKey(req)) throw new BadRequestException("The requirement with id " + req + " is not present in the model loaded form the database");
+        Model model = null;
+        try {
+            model = modelDAO.getModel(organization);
+        } catch (SQLException e) {
+            throw new InternalErrorException("Error while loading the model from the database");
+        }
+        if (!model.getModel().containsKey(req)) throw new BadRequestException("The requirement with id \"" + req + "\" is not present in the model loaded form the database");
         for (String req2: project_reqs) {
             if (!req.equals(req2)) {
-                if (!model.getModel().containsKey(req2)) throw new BadRequestException("The requirement with id " + req2 + " is not present in the model loaded form the database");
+                if (!model.getModel().containsKey(req2)) throw new BadRequestException("The requirement with id \"" + req2 + "\" is not present in the model loaded form the database");
                 double score = cosine(model.getModel(),req,req2);
                 result.add(new Dependency(score,req,req2,status,dependency_type,component));
             }
@@ -81,16 +96,21 @@ public class SemilarServiceImpl implements SemilarService {
     }
 
     @Override
-    public List<Dependency> simProject(String organization, List<String> project_reqs) throws Exception {
+    public List<Dependency> simProject(String organization, List<String> project_reqs) throws BadRequestException, InternalErrorException {
         show_time("start");
         List<Dependency> result = new ArrayList<>();
-        Model model = modelDAO.getModel(organization);
+        Model model = null;
+        try {
+            model = modelDAO.getModel(organization);
+        } catch (SQLException e) {
+            throw new InternalErrorException("Error while loading the model from the database");
+        }
         for (int i = 0; i < project_reqs.size(); ++i) {
             String req1 = project_reqs.get(i);
-            if (!model.getModel().containsKey(req1)) throw new BadRequestException("The requirement with id " + req1 + " is not present in the model loaded form the database");
+            if (!model.getModel().containsKey(req1)) throw new BadRequestException("The requirement with id \"" + req1 + "\" is not present in the model loaded form the database");
             for (int j = i + 1; j < project_reqs.size(); ++j) {
                 String req2 = project_reqs.get(j);
-                if (!model.getModel().containsKey(req2)) throw new BadRequestException("The requirement with id " + req2 + " is not present in the model loaded form the database");
+                if (!model.getModel().containsKey(req2)) throw new BadRequestException("The requirement with id \"" + req2 + "\" is not present in the model loaded form the database");
                 double score = cosine(model.getModel(),req1,req2);
                 result.add(new Dependency(score,req1,req2,status,dependency_type,component));
             }
@@ -100,8 +120,12 @@ public class SemilarServiceImpl implements SemilarService {
     }
 
     @Override
-    public void clearDB() throws SQLException {
-        modelDAO.clearDB();
+    public void clearDB() throws InternalErrorException {
+        try {
+            modelDAO.clearDB();
+        } catch (SQLException e) {
+            throw new InternalErrorException("Error while clearing the database");
+        }
     }
 
 
@@ -135,10 +159,14 @@ public class SemilarServiceImpl implements SemilarService {
 
 
 
-    private Map<String, Map<String, Double>> extractKeywords(List<String> corpus, List<String> ids, Map<String, Integer> corpusFrequency) throws Exception {
+    private Map<String, Map<String, Double>> extractKeywords(List<String> corpus, List<String> ids, Map<String, Integer> corpusFrequency) throws InternalErrorException {
         List<List<String>> docs = new ArrayList<List<String>>();
         for (String s : corpus) {
-            docs.add(englishAnalyze(s));
+            try {
+                docs.add(englishAnalyze(s));
+            } catch (IOException e) {
+                throw new InternalErrorException("Error loading preprocess pipeline");
+            }
         }
         List<List<String>> processed=preProcess(docs);
         return tfIdf(processed,ids,corpusFrequency);
@@ -171,7 +199,7 @@ public class SemilarServiceImpl implements SemilarService {
     }
 
 
-    private List<List<String>> preProcess(List<List<String>> corpus) throws Exception {
+    private List<List<String>> preProcess(List<List<String>> corpus) {
         return corpus;
     }
 

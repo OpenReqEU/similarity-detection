@@ -107,11 +107,8 @@ public class SemilarAdapter extends ComponentAdapter{
         if (status != 200) {
             JSONObject result = new JSONObject(resJSON);
             String message = result.getString("message");
-            switch (status) {
-                case 412: throw new BadRequestException(message);
-                case 411: throw new InternalErrorException("Database error: " + message);
-                default: throw new InternalErrorException("Semilar component is not working");
-            }
+            if (status == 400) throw new BadRequestException(message);
+            else throw new InternalErrorException(message);
         }
     }
 }

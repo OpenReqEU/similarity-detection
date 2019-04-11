@@ -38,7 +38,7 @@ public class RestApiController {
             @ApiResponse(code=511, message = "Component Error")})
     public ResponseEntity<?> buildModel(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                         @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
-                                        @ApiParam(value="OpenreqJson with requirements", required = true) @RequestBody Requirements input) {
+                                        @ApiParam(value="OpenReqJson with requirements", required = true) @RequestBody Requirements input) {
         try {
             similarityService.buildModel(organization,compare,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
@@ -81,7 +81,7 @@ public class RestApiController {
     @RequestMapping(value = "/SimReqProject", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Similarity comparison between a requirement and all the requirements of a specific project", notes = "<p>Returns an array of dependencies " +
             "between the requirement and the project's requirements received as input. The similarity score is computed with the model assigned to the specified organization. " +
-            "All the requirements must be inside this model.  </p> <p>The threshold attribute determines the minimum score that must have the output dependencies. The max_number " +
+            "All the requirements must be inside this model.  </p><br><p>The threshold attribute determines the minimum score that must have the output dependencies. The max_number " +
             "attribute determines the maximum number of output dependencies.</p>")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=410, message = "Not Found"),
@@ -111,7 +111,7 @@ public class RestApiController {
     @RequestMapping(value = "/SimProject", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Similarity comparison between the requirements of one project", notes = "<p>Returns an array of dependencies between all possible pairs of " +
             "requirements from the project received as input. The similarity score is computed with the model assigned to the specified organization. All the requirements" +
-            " must be inside this model.</p><p>The threshold attribute determines the minimum score that must have the output dependencies. The max_number attribute determines " +
+            " must be inside this model.</p><br><p>The threshold attribute determines the minimum score that must have the output dependencies. The max_number attribute determines " +
             "the maximum number of output dependencies.</p>")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=410, message = "Not Found"),

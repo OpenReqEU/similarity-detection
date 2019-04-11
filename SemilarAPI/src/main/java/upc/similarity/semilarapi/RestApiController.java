@@ -5,6 +5,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import upc.similarity.semilarapi.entity.Requirement;
+import upc.similarity.semilarapi.exception.BadRequestException;
+import upc.similarity.semilarapi.exception.InternalErrorException;
 import upc.similarity.semilarapi.service.SemilarService;
 
 import java.sql.SQLException;
@@ -25,12 +27,12 @@ public class RestApiController {
         try {
             semilarService.buildModel(compare,organization,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (SQLException e) {
+        } catch (BadRequestException e) {
             e.printStackTrace();
-            return new ResponseEntity<>(e,HttpStatus.valueOf(411));
-        } catch (Exception e) {
+            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
+        } catch (InternalErrorException e) {
             e.printStackTrace();
-            return new ResponseEntity<>(e,HttpStatus.valueOf(500));
+            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -40,9 +42,12 @@ public class RestApiController {
                                        @RequestParam("req2") String req2) {
         try {
             return new ResponseEntity<>(semilarService.simReqReq(organization,req1,req2),HttpStatus.OK);
-        } catch (Exception e) {
+        } catch (BadRequestException e) {
             e.printStackTrace();
-            return new ResponseEntity<>(e,HttpStatus.valueOf(500));
+            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
+        } catch (InternalErrorException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -52,9 +57,12 @@ public class RestApiController {
                                            @RequestBody List<String> project_reqs) {
         try {
             return new ResponseEntity<>(semilarService.simReqProject(organization,req,project_reqs),HttpStatus.OK);
-        } catch (Exception e) {
+        } catch (BadRequestException e) {
             e.printStackTrace();
-            return new ResponseEntity<>(e,HttpStatus.valueOf(500));
+            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
+        } catch (InternalErrorException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -63,9 +71,12 @@ public class RestApiController {
                                         @RequestBody List<String> project_reqs) {
         try {
             return new ResponseEntity<>(semilarService.simProject(organization,project_reqs),HttpStatus.OK);
-        } catch (Exception e) {
+        } catch (BadRequestException e) {
             e.printStackTrace();
-            return new ResponseEntity<>(e,HttpStatus.valueOf(500));
+            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
+        } catch (InternalErrorException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -75,9 +86,9 @@ public class RestApiController {
             semilarService.clearDB();
             System.out.println("DB cleared");
             return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (SQLException e) {
+        } catch (InternalErrorException e) {
             e.printStackTrace();
-            return new ResponseEntity<>(e,HttpStatus.valueOf(411));
+            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
