@@ -24,11 +24,39 @@ public class RestApiController {
     @Autowired
     SimilarityService similarityService;
 
+    //Model generator
+
+    @CrossOrigin
+    @RequestMapping(value = "/BuildModel", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Builds a model with the input requirements", notes = "Builds a model with the entry requirements. " +
+            "The generated model is assigned to the specified organization and stored in an internal database. Each organization" +
+            " only can have one model at a time. If at the time of generating a new model the corresponding organization already has" +
+            " an existing model, it is replaced by the new one.")
+    @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
+            @ApiResponse(code=410, message = "Not Found"),
+            @ApiResponse(code=411, message = "Bad request"),
+            @ApiResponse(code=511, message = "Component Error")})
+    public ResponseEntity<?> buildModel(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+                                        @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
+                                        @ApiParam(value="OpenreqJson with requirements", required = true) @RequestBody Requirements input) {
+        try {
+            similarityService.buildModel(organization,compare,input);
+            return new ResponseEntity<>(null,HttpStatus.OK);
+        } catch (BadRequestException e) {
+            return getResponseBadRequest(e);
+        } catch (NotFoundException e) {
+            return getResponseNotFound(e);
+        } catch (InternalErrorException e) {
+            return getInternalError(e);
+        }
+    }
+
     // Req - Req
 
     @CrossOrigin
     @RequestMapping(value = "/SimReqReq", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Similarity comparison between two requirements", notes = "")
+    @ApiOperation(value = "Similarity comparison between two requirements", notes = "Returns a dependency between the two input requirements. The similarity score is computed with the" +
+            " model assigned to the specified organization. The two requirements must be in this model.")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=410, message = "Not Found"),
             @ApiResponse(code=411, message = "Bad request"),
@@ -51,7 +79,10 @@ public class RestApiController {
 
     @CrossOrigin
     @RequestMapping(value = "/SimReqProject", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Similarity comparison between a requirement and all the requirements of a specific project", notes = "")
+    @ApiOperation(value = "Similarity comparison between a requirement and all the requirements of a specific project", notes = "<p>Returns an array of dependencies " +
+            "between the requirement and the project's requirements received as input. The similarity score is computed with the model assigned to the specified organization. " +
+            "All the requirements must be inside this model.  </p> <p>The threshold attribute determines the minimum score that must have the output dependencies. The max_number " +
+            "attribute determines the maximum number of output dependencies.</p>")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=410, message = "Not Found"),
             @ApiResponse(code=411, message = "Bad request"),
@@ -78,7 +109,10 @@ public class RestApiController {
 
     @CrossOrigin
     @RequestMapping(value = "/SimProject", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Similarity comparison between the requirements of one project", notes = "")
+    @ApiOperation(value = "Similarity comparison between the requirements of one project", notes = "<p>Returns an array of dependencies between all possible pairs of " +
+            "requirements from the project received as input. The similarity score is computed with the model assigned to the specified organization. All the requirements" +
+            " must be inside this model.</p><p>The threshold attribute determines the minimum score that must have the output dependencies. The max_number attribute determines " +
+            "the maximum number of output dependencies.</p>")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=410, message = "Not Found"),
             @ApiResponse(code=411, message = "Bad request"),
@@ -101,29 +135,6 @@ public class RestApiController {
     }
 
 
-    // DB
-
-    @CrossOrigin
-    @RequestMapping(value = "/BuildModel", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Builds model", notes = "")
-    @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
-            @ApiResponse(code=410, message = "Not Found"),
-            @ApiResponse(code=411, message = "Bad request"),
-            @ApiResponse(code=511, message = "Component Error")})
-    public ResponseEntity<?> buildModel(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
-                                             @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
-                                             @ApiParam(value="OpenreqJson with requirements", required = true) @RequestBody Requirements input) {
-        try {
-            similarityService.buildModel(organization,compare,input);
-            return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (BadRequestException e) {
-            return getResponseBadRequest(e);
-        } catch (NotFoundException e) {
-            return getResponseNotFound(e);
-        } catch (InternalErrorException e) {
-            return getInternalError(e);
-        }
-    }
 
     /*@CrossOrigin
     @RequestMapping(value = "/DB/Clear", method = RequestMethod.DELETE)

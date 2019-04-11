@@ -1,12 +1,8 @@
 package upc.similarity.semilarapi.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import semilar.data.Sentence;
-import semilar.tools.preprocessing.SentencePreprocessor;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 //Class used to represent requirements
 public class Requirement implements Serializable {
