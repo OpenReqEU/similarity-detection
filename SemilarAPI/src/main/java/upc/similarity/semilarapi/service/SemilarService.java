@@ -12,11 +12,11 @@ public interface SemilarService {
 
     public void buildModel(String compare, String organization, List<Requirement> reqs) throws BadRequestException, InternalErrorException;
 
-    public List<Dependency> simReqReq(String organization, String req1, String req2) throws BadRequestException, InternalErrorException;
+    public void simReqReq(String filename, String organization, String req1, String req2) throws BadRequestException, InternalErrorException;
 
-    public List<Dependency> simReqProject(String organization, String req, List<String> project_reqs) throws BadRequestException, InternalErrorException;
+    public void simReqProject(String filename, String organization, String req, List<String> project_reqs) throws BadRequestException, InternalErrorException;
 
-    public List<Dependency> simProject(String organization, List<String> project_reqs) throws BadRequestException, InternalErrorException;
+    public void simProject(String filename, String organization, List<String> project_reqs) throws BadRequestException, InternalErrorException;
 
-    public void clearDB() throws InternalErrorException;
+    public void clearDB(String organization) throws InternalErrorException;
 }

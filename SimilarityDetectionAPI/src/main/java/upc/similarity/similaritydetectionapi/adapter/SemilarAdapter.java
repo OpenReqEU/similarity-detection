@@ -24,33 +24,30 @@ public class SemilarAdapter extends ComponentAdapter{
     private static final String URL = "http://localhost:9405/upc/Semilar/";
 
     @Override
-    public List<Dependency> simReqReq(String organization, String req1, String req2) throws InternalErrorException, BadRequestException {
+    public void simReqReq(String filename, String organization, String req1, String req2) throws InternalErrorException, BadRequestException {
 
-        String response = connection_component(URL + "SimReqReq?organization=" + organization + "&req1=" + req1 + "&req2=" + req2,null);
-        JSONArray array = new JSONArray(response);
-        return JSON_to_list_dependencies(array);
+        connection_component(URL + "SimReqReq?organization=" + organization + "&req1=" + req1 + "&req2=" + req2 + "&filename=" +
+                 filename,null);
     }
 
     @Override
-    public List<Dependency> simReqProject(String organization, String req, List<String> reqs) throws InternalErrorException, BadRequestException {
+    public void simReqProject(String filename, String organization, String req, List<String> reqs) throws InternalErrorException, BadRequestException {
 
         JSONArray json_to_send = new JSONArray();
         for (String aux: reqs) json_to_send.put(aux);
 
-        String response = connection_component(URL + "SimReqProject?organization=" + organization + "&req=" + req, json_to_send);
-        JSONArray array = new JSONArray(response);
-        return JSON_to_list_dependencies(array);
+        connection_component(URL + "SimReqProject?organization=" + organization + "&req=" + req + "&filename=" +
+                filename, json_to_send);
     }
 
     @Override
-    public List<Dependency> simProject(String organization, List<String> reqs) throws InternalErrorException, BadRequestException {
+    public void simProject(String filename, String organization, List<String> reqs) throws InternalErrorException, BadRequestException {
 
         JSONArray json_to_send = new JSONArray();
         for (String aux: reqs) json_to_send.put(aux);
 
-        String response = connection_component(URL + "SimProject?organization=" + organization, json_to_send);
-        JSONArray array = new JSONArray(response);
-        return JSON_to_list_dependencies(array);
+        connection_component(URL + "SimProject?organization=" + organization + "&filename=" +
+                filename, json_to_send);
     }
 
     public void buildModel(String organization, boolean compare, List<Requirement> requirements) throws InternalErrorException, BadRequestException {

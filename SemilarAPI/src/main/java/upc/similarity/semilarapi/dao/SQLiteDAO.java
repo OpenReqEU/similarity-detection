@@ -78,10 +78,11 @@ public class SQLiteDAO implements modelDAO {
 
 
     @Override
-    public void clearDB() throws SQLException {
+    public void clearDB(String organization) throws SQLException {
         c = DriverManager.getConnection(db_url);
         PreparedStatement ps;
-        ps = c.prepareStatement("DELETE FROM models");
+        ps = c.prepareStatement("DELETE FROM models WHERE organization = ?");
+        ps.setString(1,organization);
         ps.execute();
         c.close();
     }

@@ -1,7 +1,0 @@
-{"requirements":[
-    {"id":"QM-1"},
-    {"id":"QM-2"},
-    {"id":"QM-3"},
-    {"id":"QM-4"}],
-"projects":[
-    {"name":"Bug report","id":"QM","specifiedRequirements":["QM-3","QM-4"]}]}

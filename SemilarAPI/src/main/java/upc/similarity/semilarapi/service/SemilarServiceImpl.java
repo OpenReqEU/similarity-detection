@@ -4,7 +4,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 import upc.similarity.semilarapi.dao.modelDAO;
 import upc.similarity.semilarapi.dao.SQLiteDAO;
@@ -13,6 +12,10 @@ import upc.similarity.semilarapi.exception.BadRequestException;
 import upc.similarity.semilarapi.exception.InternalErrorException;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -38,10 +41,10 @@ public class SemilarServiceImpl implements SemilarService {
         return null;
     }
 
-
     @Override
     public void buildModel(String compare, String organization, List<Requirement> reqs) throws BadRequestException, InternalErrorException {
         show_time("start");
+        System.out.println(reqs.size());
         Map<String, Integer> corpusFrequency = new HashMap<>();
         List<String> text = new ArrayList<>();
         List<String> ids = new ArrayList<>();
@@ -56,9 +59,8 @@ public class SemilarServiceImpl implements SemilarService {
     }
 
     @Override
-    public List<Dependency> simReqReq(String organization, String req1, String req2) throws BadRequestException, InternalErrorException {
+    public void simReqReq(String filename, String organization, String req1, String req2) throws BadRequestException, InternalErrorException {
         show_time("start");
-        List<Dependency> result = new ArrayList<>();
         Model model = null;
         try {
             model = modelDAO.getModel(organization);
@@ -68,15 +70,28 @@ public class SemilarServiceImpl implements SemilarService {
         if (!model.getModel().containsKey(req1)) throw new BadRequestException("The requirement with id \"" + req1 + "\" is not present in the model loaded form the database");
         if (!model.getModel().containsKey(req2)) throw new BadRequestException("The requirement with id \"" + req2 + "\" is not present in the model loaded form the database");
         double score = cosine(model.getModel(),req1,req2);
-        result.add(new Dependency(score,req1,req2,status,dependency_type,component));
+        Dependency result = new Dependency(score,req1,req2,status,dependency_type,component);
+
+        //TODO improve this part
+        Path p = Paths.get("../testing/output/"+filename);
+        String s = System.lineSeparator() + "{\"dependencies\": [";
+
+        write_to_file(s,p);
+
+        s = System.lineSeparator() + result.print_json();
+
+        write_to_file(s,p);
+
+        s = System.lineSeparator() + "]}";
+
+        write_to_file(s,p);
+
         show_time("finish");
-        return result;
     }
 
     @Override
-    public List<Dependency> simReqProject(String organization, String req, List<String> project_reqs) throws BadRequestException, InternalErrorException {
+    public void simReqProject(String filename, String organization, String req, List<String> project_reqs) throws BadRequestException, InternalErrorException {
         show_time("start");
-        List<Dependency> result = new ArrayList<>();
         Model model = null;
         try {
             model = modelDAO.getModel(organization);
@@ -84,45 +99,88 @@ public class SemilarServiceImpl implements SemilarService {
             throw new InternalErrorException("Error while loading the model from the database");
         }
         if (!model.getModel().containsKey(req)) throw new BadRequestException("The requirement with id \"" + req + "\" is not present in the model loaded form the database");
+
+        Path p = Paths.get("../testing/output/"+filename);
+        String s = System.lineSeparator() + "{\"dependencies\": [";
+        write_to_file(s,p);
+
+        boolean firsttimeComa = true;
+        int cont = 0;
+        String result = "";
         for (String req2: project_reqs) {
-            if (!req.equals(req2)) {
-                if (!model.getModel().containsKey(req2)) throw new BadRequestException("The requirement with id \"" + req2 + "\" is not present in the model loaded form the database");
+            if (!req.equals(req2) && model.getModel().containsKey(req2)) {
                 double score = cosine(model.getModel(),req,req2);
-                result.add(new Dependency(score,req,req2,status,dependency_type,component));
+                Dependency dependency = new Dependency(score,req,req2,status,dependency_type,component);
+                s = System.lineSeparator() + dependency.print_json();
+                if (!firsttimeComa) s = "," + s;
+                firsttimeComa = false;
+                result = result.concat(s);
+                ++cont;
+                if (cont >= 5000) {
+                    write_to_file(result,p);
+                    result = "";
+                    cont = 0;
+                }
             }
         }
+
+        if (!result.equals("")) write_to_file(result,p);
+        s = System.lineSeparator() + "]}";
+        write_to_file(s,p);
+
         show_time("finish");
-        return result;
     }
 
     @Override
-    public List<Dependency> simProject(String organization, List<String> project_reqs) throws BadRequestException, InternalErrorException {
+    public void simProject(String filename, String organization, List<String> project_reqs) throws BadRequestException, InternalErrorException {
         show_time("start");
-        List<Dependency> result = new ArrayList<>();
         Model model = null;
         try {
             model = modelDAO.getModel(organization);
         } catch (SQLException e) {
             throw new InternalErrorException("Error while loading the model from the database");
         }
+
+        Path p = Paths.get("../testing/output/"+filename);
+        String s = System.lineSeparator() + "{\"dependencies\": [";
+        write_to_file(s,p);
+
+        boolean firsttimeComa = true;
+        int cont = 0;
+        String result = "";
+
         for (int i = 0; i < project_reqs.size(); ++i) {
             String req1 = project_reqs.get(i);
             if (!model.getModel().containsKey(req1)) throw new BadRequestException("The requirement with id \"" + req1 + "\" is not present in the model loaded form the database");
             for (int j = i + 1; j < project_reqs.size(); ++j) {
                 String req2 = project_reqs.get(j);
-                if (!model.getModel().containsKey(req2)) throw new BadRequestException("The requirement with id \"" + req2 + "\" is not present in the model loaded form the database");
-                double score = cosine(model.getModel(),req1,req2);
-                result.add(new Dependency(score,req1,req2,status,dependency_type,component));
+                if (!req2.equals(req1) && model.getModel().containsKey(req2)) {
+                    double score = cosine(model.getModel(),req1,req2);
+                    Dependency dependency = new Dependency(score,req1,req2,status,dependency_type,component);
+                    s = System.lineSeparator() + dependency.print_json();
+                    if (!firsttimeComa) s = "," + s;
+                    firsttimeComa = false;
+                    result = result.concat(s);
+                    ++cont;
+                    if (cont >= 5000) {
+                        write_to_file(result,p);
+                        result = "";
+                        cont = 0;
+                    }
+                }
             }
         }
+        if (!result.equals("")) write_to_file(result,p);
+        s = System.lineSeparator() + "]}";
+        write_to_file(s,p);
+
         show_time("finish");
-        return result;
     }
 
     @Override
-    public void clearDB() throws InternalErrorException {
+    public void clearDB(String organization) throws InternalErrorException {
         try {
-            modelDAO.clearDB();
+            modelDAO.clearDB(organization);
         } catch (SQLException e) {
             throw new InternalErrorException("Error while clearing the database");
         }
@@ -151,7 +209,7 @@ public class SemilarServiceImpl implements SemilarService {
             if (requirement.getId() == null) throw new BadRequestException("There is a requirement without id.");
             array_ids.add(requirement.getId());
             String text = "";
-            if (requirement.getName() != null) text = text.concat(requirement.getName() + ".");
+            if (requirement.getName() != null) text = text.concat(requirement.getName() + ". ");
             if ((compare.equals("true")) && (requirement.getText() != null)) text = text.concat(requirement.getText());
             array_text.add(text);
         }
@@ -208,7 +266,7 @@ public class SemilarServiceImpl implements SemilarService {
                 .withTokenizer("standard")
                 .addTokenFilter("lowercase")
                 .addTokenFilter("commongrams")
-                .addTokenFilter("porterstem")
+                //.addTokenFilter("porterstem")
                 .addTokenFilter("stop")
                 .build();
         return analyze(text, analyzer);
@@ -244,8 +302,8 @@ public class SemilarServiceImpl implements SemilarService {
         double cosine=0.0;
         Map<String,Double> wordsA=res.get(a);
         Map<String,Double> wordsB=res.get(b);
-        System.out.println(wordsA.keySet());
-        System.out.println(wordsB.keySet());
+        //System.out.println(wordsA.keySet());
+        //System.out.println(wordsB.keySet());
         Set<String> intersection= new HashSet<String>(wordsA.keySet());
         intersection.retainAll(wordsB.keySet());
         for (String s: intersection) {
@@ -266,5 +324,14 @@ public class SemilarServiceImpl implements SemilarService {
             norm+=wordsB.get(s)*wordsB.get(s);
         }
         return sqrt(norm);
+    }
+
+    private void write_to_file(String text, Path p) throws InternalErrorException {
+        try (BufferedWriter writer = Files.newBufferedWriter(p, StandardOpenOption.APPEND)) {
+            writer.write(text);
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            throw new InternalErrorException("Write start to file fail");
+        }
     }
 }

@@ -1,6 +1,0 @@
-{"requirements":[
-    {"id":"QM-1"},
-    {"id":"QM-2"}],
-"dependencies":[
-    {"toid":"QM-1","dependency_type":"duplicates","dependency_score":0.7,"description":["Similarity-DKPro"],"fromid":"QM-2","status":"proposed"}]}
-

@@ -23,11 +23,11 @@ public abstract class ComponentAdapter {
 
 
     //main operations
-    public abstract List<Dependency> simReqReq(String organization, String req1, String req2) throws InternalErrorException, BadRequestException, NotFoundException;
+    public abstract void simReqReq(String filename, String organization, String req1, String req2) throws InternalErrorException, BadRequestException, NotFoundException;
 
-    public abstract List<Dependency> simReqProject(String organization, String req, List<String> reqs) throws InternalErrorException, BadRequestException, NotFoundException;
+    public abstract void simReqProject(String filename, String organization, String req, List<String> reqs) throws InternalErrorException, BadRequestException, NotFoundException;
 
-    public abstract List<Dependency> simProject(String organization, List<String> reqs) throws InternalErrorException, BadRequestException, NotFoundException;
+    public abstract void simProject(String filename, String organization, List<String> reqs) throws InternalErrorException, BadRequestException, NotFoundException;
 
     //auxiliary operations
     protected String connection_component(String URL, JSONArray json) throws InternalErrorException, BadRequestException {

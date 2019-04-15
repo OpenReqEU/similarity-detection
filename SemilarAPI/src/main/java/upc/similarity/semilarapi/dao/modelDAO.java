@@ -13,5 +13,5 @@ public interface modelDAO {
 
     public Model getModel(String organization) throws SQLException, BadRequestException;
 
-    public void clearDB() throws SQLException;
+    public void clearDB(String organization) throws SQLException;
 }

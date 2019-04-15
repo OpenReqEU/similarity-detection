@@ -18,8 +18,8 @@ import upc.similarity.similaritydetectionapi.adapter.SemilarAdapter;
 import upc.similarity.similaritydetectionapi.entity.Dependency;
 import upc.similarity.similaritydetectionapi.entity.Project;
 import upc.similarity.similaritydetectionapi.entity.input_output.JsonProject;
-import upc.similarity.similaritydetectionapi.entity.Requirement;
 import upc.similarity.similaritydetectionapi.entity.input_output.Requirements;
+import upc.similarity.similaritydetectionapi.entity.input_output.Result_id;
 import upc.similarity.similaritydetectionapi.exception.*;
 import upc.similarity.similaritydetectionapi.values.Component;
 
@@ -39,37 +39,169 @@ public class SimilarityServiceImpl implements SimilarityService {
     //Main operations
 
     @Override
-    public List<Dependency> simReqReq(String organization, String req1, String req2) throws BadRequestException, InternalErrorException, NotFoundException {
-
-        ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdpapter(Component.valueOf(component));
-        return componentAdapter.simReqReq(organization,req1,req2);
-    }
-
-    @Override
-    public List<Dependency> simReqProject(String organization, double threshold, int max_number, String req, String project_id, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
-
-        if (threshold < 0 || threshold > 1) throw new BadRequestException("Threshold must be a number between 0 and 1");
-        ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdpapter(Component.valueOf(component));
-        Project project = search_project(project_id,input.getProjects());
-        List<Dependency> response = componentAdapter.simReqProject(organization,req,project.getSpecifiedRequirements());
-        return sort_dependencies(response,max_number,threshold);
-    }
-
-    @Override
-    public List<Dependency> simProject(String organization, double threshold, int max_number, String project_id, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
-
-        ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdpapter(Component.valueOf(component));
-        Project project = search_project(project_id,input.getProjects());
-        List<Dependency> response = componentAdapter.simProject(organization,project.getSpecifiedRequirements());
-        return sort_dependencies(response,max_number,threshold);
-    }
-
-    @Override
-    public void buildModel(String organization, boolean compare, Requirements input) throws InternalErrorException, BadRequestException {
+    public Result_id buildModel(String url, String organization, boolean compare, Requirements input) throws InternalErrorException, BadRequestException {
 
         if (!input.OK()) throw new BadRequestException("The provided json has not requirements");
-        SemilarAdapter semilarAdapter = new SemilarAdapter();
-        semilarAdapter.buildModel(organization,compare,input.getRequirements());
+        Result_id id = get_id();
+
+        //New thread
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                InputStream fis = null;
+                String success = "false";
+                try {
+                    SemilarAdapter semilarAdapter = new SemilarAdapter();
+                    semilarAdapter.buildModel(organization,compare,input.getRequirements());
+                    String result = "{\"result\":\"Success!\"}";
+                    fis = new ByteArrayInputStream(result.getBytes());
+                    success = "true";
+                } catch (InternalErrorException e) {
+                    fis = new ByteArrayInputStream(exception_to_JSON(500,"Internal error",e.getMessage()).getBytes());
+                } catch (BadRequestException e) {
+                    fis = new ByteArrayInputStream(exception_to_JSON(400,"Bad request",e.getMessage()).getBytes());
+                }
+                finally {
+                    update_client(fis,url,id.getId(),success,"AddReqs");
+                }
+            }
+        });
+
+        thread.start();
+        return id;
+    }
+
+    @Override
+    public Result_id simReqReq(String url, String organization, String req1, String req2) throws BadRequestException, InternalErrorException, NotFoundException {
+
+        Result_id id = get_id();
+
+        //Create file to save resulting dependencies
+        File file = create_file(path+id.getId());
+
+        //New thread
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                InputStream fis = null;
+                String success = "false";
+                try {
+                    ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdpapter(Component.valueOf(component));
+                    componentAdapter.simReqReq(id.getId(),organization,req1,req2);
+                    fis = new FileInputStream(file);
+                    success = "true";
+                } catch (InternalErrorException e) {
+                    fis = new ByteArrayInputStream(exception_to_JSON(500,"Internal error",e.getMessage()).getBytes());
+                } catch (BadRequestException e) {
+                    fis = new ByteArrayInputStream(exception_to_JSON(400,"Bad request",e.getMessage()).getBytes());
+                } catch (NotFoundException e) {
+                    fis = new ByteArrayInputStream(exception_to_JSON(404,"Not found",e.getMessage()).getBytes());
+                } catch (FileNotFoundException e) {
+                    fis = new ByteArrayInputStream(exception_to_JSON(500,"File error",e.getMessage()).getBytes());
+                }
+                finally {
+                    update_client(fis,url,id.getId(),success,"ReqReq");
+                    try {
+                        delete_file(file);
+                    } catch (InternalErrorException e) {
+                        System.out.println(e.getMessage());
+                    }
+                }
+            }
+        });
+
+        thread.start();
+        return id;
+    }
+
+    @Override
+    public Result_id simReqProject(String url, String organization, double threshold, int max_number, String req, String project_id, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
+
+        if (threshold < 0 || threshold > 1) throw new BadRequestException("Threshold must be a number between 0 and 1");
+        Project project = search_project(project_id,input.getProjects());
+
+        Result_id id = get_id();
+
+        //Create file to save resulting dependencies
+        File file = create_file(path+id.getId());
+
+        //New thread
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                InputStream fis = null;
+                String success = "false";
+                try {
+                    ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdpapter(Component.valueOf(component));
+                    componentAdapter.simReqProject(id.getId(),organization,req,project.getSpecifiedRequirements());
+                    fis = new FileInputStream(file);
+                    success = "true";
+                } catch (InternalErrorException e) {
+                    fis = new ByteArrayInputStream(exception_to_JSON(500,"Internal error",e.getMessage()).getBytes());
+                } catch (BadRequestException e) {
+                    fis = new ByteArrayInputStream(exception_to_JSON(400,"Bad request",e.getMessage()).getBytes());
+                } catch (NotFoundException e) {
+                    fis = new ByteArrayInputStream(exception_to_JSON(404,"Not found",e.getMessage()).getBytes());
+                } catch (FileNotFoundException e) {
+                    fis = new ByteArrayInputStream(exception_to_JSON(500,"File error",e.getMessage()).getBytes());
+                }
+                finally {
+                    update_client(fis,url,id.getId(),success,"ReqProject");
+                    try {
+                        delete_file(file);
+                    } catch (InternalErrorException e) {
+                        System.out.println(e.getMessage());
+                    }
+                }
+            }
+        });
+
+        thread.start();
+        return id;
+    }
+
+    @Override
+    public Result_id simProject(String url, String organization, double threshold, int max_number, String project_id, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
+
+        Project project = search_project(project_id,input.getProjects());
+        Result_id id = get_id();
+
+        //Create file to save resulting dependencies
+        File file = create_file(path+id.getId());
+
+        //New thread
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                InputStream fis = null;
+                String success = "false";
+                try {
+                    ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdpapter(Component.valueOf(component));
+                    componentAdapter.simProject(id.getId(),organization,project.getSpecifiedRequirements());
+                    fis = new FileInputStream(file);
+                    success = "true";
+                } catch (InternalErrorException e) {
+                    fis = new ByteArrayInputStream(exception_to_JSON(500,"Internal error",e.getMessage()).getBytes());
+                } catch (BadRequestException e) {
+                    fis = new ByteArrayInputStream(exception_to_JSON(400,"Bad request",e.getMessage()).getBytes());
+                } catch (NotFoundException e) {
+                    fis = new ByteArrayInputStream(exception_to_JSON(404,"Not found",e.getMessage()).getBytes());
+                } catch (FileNotFoundException e) {
+                    fis = new ByteArrayInputStream(exception_to_JSON(500,"File error",e.getMessage()).getBytes());
+                }
+                finally {
+                    update_client(fis,url,id.getId(),success,"Project");
+                    try {
+                        delete_file(file);
+                    } catch (InternalErrorException e) {
+                        System.out.println(e.getMessage());
+                    }
+                }
+            }
+        });
+
+        thread.start();
+        return id;
     }
 
     @Override
@@ -84,6 +216,21 @@ public class SimilarityServiceImpl implements SimilarityService {
 
 
     //Auxiliary operations
+
+    private String exception_to_JSON(int status, String error, String message) {
+        JSONObject result = new JSONObject();
+        result.put("status",status);
+        result.put("error",error);
+        result.put("message",message);
+        return result.toString();
+    }
+
+
+    private Result_id get_id() {
+        Random rand = new Random();
+        return new Result_id(System.currentTimeMillis() + "_" + rand.nextInt(1000));
+    }
+
 
     private List<Dependency> sort_dependencies(List<Dependency> dependencies, int max_num, double threshold) {
 
@@ -110,29 +257,6 @@ public class SimilarityServiceImpl implements SimilarityService {
         return result;
     }
 
-    private List<Requirement> search_requirements(List<String> req, List<Requirement> requirements) throws NotFoundException {
-
-        List<Requirement> result = new ArrayList<>();
-        Set<String> ids = new HashSet<>();
-        for (String id: req) ids.add(id);
-
-        for (int i = 0; (!ids.isEmpty()) && (i < requirements.size()); ++i) {
-            Requirement req_aux = requirements.get(i);
-            if (req_ok(req_aux) && ids.contains(req_aux.getId())) {
-                result.add(req_aux);
-                ids.remove(req_aux.getId());
-            }
-        }
-
-        if (!ids.isEmpty()) {
-            for (String id: ids) {
-                throw new NotFoundException("There is not requirement with id \'" + id + "\' in the JSON provided"); //Error: req not found
-            }
-        }
-
-        return result;
-    }
-
     private Project search_project(String project, List<Project> projects) throws NotFoundException {
 
         boolean found = false;
@@ -147,57 +271,9 @@ public class SimilarityServiceImpl implements SimilarityService {
         return project_input;
     }
 
-    private List<Requirement> search_project_requirements(Project project, List<Requirement> requirements) {
-
-        List<Requirement> result = new ArrayList<>();
-        List<String> requirements_id = project.getSpecifiedRequirements();
-        Set<String> ids = new HashSet<>();
-        for (String id: requirements_id) ids.add(id);
-
-        for (int i = 0; (!ids.isEmpty()) && (i < requirements.size()); i++) {
-            Requirement requirement_aux = requirements.get(i);
-            String id_aux = requirement_aux.getId();
-            if (id_aux != null && ids.contains(id_aux)) {
-                result.add(requirement_aux);
-                ids.remove(id_aux);
-            }
-        }
-
-        return result;
-    }
-
-    private boolean validCompare(String compare) {
-
-        if (compare.equals("true") || compare.equals("false")) return true;
-        else return false;
-
-        /*String[] parts = compare.split("-");
-        boolean correcto = true;
-        for (int i = 0; (correcto) && (i < parts.length); ++i) {
-            String aux = parts[i];
-            if (!aux.equals("")) {
-                if (!aux.equals("Name") && !aux.equals("Text") && !aux.equals("Comments")) correcto = false;
-            }
-        }
-        return correcto;*/
-    }
-
     private boolean project_ok(Project project) {
         if (project.getId() == null) return false;
         else return true;
-    }
-
-    private boolean req_ok(Requirement req) {
-        if (req.getId() == null) return false;
-        else return true;
-    }
-
-    private String exception_to_JSON(int status, String error, String message) {
-        JSONObject result = new JSONObject();
-        result.put("status",status);
-        result.put("error",error);
-        result.put("message",message);
-        return result.toString();
     }
 
     private void update_client(InputStream targetStream, String url, String id, String success, String operation) {
