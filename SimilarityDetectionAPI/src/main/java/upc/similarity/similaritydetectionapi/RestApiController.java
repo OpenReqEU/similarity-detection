@@ -91,7 +91,7 @@ public class RestApiController {
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal Error")})
     public ResponseEntity<?> simReqProject(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
-                                           /*@ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,*/
+                                           @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                            /*@ApiParam(value="Maximum number of dependencies in the output", required = true, example = "5") @RequestParam("max_number") int max_number,*/
                                            @ApiParam(value="Id of the requirement to compare", required = true, example = "SQ-132") @RequestParam("req") String req,
                                            @ApiParam(value="Id of the project to compare", required = true, example = "SM") @RequestParam("project") String project,
@@ -99,7 +99,7 @@ public class RestApiController {
                                            @ApiParam(value="OpenReqJson with the project", required = true) @RequestBody JsonProject input) {
         try {
             url_ok(url);
-            return new ResponseEntity<>(similarityService.simReqProject(url,organization,0,0,req,project,input), HttpStatus.OK);
+            return new ResponseEntity<>(similarityService.simReqProject(url,organization,threshold,0,req,project,input), HttpStatus.OK);
         } catch (BadRequestException e) {
             return getResponseBadRequest(e);
         } catch (NotFoundException e) {
@@ -121,14 +121,14 @@ public class RestApiController {
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal Error")})
     public ResponseEntity<?> simProject(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
-                                        /*@ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,*/
+                                        @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                         /*@ApiParam(value="Maximum number of dependencies in the output", required = true, example = "5") @RequestParam("max_number") int max_number,*/
                                         @ApiParam(value="Id of the project to compare", required = true, example = "SQ") @RequestParam("project") String project,
                                         @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/Test") @RequestParam("url") String url,
                                         @ApiParam(value="OpenReqJson with the project", required = true) @RequestBody JsonProject input) {
         try {
             url_ok(url);
-            return new ResponseEntity<>(similarityService.simProject(url,organization,0,0,project,input), HttpStatus.OK);
+            return new ResponseEntity<>(similarityService.simProject(url,organization,threshold,0,project,input), HttpStatus.OK);
         } catch (BadRequestException e) {
             return getResponseBadRequest(e);
         } catch (NotFoundException e) {

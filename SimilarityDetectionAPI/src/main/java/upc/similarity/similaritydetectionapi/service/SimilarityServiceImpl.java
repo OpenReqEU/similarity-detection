@@ -133,7 +133,7 @@ public class SimilarityServiceImpl implements SimilarityService {
                 String success = "false";
                 try {
                     ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdpapter(Component.valueOf(component));
-                    componentAdapter.simReqProject(id.getId(),organization,req,project.getSpecifiedRequirements());
+                    componentAdapter.simReqProject(id.getId(),organization,req,threshold,project.getSpecifiedRequirements());
                     fis = new FileInputStream(file);
                     success = "true";
                 } catch (InternalErrorException e) {
@@ -163,6 +163,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     @Override
     public Result_id simProject(String url, String organization, double threshold, int max_number, String project_id, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
 
+        if (threshold < 0 || threshold > 1) throw new BadRequestException("Threshold must be a number between 0 and 1");
         Project project = search_project(project_id,input.getProjects());
         Result_id id = get_id();
 
@@ -177,7 +178,7 @@ public class SimilarityServiceImpl implements SimilarityService {
                 String success = "false";
                 try {
                     ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdpapter(Component.valueOf(component));
-                    componentAdapter.simProject(id.getId(),organization,project.getSpecifiedRequirements());
+                    componentAdapter.simProject(id.getId(),organization,threshold,project.getSpecifiedRequirements());
                     fis = new FileInputStream(file);
                     success = "true";
                 } catch (InternalErrorException e) {

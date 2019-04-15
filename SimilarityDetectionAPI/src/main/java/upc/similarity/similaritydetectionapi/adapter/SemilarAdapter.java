@@ -23,33 +23,6 @@ public class SemilarAdapter extends ComponentAdapter{
 
     private static final String URL = "http://localhost:9405/upc/Semilar/";
 
-    @Override
-    public void simReqReq(String filename, String organization, String req1, String req2) throws InternalErrorException, BadRequestException {
-
-        connection_component(URL + "SimReqReq?organization=" + organization + "&req1=" + req1 + "&req2=" + req2 + "&filename=" +
-                 filename,null);
-    }
-
-    @Override
-    public void simReqProject(String filename, String organization, String req, List<String> reqs) throws InternalErrorException, BadRequestException {
-
-        JSONArray json_to_send = new JSONArray();
-        for (String aux: reqs) json_to_send.put(aux);
-
-        connection_component(URL + "SimReqProject?organization=" + organization + "&req=" + req + "&filename=" +
-                filename, json_to_send);
-    }
-
-    @Override
-    public void simProject(String filename, String organization, List<String> reqs) throws InternalErrorException, BadRequestException {
-
-        JSONArray json_to_send = new JSONArray();
-        for (String aux: reqs) json_to_send.put(aux);
-
-        connection_component(URL + "SimProject?organization=" + organization + "&filename=" +
-                filename, json_to_send);
-    }
-
     public void buildModel(String organization, boolean compare, List<Requirement> requirements) throws InternalErrorException, BadRequestException {
 
         JSONArray reqs_json = list_requirements_to_JSON(requirements);
@@ -72,6 +45,33 @@ public class SemilarAdapter extends ComponentAdapter{
         }
 
         if (httpStatus != 200) check_excepcions(httpStatus,json_response);
+    }
+
+    @Override
+    public void simReqReq(String filename, String organization, String req1, String req2) throws InternalErrorException, BadRequestException {
+
+        connection_component(URL + "SimReqReq?organization=" + organization + "&req1=" + req1 + "&req2=" + req2 + "&filename=" +
+                 filename,null);
+    }
+
+    @Override
+    public void simReqProject(String filename, String organization, String req, double threshold, List<String> reqs) throws InternalErrorException, BadRequestException {
+
+        JSONArray json_to_send = new JSONArray();
+        for (String aux: reqs) json_to_send.put(aux);
+
+        connection_component(URL + "SimReqProject?organization=" + organization + "&req=" + req + "&filename=" +
+                filename + "&threshold=" + threshold, json_to_send);
+    }
+
+    @Override
+    public void simProject(String filename, String organization, double threshold, List<String> reqs) throws InternalErrorException, BadRequestException {
+
+        JSONArray json_to_send = new JSONArray();
+        for (String aux: reqs) json_to_send.put(aux);
+
+        connection_component(URL + "SimProject?organization=" + organization + "&filename=" +
+                filename + "&threshold=" + threshold, json_to_send);
     }
 
     public void clearDB() throws InternalErrorException, BadRequestException {

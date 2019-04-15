@@ -90,7 +90,7 @@ public class SemilarServiceImpl implements SemilarService {
     }
 
     @Override
-    public void simReqProject(String filename, String organization, String req, List<String> project_reqs) throws BadRequestException, InternalErrorException {
+    public void simReqProject(String filename, String organization, String req, double threshold, List<String> project_reqs) throws BadRequestException, InternalErrorException {
         show_time("start");
         Model model = null;
         try {
@@ -110,16 +110,18 @@ public class SemilarServiceImpl implements SemilarService {
         for (String req2: project_reqs) {
             if (!req.equals(req2) && model.getModel().containsKey(req2)) {
                 double score = cosine(model.getModel(),req,req2);
-                Dependency dependency = new Dependency(score,req,req2,status,dependency_type,component);
-                s = System.lineSeparator() + dependency.print_json();
-                if (!firsttimeComa) s = "," + s;
-                firsttimeComa = false;
-                result = result.concat(s);
-                ++cont;
-                if (cont >= 5000) {
-                    write_to_file(result,p);
-                    result = "";
-                    cont = 0;
+                if (score >= threshold) {
+                    Dependency dependency = new Dependency(score, req, req2, status, dependency_type, component);
+                    s = System.lineSeparator() + dependency.print_json();
+                    if (!firsttimeComa) s = "," + s;
+                    firsttimeComa = false;
+                    result = result.concat(s);
+                    ++cont;
+                    if (cont >= 5000) {
+                        write_to_file(result, p);
+                        result = "";
+                        cont = 0;
+                    }
                 }
             }
         }
@@ -132,7 +134,7 @@ public class SemilarServiceImpl implements SemilarService {
     }
 
     @Override
-    public void simProject(String filename, String organization, List<String> project_reqs) throws BadRequestException, InternalErrorException {
+    public void simProject(String filename, String organization, double threshold, List<String> project_reqs) throws BadRequestException, InternalErrorException {
         show_time("start");
         Model model = null;
         try {
@@ -156,16 +158,18 @@ public class SemilarServiceImpl implements SemilarService {
                 String req2 = project_reqs.get(j);
                 if (!req2.equals(req1) && model.getModel().containsKey(req2)) {
                     double score = cosine(model.getModel(),req1,req2);
-                    Dependency dependency = new Dependency(score,req1,req2,status,dependency_type,component);
-                    s = System.lineSeparator() + dependency.print_json();
-                    if (!firsttimeComa) s = "," + s;
-                    firsttimeComa = false;
-                    result = result.concat(s);
-                    ++cont;
-                    if (cont >= 5000) {
-                        write_to_file(result,p);
-                        result = "";
-                        cont = 0;
+                    if (score >= threshold) {
+                        Dependency dependency = new Dependency(score, req1, req2, status, dependency_type, component);
+                        s = System.lineSeparator() + dependency.print_json();
+                        if (!firsttimeComa) s = "," + s;
+                        firsttimeComa = false;
+                        result = result.concat(s);
+                        ++cont;
+                        if (cont >= 5000) {
+                            write_to_file(result, p);
+                            result = "";
+                            cont = 0;
+                        }
                     }
                 }
             }
@@ -266,7 +270,7 @@ public class SemilarServiceImpl implements SemilarService {
                 .withTokenizer("standard")
                 .addTokenFilter("lowercase")
                 .addTokenFilter("commongrams")
-                //.addTokenFilter("porterstem")
+                .addTokenFilter("porterstem")
                 .addTokenFilter("stop")
                 .build();
         return analyze(text, analyzer);

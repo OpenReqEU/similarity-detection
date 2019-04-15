@@ -56,9 +56,10 @@ public class RestApiController {
     public ResponseEntity<?> simReqProject(@RequestParam("organization") String organization,
                                            @RequestParam("req") String req,
                                            @RequestParam("filename") String filename,
+                                           @RequestParam("threshold") double threshold,
                                            @RequestBody List<String> project_reqs) {
         try {
-            semilarService.simReqProject(filename,organization,req,project_reqs);
+            semilarService.simReqProject(filename,organization,req,threshold,project_reqs);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (BadRequestException e) {
             e.printStackTrace();
@@ -72,9 +73,10 @@ public class RestApiController {
     @RequestMapping(value = "/upc/Semilar/SimProject", method = RequestMethod.POST)
     public ResponseEntity<?> simProject(@RequestParam("organization") String organization,
                                         @RequestParam("filename") String filename,
+                                        @RequestParam("threshold") double threshold,
                                         @RequestBody List<String> project_reqs) {
         try {
-            semilarService.simProject(filename,organization,project_reqs);
+            semilarService.simProject(filename,organization,threshold,project_reqs);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (BadRequestException e) {
             e.printStackTrace();
