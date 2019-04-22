@@ -152,6 +152,7 @@ public class SemilarServiceImpl implements SemilarService {
         String result = "";
 
         for (int i = 0; i < project_reqs.size(); ++i) {
+            System.out.println(project_reqs.size() - i);
             String req1 = project_reqs.get(i);
             if (!model.getModel().containsKey(req1)) throw new BadRequestException("The requirement with id \"" + req1 + "\" is not present in the model loaded form the database");
             for (int j = i + 1; j < project_reqs.size(); ++j) {
