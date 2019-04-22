@@ -154,22 +154,23 @@ public class SemilarServiceImpl implements SemilarService {
         for (int i = 0; i < project_reqs.size(); ++i) {
             System.out.println(project_reqs.size() - i);
             String req1 = project_reqs.get(i);
-            if (!model.getModel().containsKey(req1)) throw new BadRequestException("The requirement with id \"" + req1 + "\" is not present in the model loaded form the database");
-            for (int j = i + 1; j < project_reqs.size(); ++j) {
-                String req2 = project_reqs.get(j);
-                if (!req2.equals(req1) && model.getModel().containsKey(req2)) {
-                    double score = cosine(model.getModel(),req1,req2);
-                    if (score >= threshold) {
-                        Dependency dependency = new Dependency(score, req1, req2, status, dependency_type, component);
-                        s = System.lineSeparator() + dependency.print_json();
-                        if (!firsttimeComa) s = "," + s;
-                        firsttimeComa = false;
-                        result = result.concat(s);
-                        ++cont;
-                        if (cont >= 5000) {
-                            write_to_file(result, p);
-                            result = "";
-                            cont = 0;
+            if (model.getModel().containsKey(req1)) {
+                for (int j = i + 1; j < project_reqs.size(); ++j) {
+                    String req2 = project_reqs.get(j);
+                    if (!req2.equals(req1) && model.getModel().containsKey(req2)) {
+                        double score = cosine(model.getModel(), req1, req2);
+                        if (score >= threshold) {
+                            Dependency dependency = new Dependency(score, req1, req2, status, dependency_type, component);
+                            s = System.lineSeparator() + dependency.print_json();
+                            if (!firsttimeComa) s = "," + s;
+                            firsttimeComa = false;
+                            result = result.concat(s);
+                            ++cont;
+                            if (cont >= 5000) {
+                                write_to_file(result, p);
+                                result = "";
+                                cont = 0;
+                            }
                         }
                     }
                 }
