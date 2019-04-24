@@ -50,16 +50,19 @@ public class FileUploadService {
 
 	private void saveToFile(InputStream inStream, String target) throws IOException {
 		OutputStream out = null;
-		int read = 0;
-		byte[] bytes = new byte[1024];
+		try {
+			int read = 0;
+			byte[] bytes = new byte[1024];
 
-		out = new FileOutputStream(new File(target));
-		while ((read = inStream.read(bytes)) != -1) {
-			System.out.println("writing file");
-			out.write(bytes, 0, read);
+			out = new FileOutputStream(new File(target));
+			while ((read = inStream.read(bytes)) != -1) {
+				System.out.println("writing file");
+				out.write(bytes, 0, read);
+			}
+			out.flush();
+		} finally {
+			if (out != null) out.close();
 		}
-		out.flush();
-		out.close();
 	}
 
 	@CrossOrigin
@@ -70,20 +73,20 @@ public class FileUploadService {
 		String info = "";
 		String result = "";
 		String line = "";
+		FileReader fileReader = null;
+		BufferedReader bufferedReader = null;
 		try {
-			FileReader fileReader = new FileReader("../testing/output/test_info");
-			BufferedReader bufferedReader = new BufferedReader(fileReader);
+			fileReader = new FileReader("../testing/output/test_info");
+			bufferedReader = new BufferedReader(fileReader);
 			while ((line = bufferedReader.readLine()) != null) {
-				info += line;
+				info = info.concat(line);
 			}
-			bufferedReader.close();
 
-			FileReader fileReader2 = new FileReader("../testing/output/test_result");
-			BufferedReader bufferedReader2 = new BufferedReader(fileReader2);
-			while ((line = bufferedReader2.readLine()) != null) {
-				result += line;
+			fileReader = new FileReader("../testing/output/test_result");
+			bufferedReader = new BufferedReader(fileReader);
+			while ((line = bufferedReader.readLine()) != null) {
+				result = result.concat(line);
 			}
-			bufferedReader.close();
 
 			JSONObject info_json = new JSONObject(info);
 			JSONObject result_json = new JSONObject(result);
@@ -97,6 +100,14 @@ public class FileUploadService {
 		} catch (Exception e) {
 			e.printStackTrace();
 			return new ResponseEntity<>(null,HttpStatus.INTERNAL_SERVER_ERROR);
+		} finally {
+			try {
+				if (fileReader != null) fileReader.close();
+				if (bufferedReader != null) bufferedReader.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+				return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+			}
 		}
 
 	}

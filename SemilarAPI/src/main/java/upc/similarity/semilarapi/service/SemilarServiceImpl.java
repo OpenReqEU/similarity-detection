@@ -97,7 +97,7 @@ public class SemilarServiceImpl implements SemilarService {
     @Override
     public String simTest(String organization, String req1, String req2) throws BadRequestException, InternalErrorException {
         show_time("start");
-        Model model = new Model(modelSAVE, corpusSAVE);
+        Model model = /*new Model(modelSAVE, corpusSAVE);*/ null;
         /*Model model = null;
         try {
             model = modelDAO.getModel(organization);

@@ -5,7 +5,7 @@ public class DriverDatabase {
     public static void main(String[] args) {
         try {
             SQLiteDAO db = new SQLiteDAO();
-            db.createDatabase();
+            //db.createDatabase();
         } catch (Exception e) {
             e.printStackTrace();
         }

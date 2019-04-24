@@ -10,7 +10,7 @@ public class SQLiteDAO implements modelDAO {
     private static Connection c;
     private static String db_url = "jdbc:sqlite:../models.db";
 
-    public void createDatabase() {
+    private void createDatabase() {
 
         String sql = "CREATE TABLE IF NOT EXISTS models (\n"
                 + "	organization varchar PRIMARY KEY,\n"
@@ -33,11 +33,9 @@ public class SQLiteDAO implements modelDAO {
 
     @Override
     public void saveModel(String organization, Model model) throws SQLException {
+        PreparedStatement ps = null;
         try {
             c = DriverManager.getConnection(db_url);
-
-
-            PreparedStatement ps;
             ps = c.prepareStatement("DELETE FROM models WHERE organization = ?");
             ps.setString(1, organization);
             ps.execute();
@@ -50,18 +48,20 @@ public class SQLiteDAO implements modelDAO {
             ps.execute();
         } finally {
             c.close();
+            if (ps != null) ps.close();
         }
     }
 
     @Override
     public Model getModel(String organization) throws SQLException, BadRequestException {
+        PreparedStatement ps = null;
+        ResultSet rs = null;
         try {
             c = DriverManager.getConnection(db_url);
-            PreparedStatement ps;
             ps = c.prepareStatement("SELECT model, corpusF FROM models WHERE organization = ?");
             ps.setString(1,organization);
             ps.execute();
-            ResultSet rs = ps.getResultSet();
+            rs = ps.getResultSet();
 
             if (rs.next()) {
                 String model = rs.getString("model");
@@ -72,6 +72,8 @@ public class SQLiteDAO implements modelDAO {
             }
         } finally {
             c.close();
+            if (ps != null) ps.close();
+            if (rs != null) rs.close();
         }
     }
 
@@ -79,11 +81,15 @@ public class SQLiteDAO implements modelDAO {
 
     @Override
     public void clearDB(String organization) throws SQLException {
-        c = DriverManager.getConnection(db_url);
-        PreparedStatement ps;
-        ps = c.prepareStatement("DELETE FROM models WHERE organization = ?");
-        ps.setString(1,organization);
-        ps.execute();
-        c.close();
+        PreparedStatement ps = null;
+        try {
+            c = DriverManager.getConnection(db_url);
+            ps = c.prepareStatement("DELETE FROM models WHERE organization = ?");
+            ps.setString(1, organization);
+            ps.execute();
+        } finally {
+            c.close();
+            if (ps != null) ps.close();
+        }
     }
 }

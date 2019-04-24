@@ -32,6 +32,7 @@ public class SimilarityServiceImpl implements SimilarityService {
 
     private static String path = "../testing/output/";
     private static String component = "Semilar";
+    private Random rand = new Random();
 
 
 
@@ -228,7 +229,6 @@ public class SimilarityServiceImpl implements SimilarityService {
 
 
     private Result_id get_id() {
-        Random rand = new Random();
         return new Result_id(System.currentTimeMillis() + "_" + rand.nextInt(1000));
     }
 
