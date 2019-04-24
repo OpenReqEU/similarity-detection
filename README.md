@@ -70,7 +70,7 @@ Steps to run the service:
 
 The service expects a JSON with OpenReqJson format. At this moment the service provides 3 different functionalities with 1 auxiliary operation.
 
-Check API details [here](https://api.openreq.eu/similarity-detection/swagger-ui.html).
+Check API details [here](https://api.openreq.eu/#/services/similarity-detection).
 
 ### Notes for developers
 
