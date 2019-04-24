@@ -99,4 +99,19 @@ public class RestApiController {
         }
     }
 
+    @RequestMapping(value = "/upc/Semilar/Test", method = RequestMethod.POST)
+    public ResponseEntity<?> Test(@RequestParam("organization") String organization,
+                                       @RequestParam("req1") String req1,
+                                       @RequestParam("req2") String req2) {
+        try {
+            return new ResponseEntity<>(semilarService.simTest(organization,req1,req2),HttpStatus.OK);
+        } catch (BadRequestException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
+        } catch (InternalErrorException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 }

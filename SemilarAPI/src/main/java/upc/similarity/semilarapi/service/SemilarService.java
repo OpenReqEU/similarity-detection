@@ -19,4 +19,6 @@ public interface SemilarService {
     public void simProject(String filename, String organization, double threshold, List<String> project_reqs) throws BadRequestException, InternalErrorException;
 
     public void clearDB(String organization) throws InternalErrorException;
+
+    public String simTest(String organization, String req1, String req2) throws BadRequestException, InternalErrorException;
 }

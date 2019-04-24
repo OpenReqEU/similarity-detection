@@ -4,6 +4,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 import upc.similarity.semilarapi.dao.modelDAO;
 import upc.similarity.semilarapi.dao.SQLiteDAO;
@@ -30,6 +31,8 @@ public class SemilarServiceImpl implements SemilarService {
     private static String status = "proposed";
     private static String dependency_type = "duplicates";
     private modelDAO modelDAO = getValue();
+    /*private Map<String, Map<String, Double>> modelSAVE;
+    private Map<String, Integer> corpusSAVE;*/
 
     private modelDAO getValue() {
         try {
@@ -51,6 +54,8 @@ public class SemilarServiceImpl implements SemilarService {
         buildCorpus(compare,reqs,text,ids);
         Map<String, Map<String, Double>> model = extractKeywords(text,ids,corpusFrequency);
         try {
+            /*modelSAVE = model;
+            corpusSAVE = corpusFrequency;*/
             modelDAO.saveModel(organization, new Model(model, corpusFrequency));
         } catch (SQLException e) {
             throw new InternalErrorException("Error while saving the new model to the database");
@@ -87,6 +92,28 @@ public class SemilarServiceImpl implements SemilarService {
         write_to_file(s,p);
 
         show_time("finish");
+    }
+
+    @Override
+    public String simTest(String organization, String req1, String req2) throws BadRequestException, InternalErrorException {
+        show_time("start");
+        Model model = new Model(modelSAVE, corpusSAVE);
+        /*Model model = null;
+        try {
+            model = modelDAO.getModel(organization);
+        } catch (SQLException e) {
+            throw new InternalErrorException("Error while loading the model from the database");
+        }*/
+        if (!model.getModel().containsKey(req1)) throw new BadRequestException("The requirement with id \"" + req1 + "\" is not present in the model loaded form the database");
+        if (!model.getModel().containsKey(req2)) throw new BadRequestException("The requirement with id \"" + req2 + "\" is not present in the model loaded form the database");
+        double score = cosine(model.getModel(),req1,req2);
+
+        JSONObject json = new JSONObject();
+        json.put("result",score);
+
+
+        show_time("finish");
+        return json.toString();
     }
 
     @Override
@@ -215,17 +242,109 @@ public class SemilarServiceImpl implements SemilarService {
             if (requirement.getId() == null) throw new BadRequestException("There is a requirement without id.");
             array_ids.add(requirement.getId());
             String text = "";
-            if (requirement.getName() != null) text = text.concat(requirement.getName() + ". ");
-            if ((compare.equals("true")) && (requirement.getText() != null)) text = text.concat(requirement.getText());
+            if (requirement.getName() != null) text = text.concat(clean_text(requirement.getName(),1) + ". ");
+            if ((compare.equals("true")) && (requirement.getText() != null)) text = text.concat(clean_text(requirement.getText(),2));
             array_text.add(text);
+        }
+    }
+
+    private String clean_text(String text, int clean) {
+        text = text.replaceAll("_", "");
+        if (clean == 0) return text;
+        else if (clean == 1) {
+
+            String[] aux = text.split(" ");
+            text = "";
+            for (String word: aux) {
+                if (word.equals(word.toUpperCase())) word = word.toLowerCase();
+                text = text.concat(" " + word);
+            }
+
+            //text = text.replace("n't", "");
+
+            text = text.replace("..", ".");
+            text = text.replace(":", " ");
+            text = text.replace("\"", "");
+            text = text.replace("\\r", ".");
+            text = text.replace("..", ".");
+            text = text.replace("\\n", ".");
+            text = text.replace("..", ".");
+            text = text.replace("!", ".");
+            text = text.replace("..", ".");
+            text = text.replace("?", ".");
+            text = text.replace("..", ".");
+            text = text.replace("=", " ");
+            text = text.replace(">", " ");
+            text = text.replace("<", " ");
+            text = text.replace("%", " ");
+            text = text.replace("#", " ");
+            text = text.replace(",", " ");
+            text = text.replace("(", " ");
+            text = text.replace(")", " ");
+            text = text.replace("{", " ");
+            text = text.replace("}", " ");
+            text = text.replace("-", " ");
+
+            String result = "";
+            String[] r = text.split("(?=\\p{Upper})");
+            for (String word: r) result = result.concat(" " + word);
+
+
+            return result;
+        }
+        else {
+            text = text.replaceAll("(\\{code.*?\\{code)","");
+
+            String[] aux = text.split(" ");
+            text = "";
+            for (String word: aux) {
+                if (word.equals(word.toUpperCase())) word = word.toLowerCase();
+                text = text.concat(" " + word);
+            }
+
+            text = text.replace("..", ".");
+            text = text.replace("\"", "");
+            text = text.replace(":", " ");
+            text = text.replace("\\r", ".");
+            text = text.replace("..", ".");
+            text = text.replace("\\n", ".");
+            text = text.replace("..", ".");
+            text = text.replace("!", ".");
+            text = text.replace("..", ".");
+            text = text.replace("?", ".");
+            text = text.replace("..", ".");
+            text = text.replace("=", " ");
+            text = text.replace("%", " ");
+            text = text.replace("#", " ");
+            text = text.replace(",", " ");
+            text = text.replace("(", " ");
+            text = text.replace(")", " ");
+            text = text.replace("{", " ");
+            text = text.replace("}", " ");
+            text = text.replace("-", " ");
+            text = text.replace(">", " ");
+            text = text.replace("<", " ");
+
+            String result = "";
+            String[] r = text.split("(?=\\p{Upper})");
+            for (String word: r) result = result.concat(" " + word);
+
+            text = "";
+            for (String word: result.split(" ")) {
+                if (word.length() < 20) text = text.concat(" " + word);
+            }
+            return result;
         }
     }
 
 
 
     private Map<String, Map<String, Double>> extractKeywords(List<String> corpus, List<String> ids, Map<String, Integer> corpusFrequency) throws InternalErrorException {
-        List<List<String>> docs = new ArrayList<List<String>>();
+        List<List<String>> docs = new ArrayList<>();
+        int cont = corpus.size();
         for (String s : corpus) {
+            System.out.println(cont);
+            --cont;
             try {
                 docs.add(englishAnalyze(s));
             } catch (IOException e) {
@@ -238,14 +357,14 @@ public class SemilarServiceImpl implements SemilarService {
     }
 
     private Map<String,Map<String, Double>> tfIdf(List<List<String>> docs, List<String> corpus, Map<String, Integer> corpusFrequency) {
-        Map<String,Map<String, Double>> tfidfComputed = new HashMap<String,Map<String, Double>>();
-        List<Map<String, Integer>> wordBag = new ArrayList<Map<String, Integer>>();
+        Map<String,Map<String, Double>> tfidfComputed = new HashMap<>();
+        List<Map<String, Integer>> wordBag = new ArrayList<>();
         for (List<String> doc : docs) {
             wordBag.add(tf(doc,corpusFrequency));
         }
-        Integer i = 0;
+        int i = 0;
         for (List<String> doc : docs) {
-            HashMap<String, Double> aux = new HashMap<String, Double>();
+            HashMap<String, Double> aux = new HashMap<>();
             for (String s : doc) {
                 Double idf = idf(docs.size(), corpusFrequency.get(s));
                 Integer tf = wordBag.get(i).get(s);
@@ -277,6 +396,21 @@ public class SemilarServiceImpl implements SemilarService {
                 .build();
         return analyze(text, analyzer);
     }
+
+    /*private String stanford_analyze(String text) {
+        Properties props = new Properties();
+        props.setProperty("annotators", "tokenize,ssplit,pos,lemma");
+        props.setProperty("coref.algorithm", "neural");
+        StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
+        CoreDocument document = new CoreDocument(text);
+        pipeline.annotate(document);
+        List<CoreLabel> tokens = document.tokens();
+        String result = "";
+        for (CoreLabel token: tokens) {
+            result = result.concat(" " + token.lemma().toLowerCase());
+        }
+        return result;
+    }*/
 
     private List<String> analyze(String text, Analyzer analyzer) throws IOException {
         List<String> result = new ArrayList<String>();
