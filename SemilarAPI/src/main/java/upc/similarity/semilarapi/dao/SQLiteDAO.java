@@ -48,7 +48,7 @@ public class SQLiteDAO implements modelDAO {
             ps.execute();
         } finally {
             c.close();
-            if (ps != null) ps.close();
+            //if (ps != null) ps.close();
         }
     }
 
@@ -72,8 +72,8 @@ public class SQLiteDAO implements modelDAO {
             }
         } finally {
             c.close();
-            if (ps != null) ps.close();
-            if (rs != null) rs.close();
+            //if (ps != null) ps.close();
+            //if (rs != null) rs.close();
         }
     }
 
