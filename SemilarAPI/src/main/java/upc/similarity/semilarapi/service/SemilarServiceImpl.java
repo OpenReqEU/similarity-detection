@@ -58,6 +58,7 @@ public class SemilarServiceImpl implements SemilarService {
             corpusSAVE = corpusFrequency;*/
             modelDAO.saveModel(organization, new Model(model, corpusFrequency));
         } catch (SQLException e) {
+            e.printStackTrace();
             throw new InternalErrorException("Error while saving the new model to the database");
         }
         show_time("finish");
@@ -72,9 +73,9 @@ public class SemilarServiceImpl implements SemilarService {
         } catch (SQLException e) {
             throw new InternalErrorException("Error while loading the model from the database");
         }
-        if (!model.getModel().containsKey(req1)) throw new BadRequestException("The requirement with id \"" + req1 + "\" is not present in the model loaded form the database");
-        if (!model.getModel().containsKey(req2)) throw new BadRequestException("The requirement with id \"" + req2 + "\" is not present in the model loaded form the database");
-        double score = cosine(model.getModel(),req1,req2);
+        if (!model.getDocs().containsKey(req1)) throw new BadRequestException("The requirement with id \"" + req1 + "\" is not present in the model loaded form the database");
+        if (!model.getDocs().containsKey(req2)) throw new BadRequestException("The requirement with id \"" + req2 + "\" is not present in the model loaded form the database");
+        double score = cosine(model.getDocs(),req1,req2);
         Dependency result = new Dependency(score,req1,req2,status,dependency_type,component);
 
         //TODO improve this part
@@ -97,16 +98,16 @@ public class SemilarServiceImpl implements SemilarService {
     @Override
     public String simTest(String organization, String req1, String req2) throws BadRequestException, InternalErrorException {
         show_time("start");
-        Model model = /*new Model(modelSAVE, corpusSAVE);*/ null;
-        /*Model model = null;
+        /*Model model = /*new Model(modelSAVE, corpusSAVE); null;*/
+        Model model = null;
         try {
             model = modelDAO.getModel(organization);
         } catch (SQLException e) {
             throw new InternalErrorException("Error while loading the model from the database");
-        }*/
-        if (!model.getModel().containsKey(req1)) throw new BadRequestException("The requirement with id \"" + req1 + "\" is not present in the model loaded form the database");
-        if (!model.getModel().containsKey(req2)) throw new BadRequestException("The requirement with id \"" + req2 + "\" is not present in the model loaded form the database");
-        double score = cosine(model.getModel(),req1,req2);
+        }
+        if (!model.getDocs().containsKey(req1)) throw new BadRequestException("The requirement with id \"" + req1 + "\" is not present in the model loaded form the database");
+        if (!model.getDocs().containsKey(req2)) throw new BadRequestException("The requirement with id \"" + req2 + "\" is not present in the model loaded form the database");
+        double score = cosine(model.getDocs(),req1,req2);
 
         JSONObject json = new JSONObject();
         json.put("result",score);
@@ -125,7 +126,7 @@ public class SemilarServiceImpl implements SemilarService {
         } catch (SQLException e) {
             throw new InternalErrorException("Error while loading the model from the database");
         }
-        if (!model.getModel().containsKey(req)) throw new BadRequestException("The requirement with id \"" + req + "\" is not present in the model loaded form the database");
+        if (!model.getDocs().containsKey(req)) throw new BadRequestException("The requirement with id \"" + req + "\" is not present in the model loaded form the database");
 
         Path p = Paths.get("../testing/output/"+filename);
         String s = System.lineSeparator() + "{\"dependencies\": [";
@@ -135,8 +136,8 @@ public class SemilarServiceImpl implements SemilarService {
         int cont = 0;
         String result = "";
         for (String req2: project_reqs) {
-            if (!req.equals(req2) && model.getModel().containsKey(req2)) {
-                double score = cosine(model.getModel(),req,req2);
+            if (!req.equals(req2) && model.getDocs().containsKey(req2)) {
+                double score = cosine(model.getDocs(),req,req2);
                 if (score >= threshold) {
                     Dependency dependency = new Dependency(score, req, req2, status, dependency_type, component);
                     s = System.lineSeparator() + dependency.print_json();
@@ -181,11 +182,11 @@ public class SemilarServiceImpl implements SemilarService {
         for (int i = 0; i < project_reqs.size(); ++i) {
             System.out.println(project_reqs.size() - i);
             String req1 = project_reqs.get(i);
-            if (model.getModel().containsKey(req1)) {
+            if (model.getDocs().containsKey(req1)) {
                 for (int j = i + 1; j < project_reqs.size(); ++j) {
                     String req2 = project_reqs.get(j);
-                    if (!req2.equals(req1) && model.getModel().containsKey(req2)) {
-                        double score = cosine(model.getModel(), req1, req2);
+                    if (!req2.equals(req1) && model.getDocs().containsKey(req2)) {
+                        double score = cosine(model.getDocs(), req1, req2);
                         if (score >= threshold) {
                             Dependency dependency = new Dependency(score, req1, req2, status, dependency_type, component);
                             s = System.lineSeparator() + dependency.print_json();
