@@ -26,13 +26,11 @@ import static java.lang.StrictMath.sqrt;
 @Service("semilarService")
 public class SemilarServiceImpl implements SemilarService {
 
-    private static Double cutoffParameter=-1.0;
+    private static Double cutoffParameter=1.0;
     private static String component = "Similarity-UPC";
     private static String status = "proposed";
     private static String dependency_type = "duplicates";
     private modelDAO modelDAO = getValue();
-    /*private Map<String, Map<String, Double>> modelSAVE;
-    private Map<String, Integer> corpusSAVE;*/
 
     private modelDAO getValue() {
         try {
@@ -48,89 +46,48 @@ public class SemilarServiceImpl implements SemilarService {
     public void buildModel(String compare, String organization, List<Requirement> reqs) throws BadRequestException, InternalErrorException {
         show_time("start");
         System.out.println(reqs.size());
-        Map<String, Integer> corpusFrequency = new HashMap<>();
-        List<String> text = new ArrayList<>();
-        List<String> ids = new ArrayList<>();
-        buildCorpus(compare,reqs,text,ids);
-        Map<String, Map<String, Double>> model = extractKeywords(text,ids,corpusFrequency);
-        try {
-            /*modelSAVE = model;
-            corpusSAVE = corpusFrequency;*/
-            modelDAO.saveModel(organization, new Model(model, corpusFrequency));
-        } catch (SQLException e) {
-            e.printStackTrace();
-            throw new InternalErrorException("Error while saving the new model to the database");
-        }
+        saveModel(organization,generateModel(compare,reqs));
         show_time("finish");
     }
 
     @Override
+    public void buildModelAndCompute(String filename, String compare, String organization, double threshold, List<Requirement> reqs) throws BadRequestException, InternalErrorException {
+        show_time("start initialization");
+        Model model = generateModel(compare,reqs);
+        saveModel(organization,model);
+        show_time("finish initialization");
+        List<String> idReqs = new ArrayList<>();
+        for (Requirement requirement: reqs) {
+            idReqs.add(requirement.getId());
+        }
+        reqs = null;
+        simProject(filename,organization,threshold,idReqs);
+    }
+
+
+    @Override
     public void simReqReq(String filename, String organization, String req1, String req2) throws BadRequestException, InternalErrorException {
         show_time("start");
-        Model model = null;
-        try {
-            model = modelDAO.getModel(organization);
-        } catch (SQLException e) {
-            throw new InternalErrorException("Error while loading the model from the database");
-        }
+        Model model = loadModel(organization);
         if (!model.getDocs().containsKey(req1)) throw new BadRequestException("The requirement with id \"" + req1 + "\" is not present in the model loaded form the database");
         if (!model.getDocs().containsKey(req2)) throw new BadRequestException("The requirement with id \"" + req2 + "\" is not present in the model loaded form the database");
         double score = cosine(model.getDocs(),req1,req2);
         Dependency result = new Dependency(score,req1,req2,status,dependency_type,component);
 
-        //TODO improve this part
-        Path p = Paths.get("../testing/output/"+filename);
-        String s = System.lineSeparator() + "{\"dependencies\": [";
-
-        write_to_file(s,p);
-
-        s = System.lineSeparator() + result.print_json();
-
-        write_to_file(s,p);
-
-        s = System.lineSeparator() + "]}";
-
+        Path p = generateFile(filename);
+        String s = System.lineSeparator() + result.print_json() + System.lineSeparator() + "]}";
         write_to_file(s,p);
 
         show_time("finish");
-    }
-
-    @Override
-    public String simTest(String organization, String req1, String req2) throws BadRequestException, InternalErrorException {
-        show_time("start");
-        /*Model model = /*new Model(modelSAVE, corpusSAVE); null;*/
-        Model model = null;
-        try {
-            model = modelDAO.getModel(organization);
-        } catch (SQLException e) {
-            throw new InternalErrorException("Error while loading the model from the database");
-        }
-        if (!model.getDocs().containsKey(req1)) throw new BadRequestException("The requirement with id \"" + req1 + "\" is not present in the model loaded form the database");
-        if (!model.getDocs().containsKey(req2)) throw new BadRequestException("The requirement with id \"" + req2 + "\" is not present in the model loaded form the database");
-        double score = cosine(model.getDocs(),req1,req2);
-
-        JSONObject json = new JSONObject();
-        json.put("result",score);
-
-
-        show_time("finish");
-        return json.toString();
     }
 
     @Override
     public void simReqProject(String filename, String organization, String req, double threshold, List<String> project_reqs) throws BadRequestException, InternalErrorException {
-        show_time("start");
-        Model model = null;
-        try {
-            model = modelDAO.getModel(organization);
-        } catch (SQLException e) {
-            throw new InternalErrorException("Error while loading the model from the database");
-        }
+        show_time("start computing");
+        Model model = loadModel(organization);
         if (!model.getDocs().containsKey(req)) throw new BadRequestException("The requirement with id \"" + req + "\" is not present in the model loaded form the database");
 
-        Path p = Paths.get("../testing/output/"+filename);
-        String s = System.lineSeparator() + "{\"dependencies\": [";
-        write_to_file(s,p);
+        Path p = generateFile(filename);
 
         boolean firsttimeComa = true;
         int cont = 0;
@@ -140,7 +97,7 @@ public class SemilarServiceImpl implements SemilarService {
                 double score = cosine(model.getDocs(),req,req2);
                 if (score >= threshold) {
                     Dependency dependency = new Dependency(score, req, req2, status, dependency_type, component);
-                    s = System.lineSeparator() + dependency.print_json();
+                    String s = System.lineSeparator() + dependency.print_json();
                     if (!firsttimeComa) s = "," + s;
                     firsttimeComa = false;
                     result = result.concat(s);
@@ -155,25 +112,18 @@ public class SemilarServiceImpl implements SemilarService {
         }
 
         if (!result.equals("")) write_to_file(result,p);
-        s = System.lineSeparator() + "]}";
+        String s = System.lineSeparator() + "]}";
         write_to_file(s,p);
 
-        show_time("finish");
+        show_time("finish computing");
     }
 
     @Override
     public void simProject(String filename, String organization, double threshold, List<String> project_reqs) throws BadRequestException, InternalErrorException {
-        show_time("start");
-        Model model = null;
-        try {
-            model = modelDAO.getModel(organization);
-        } catch (SQLException e) {
-            throw new InternalErrorException("Error while loading the model from the database");
-        }
+        show_time("start computing");
+        Model model = loadModel(organization);
 
-        Path p = Paths.get("../testing/output/"+filename);
-        String s = System.lineSeparator() + "{\"dependencies\": [";
-        write_to_file(s,p);
+        Path p = generateFile(filename);
 
         boolean firsttimeComa = true;
         int cont = 0;
@@ -189,26 +139,26 @@ public class SemilarServiceImpl implements SemilarService {
                         double score = cosine(model.getDocs(), req1, req2);
                         if (score >= threshold) {
                             Dependency dependency = new Dependency(score, req1, req2, status, dependency_type, component);
-                            s = System.lineSeparator() + dependency.print_json();
+                            String s = System.lineSeparator() + dependency.print_json();
                             if (!firsttimeComa) s = "," + s;
                             firsttimeComa = false;
                             result = result.concat(s);
                             ++cont;
-                            if (cont >= 5000) {
-                                write_to_file(result, p);
-                                result = "";
-                                cont = 0;
-                            }
                         }
                     }
+                }
+                if (cont >= 5000) {
+                    write_to_file(result, p);
+                    result = "";
+                    cont = 0;
                 }
             }
         }
         if (!result.equals("")) write_to_file(result,p);
-        s = System.lineSeparator() + "]}";
+        String s = System.lineSeparator() + "]}";
         write_to_file(s,p);
 
-        show_time("finish");
+        show_time("finish computing");
     }
 
     @Override
@@ -222,11 +172,42 @@ public class SemilarServiceImpl implements SemilarService {
 
 
 
-
-
     /*
     auxiliary operations
      */
+
+    private Path generateFile(String filename) throws InternalErrorException {
+        Path p = Paths.get("../testing/output/"+filename);
+        String s = System.lineSeparator() + "{\"dependencies\": [";
+        write_to_file(s,p);
+        return p;
+    }
+
+    private Model loadModel(String organization) throws BadRequestException, InternalErrorException {
+        try {
+            return modelDAO.getModel(organization);
+        } catch (SQLException e) {
+            throw new InternalErrorException("Error while loading the model from the database");
+        }
+    }
+
+    private Model generateModel(String compare, List<Requirement> reqs) throws BadRequestException, InternalErrorException {
+        Map<String, Integer> corpusFrequency = new HashMap<>();
+        List<String> text = new ArrayList<>();
+        List<String> ids = new ArrayList<>();
+        buildCorpus(compare,reqs,text,ids);
+        Map<String, Map<String, Double>> docs = extractKeywords(text,ids,corpusFrequency);
+        return new Model(docs,corpusFrequency);
+    }
+
+    private void saveModel(String organization, Model model) throws InternalErrorException {
+        try {
+            modelDAO.saveModel(organization, model);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new InternalErrorException("Error while saving the new model to the database");
+        }
+    }
 
     private void show_time(String text) {
         LocalDateTime now = LocalDateTime.now();
@@ -342,10 +323,7 @@ public class SemilarServiceImpl implements SemilarService {
 
     private Map<String, Map<String, Double>> extractKeywords(List<String> corpus, List<String> ids, Map<String, Integer> corpusFrequency) throws InternalErrorException {
         List<List<String>> docs = new ArrayList<>();
-        int cont = corpus.size();
         for (String s : corpus) {
-            System.out.println(cont);
-            --cont;
             try {
                 docs.add(englishAnalyze(s));
             } catch (IOException e) {
@@ -369,7 +347,7 @@ public class SemilarServiceImpl implements SemilarService {
             for (String s : doc) {
                 Double idf = idf(docs.size(), corpusFrequency.get(s));
                 Integer tf = wordBag.get(i).get(s);
-                Double tfidf = idf * tf;
+                double tfidf = idf * tf;
                 if (tfidf>=cutoffParameter) aux.put(s, tfidf);
             }
             tfidfComputed.put(corpus.get(i),aux);
@@ -378,7 +356,7 @@ public class SemilarServiceImpl implements SemilarService {
         return tfidfComputed;
     }
 
-    private double idf(Integer size, Integer frequency) {
+    private double idf(int size, int frequency) {
         return Math.log(size / frequency+1);
     }
 
@@ -391,27 +369,12 @@ public class SemilarServiceImpl implements SemilarService {
         Analyzer analyzer = CustomAnalyzer.builder()
                 .withTokenizer("standard")
                 .addTokenFilter("lowercase")
-                .addTokenFilter("commongrams")
+                //.addTokenFilter("commongrams")
                 .addTokenFilter("porterstem")
                 .addTokenFilter("stop")
                 .build();
         return analyze(text, analyzer);
     }
-
-    /*private String stanford_analyze(String text) {
-        Properties props = new Properties();
-        props.setProperty("annotators", "tokenize,ssplit,pos,lemma");
-        props.setProperty("coref.algorithm", "neural");
-        StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
-        CoreDocument document = new CoreDocument(text);
-        pipeline.annotate(document);
-        List<CoreLabel> tokens = document.tokens();
-        String result = "";
-        for (CoreLabel token: tokens) {
-            result = result.concat(" " + token.lemma().toLowerCase());
-        }
-        return result;
-    }*/
 
     private List<String> analyze(String text, Analyzer analyzer) throws IOException {
         List<String> result = new ArrayList<String>();
@@ -421,7 +384,6 @@ public class SemilarServiceImpl implements SemilarService {
         while (tokenStream.incrementToken()) {
             result.add(attr.toString());
         }
-        Integer i = 0;
         return result;
     }
 
@@ -443,8 +405,6 @@ public class SemilarServiceImpl implements SemilarService {
         double cosine=0.0;
         Map<String,Double> wordsA=res.get(a);
         Map<String,Double> wordsB=res.get(b);
-        //System.out.println(wordsA.keySet());
-        //System.out.println(wordsB.keySet());
         Set<String> intersection= new HashSet<String>(wordsA.keySet());
         intersection.retainAll(wordsB.keySet());
         for (String s: intersection) {
@@ -452,8 +412,10 @@ public class SemilarServiceImpl implements SemilarService {
             Double forB=wordsB.get(s);
             cosine+=forA*forB;
         }
-        Double normA=norm(wordsA);
-        Double normB=norm(wordsB);
+        double normA=norm(wordsA);
+        double normB=norm(wordsB);
+
+        if (normA == 0 || normB == 0) return 0;
 
         cosine=cosine/(normA*normB);
         return cosine;
@@ -462,7 +424,8 @@ public class SemilarServiceImpl implements SemilarService {
     public Double norm(Map<String, Double> wordsB) {
         double norm=0.0;
         for (String s:wordsB.keySet()) {
-            norm+=wordsB.get(s)*wordsB.get(s);
+            double value = wordsB.get(s);
+            norm+=value*value;
         }
         return sqrt(norm);
     }

@@ -47,6 +47,30 @@ public class SemilarAdapter extends ComponentAdapter{
         if (httpStatus != 200) check_excepcions(httpStatus,json_response);
     }
 
+    public void buildModelAndCompute(String filename, String organization, boolean compare, double threshold, List<Requirement> requirements) throws InternalErrorException, BadRequestException {
+
+        JSONArray reqs_json = list_requirements_to_JSON(requirements);
+
+        HttpClient httpclient = HttpClients.createDefault();
+        HttpPost httppost = new HttpPost(URL + "BuildModelAndCompute?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold);
+        httppost.setEntity(new StringEntity(reqs_json.toString(), ContentType.APPLICATION_JSON));
+
+        int httpStatus = 200;
+        String json_response = "";
+
+        //Execute and get the response.
+        try {
+            HttpResponse response = httpclient.execute(httppost);
+            httpStatus = response.getStatusLine().getStatusCode();
+            json_response = EntityUtils.toString(response.getEntity());
+
+        } catch (IOException e) {
+            throw_component_exception(e,"Error conecting with the component");
+        }
+
+        if (httpStatus != 200) check_excepcions(httpStatus,json_response);
+    }
+
     @Override
     public void simReqReq(String filename, String organization, String req1, String req2) throws InternalErrorException, BadRequestException {
 

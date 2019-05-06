@@ -37,7 +37,9 @@ public class SimilarityServiceImpl implements SimilarityService {
 
 
 
-    //Main operations
+    /*
+    Main operations
+     */
 
     @Override
     public Result_id buildModel(String url, String organization, boolean compare, Requirements input) throws InternalErrorException, BadRequestException {
@@ -64,6 +66,43 @@ public class SimilarityServiceImpl implements SimilarityService {
                 }
                 finally {
                     update_client(fis,url,id.getId(),success,"AddReqs");
+                }
+            }
+        });
+
+        thread.start();
+        return id;
+    }
+
+    @Override
+    public Result_id buildModelAndCompute(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException {
+
+        if (!input.OK()) throw new BadRequestException("The provided json has not requirements");
+        Result_id id = get_id();
+
+        //Create file to save resulting dependencies
+        File file = create_file(path+id.getId());
+
+        //New thread
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                InputStream fis = null;
+                String success = "false";
+                try {
+                    SemilarAdapter semilarAdapter = new SemilarAdapter();
+                    semilarAdapter.buildModelAndCompute(id.getId(),organization,compare,threshold,input.getRequirements());
+                    fis = new FileInputStream(file);
+                    success = "true";
+                } catch (InternalErrorException e) {
+                    fis = new ByteArrayInputStream(exception_to_JSON(500,"Internal error",e.getMessage()).getBytes());
+                } catch (BadRequestException e) {
+                    fis = new ByteArrayInputStream(exception_to_JSON(400,"Bad request",e.getMessage()).getBytes());
+                } catch (FileNotFoundException e) {
+                    fis = new ByteArrayInputStream(exception_to_JSON(500,"File error",e.getMessage()).getBytes());
+                }
+                finally {
+                    update_client(fis,url,id.getId(),success,"AddReqsAndCompute");
                 }
             }
         });

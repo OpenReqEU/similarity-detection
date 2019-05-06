@@ -12,13 +12,15 @@ Next sections provide a general overview of the technical details of the similar
 
 ### Main functionalities
 
-There are three different types of operations:
+There are four different types of operations:
 
+    - AddReqs: Generates a model with the input requirements
 	- ReqReq: Compares two requirements
-	- ReqProj: Compares between a list of requirements and a set of requirements
-	- Proj: Compares all possible pairs of requirements from a set of requirements
+	- ReqProject: Compares between a list of requirements and a set of requirements
+	- Project: Compares all possible pairs of requirements from a set of requirements
+	- AddReqsAndCompute: Is a mixture between AddReqs and Project methods
 
-The component needs to preprocess the requirements before doing any comparison. The operation BuildModel is responsible for that work.
+The component needs to preprocess the requirements before doing any comparison. The operation AddReqs is responsible for that work.
 
 The API uses UTF-8 charset. Also, it uses the OpenReq format for input and output JSONs.
 
@@ -57,13 +59,15 @@ Steps to configure the service:
 
 Steps to run the service:
 
-1. Open a terminal and copy-paste "sh run_similarity_detection.sh". Wait for an exit like this: u.s.s.SimilaritydetectionapiApplication  : Started SimilaritydetectionapiApplication
+1. Open a terminal and copy-paste "cd jars"
 
-2. Open a terminal and copy-paste "sh run_semilar.sh". Wait for an exit like this: u.s.semilarapi.SemilarapiApplication  : Started SemilarapiApplication
+2. Open a terminal and copy-paste "java -jar jars/similaritydetectionapi.jar". Wait for an exit like this: u.s.s.SimilaritydetectionapiApplication  : Started SimilaritydetectionapiApplication
 
-3. (only if you wanna use the auxiliary client) Open a terminal and copy-paste "sh run_restservice.sh". Wait for an exit like this: u.s.restserviceapi.RestServiceApplication  : Started RestServiceApplication
+3. Open a terminal and copy-paste "java -jar jars/semilarapi.jar". Wait for an exit like this: u.s.semilarapi.SemilarapiApplication  : Started SemilarapiApplication
 
-4. Go to http://localhost:9404/swagger-ui.html#/ to see the swagger generated. You can use the component through the swagger or through http connections to the endpoints indicated in the swagger documentation.
+4. (only if you wanna use the auxiliary client) Open a terminal and copy-paste "java -jar jars/testrestservice.jar". Wait for an exit like this: u.s.restserviceapi.RestServiceApplication  : Started RestServiceApplication
+
+5. Go to http://localhost:9404/swagger-ui.html#/ to see the swagger generated. You can use the component through the swagger or through http connections to the endpoints indicated in the swagger documentation.
 
 
 ### How to use it

@@ -18,5 +18,7 @@ public interface SimilarityService {
 
     public Result_id simProject(String url, String organization, double threshold, int max_number, String project, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException;
 
+    public Result_id buildModelAndCompute(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException;
+
     public void clearDB() throws InternalErrorException, BadRequestException, NotFoundException;
 }

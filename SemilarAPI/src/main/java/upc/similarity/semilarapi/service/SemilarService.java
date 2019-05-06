@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 import upc.similarity.semilarapi.entity.Dependency;
+import upc.similarity.semilarapi.entity.Model;
 import upc.similarity.semilarapi.entity.Requirement;
 import upc.similarity.semilarapi.exception.BadRequestException;
 import upc.similarity.semilarapi.exception.InternalErrorException;
@@ -18,7 +19,7 @@ public interface SemilarService {
 
     public void simProject(String filename, String organization, double threshold, List<String> project_reqs) throws BadRequestException, InternalErrorException;
 
-    public void clearDB(String organization) throws InternalErrorException;
+    public void buildModelAndCompute(String filename, String compare, String organization, double threshold, List<Requirement> reqs) throws BadRequestException, InternalErrorException;
 
-    public String simTest(String organization, String req1, String req2) throws BadRequestException, InternalErrorException;
+    public void clearDB(String organization) throws InternalErrorException;
 }

@@ -148,10 +148,7 @@ public class SQLiteDAO implements modelDAO {
     private void saveDocs(String organization, Map<String, Map<String, Double>> docs, Connection conn) throws SQLException {
 
         Iterator it = docs.entrySet().iterator();
-        int count = 0;
-        int size = docs.size();
         while (it.hasNext()) {
-            System.out.println("DOCS: "+(size - count));
             Map.Entry pair = (Map.Entry)it.next();
             String key = (String) pair.getKey();
             Map<String, Double> words = ( Map<String, Double>) pair.getValue();
@@ -161,7 +158,6 @@ public class SQLiteDAO implements modelDAO {
                 ps.setString(2,words_conversion_toJSON(words).toString());
                 ps.execute();
             }
-            ++count;
             it.remove();
         }
     }
@@ -179,27 +175,6 @@ public class SQLiteDAO implements modelDAO {
         }
         return result;
     }
-
-    /*private void saveCorpusFrequency(String organization, Map<String, Integer> corpusFrequency, Connection conn) throws SQLException {
-
-        int count = 0;
-        int size = corpusFrequency.size();
-        Iterator it = corpusFrequency.entrySet().iterator();
-        while (it.hasNext()) {
-            System.out.println("CORPUS: " + (size - count));
-            Map.Entry pair = (Map.Entry)it.next();
-            String key = (String) pair.getKey();
-            int score = (Integer) pair.getValue();
-            String sql = "INSERT INTO corpus_"+organization+"(id, score) VALUES (?,?)";
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1,key);
-                ps.setInt(2,score);
-                ps.execute();
-            }
-            ++count;
-            it.remove();
-        }
-    }*/
 
     private void saveCorpusFrequency(String organization, Map<String, Integer> corpusFrequency, Connection conn) throws SQLException {
 
@@ -280,29 +255,8 @@ public class SQLiteDAO implements modelDAO {
             JSONObject aux = json.getJSONObject(i);
             String id = aux.getString("id");
             Integer value = aux.getInt("value");
-            result.put(id,value);
+            result.put(id, value);
         }
         return result;
     }
-
-
-    /*private Map<String, Integer> loadCorpusFrequency(String organization, Connection conn) throws SQLException {
-
-        Map<String, Integer> result = new HashMap<>();
-
-        String sql = "SELECT* FROM corpus_"+organization;
-
-        try (Statement stmt  = conn.createStatement();
-             ResultSet rs    = stmt.executeQuery(sql)){
-
-            while (rs.next()) {
-                String key = rs.getString("id");
-                int score = rs.getInt("score");
-                result.put(key,score);
-            }
-        }
-
-        return result;
-    }*/
-
 }

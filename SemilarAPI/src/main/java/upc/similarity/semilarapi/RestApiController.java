@@ -87,30 +87,33 @@ public class RestApiController {
         }
     }
 
-    @RequestMapping(value = "/upc/Semilar/Clear", method = RequestMethod.DELETE)
-    public ResponseEntity<?> clearDB(@RequestParam("organization") String organization) {
+    @RequestMapping(value = "/upc/Semilar/BuildModelAndCompute", method = RequestMethod.POST)
+    public ResponseEntity<?> buildModelAndCompute(@RequestParam("organization") String organization,
+                                                  @RequestParam("compare") String compare,
+                                                  @RequestParam("filename") String filename,
+                                                  @RequestParam("threshold") double threshold,
+                                                  @RequestBody List<Requirement> input) {
         try {
-            semilarService.clearDB(organization);
-            System.out.println("DB cleared");
+            semilarService.buildModelAndCompute(filename,compare,organization,threshold,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (InternalErrorException e) {
-            e.printStackTrace();
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @RequestMapping(value = "/upc/Semilar/Test", method = RequestMethod.POST)
-    public ResponseEntity<?> Test(@RequestParam("organization") String organization,
-                                       @RequestParam("req1") String req1,
-                                       @RequestParam("req2") String req2) {
-        try {
-            return new ResponseEntity<>(semilarService.simTest(organization,req1,req2),HttpStatus.OK);
         } catch (BadRequestException e) {
             e.printStackTrace();
             return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
         } catch (InternalErrorException e) {
             e.printStackTrace();
             return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @RequestMapping(value = "/upc/Semilar/Clear", method = RequestMethod.DELETE)
+    public ResponseEntity<?> clearDB(@RequestParam("organization") String organization) {
+        try {
+            semilarService.clearDB(organization);
+            System.out.println("DB cleared");
+            return new ResponseEntity<>(null, HttpStatus.OK);
+        } catch (InternalErrorException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
