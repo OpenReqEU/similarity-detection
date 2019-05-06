@@ -26,7 +26,7 @@ import static java.lang.StrictMath.sqrt;
 @Service("semilarService")
 public class SemilarServiceImpl implements SemilarService {
 
-    private static Double cutoffParameter=1.0;
+    private static Double cutoffParameter=-1.0;
     private static String component = "Similarity-UPC";
     private static String status = "proposed";
     private static String dependency_type = "duplicates";
@@ -369,7 +369,7 @@ public class SemilarServiceImpl implements SemilarService {
         Analyzer analyzer = CustomAnalyzer.builder()
                 .withTokenizer("standard")
                 .addTokenFilter("lowercase")
-                //.addTokenFilter("commongrams")
+                .addTokenFilter("commongrams")
                 .addTokenFilter("porterstem")
                 .addTokenFilter("stop")
                 .build();
