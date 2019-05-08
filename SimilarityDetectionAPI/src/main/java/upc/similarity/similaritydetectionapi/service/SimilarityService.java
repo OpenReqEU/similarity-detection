@@ -9,7 +9,7 @@ public interface SimilarityService {
 
     public Result_id buildModel(String url, String organization, boolean compare, Requirements input) throws InternalErrorException, BadRequestException, NotFoundException;
 
-    public String simReqReq(String url, String organization, String req1, String req2) throws BadRequestException, InternalErrorException, NotFoundException;
+    public String simReqReq(String organization, String req1, String req2) throws BadRequestException, InternalErrorException, NotFoundException;
 
     public Result_id simReqProject(String url, String organization, double threshold, int max_number, String req, String project, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException;
 

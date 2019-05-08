@@ -36,7 +36,7 @@ public class SwaggerConfig {
                 .apiInfo(apiInfo())
                 .pathMapping("/")
                 .select()
-                .paths(PathSelectors.regex("/upload/GetResult"))
+                .paths(PathSelectors.regex("/upload/GetResult|/upload/Test"))
                 .apis(RequestHandlerSelectors.basePackage("upc.testing")).paths(PathSelectors.regex("/upload.*"))
                 .build().tags(new Tag("Testing Service", "Testing"));
     }
