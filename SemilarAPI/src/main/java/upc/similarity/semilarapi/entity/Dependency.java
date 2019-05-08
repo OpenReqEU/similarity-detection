@@ -1,6 +1,7 @@
 package upc.similarity.semilarapi.entity;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.json.JSONObject;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -8,6 +9,8 @@ import java.util.List;
 
 //Class used to represent dependencies between requirements
 public class Dependency implements Serializable {
+
+    private static ObjectMapper mapper = new ObjectMapper();
 
     @JsonProperty(value="dependency_score")
     private double dependency_score;
@@ -97,17 +100,23 @@ public class Dependency implements Serializable {
      */
 
     public String print_json() {
-
-        ObjectMapper mapper = new ObjectMapper();
-
         String jsonInString = "";
         try {
             jsonInString = mapper.writeValueAsString(this);
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         return jsonInString;
+    }
+
+    public JSONObject toJSON() {
+        String jsonInString = "";
+        try {
+            jsonInString = mapper.writeValueAsString(this);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new JSONObject(jsonInString);
     }
 
     @Override

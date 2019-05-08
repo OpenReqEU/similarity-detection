@@ -12,7 +12,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import upc.similarity.similaritydetectionapi.entity.Dependency;
 import upc.similarity.similaritydetectionapi.entity.Requirement;
-import upc.similarity.similaritydetectionapi.entity.input_output.Requirements;
 import upc.similarity.similaritydetectionapi.exception.*;
 
 import java.io.IOException;
@@ -22,15 +21,23 @@ import java.util.List;
 public abstract class ComponentAdapter {
 
 
-    //main operations
-    public abstract void simReqReq(String filename, String organization, String req1, String req2) throws InternalErrorException, BadRequestException, NotFoundException;
+    /*
+    Main operations
+     */
+
+    public abstract String simReqReq(String filename, String organization, String req1, String req2) throws InternalErrorException, BadRequestException, NotFoundException;
 
     public abstract void simReqProject(String filename, String organization, String req, double threshold, List<String> reqs) throws InternalErrorException, BadRequestException, NotFoundException;
 
     public abstract void simProject(String filename, String organization, double threshold, List<String> reqs) throws InternalErrorException, BadRequestException, NotFoundException;
 
-    //auxiliary operations
-    protected String connection_component(String URL, JSONArray json) throws InternalErrorException, BadRequestException {
+    public abstract String getResponsePage(String organization, String responseId) throws InternalErrorException, BadRequestException, NotFinishedException;
+
+    /*
+    Auxiliary operations
+     */
+
+    protected String connection_component(String URL, JSONArray json) throws InternalErrorException, BadRequestException, NotFinishedException {
 
         HttpClient httpclient = HttpClients.createDefault();
         HttpPost httppost = new HttpPost(URL);
@@ -46,17 +53,17 @@ public abstract class ComponentAdapter {
             json_response = EntityUtils.toString(response.getEntity());
 
         } catch (IOException e) {
-            throw_component_exception(e,"Error conecting with the component");
+            throw_component_exception(e,"Error connecting with the component");
         }
 
-        if (httpStatus != 200) check_excepcions(httpStatus,json_response);
+        if (httpStatus != 200) check_exceptions(httpStatus,json_response);
 
         return json_response;
     }
 
     protected abstract void throw_component_exception(Exception e, String message) throws InternalErrorException;
 
-    protected abstract void check_excepcions(int status, String response) throws InternalErrorException, BadRequestException;
+    protected abstract void check_exceptions(int status, String response) throws InternalErrorException, BadRequestException, NotFinishedException;
 
     protected List<Dependency> JSON_to_dependencies(JSONObject json) throws InternalErrorException {
 

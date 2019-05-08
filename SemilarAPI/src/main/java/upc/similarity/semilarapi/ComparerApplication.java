@@ -4,9 +4,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class SemilarapiApplication {
+public class ComparerApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(SemilarapiApplication.class, args);
+		SpringApplication.run(ComparerApplication.class, args);
 	}
 }

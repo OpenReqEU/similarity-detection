@@ -14,7 +14,7 @@ import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 import upc.similarity.similaritydetectionapi.AdaptersController;
 import upc.similarity.similaritydetectionapi.adapter.ComponentAdapter;
-import upc.similarity.similaritydetectionapi.adapter.SemilarAdapter;
+import upc.similarity.similaritydetectionapi.adapter.ComparerAdapter;
 import upc.similarity.similaritydetectionapi.entity.Dependency;
 import upc.similarity.similaritydetectionapi.entity.Project;
 import upc.similarity.similaritydetectionapi.entity.input_output.JsonProject;
@@ -31,7 +31,7 @@ import java.util.*;
 public class SimilarityServiceImpl implements SimilarityService {
 
     private static String path = "../testing/output/";
-    private static String component = "Semilar";
+    private static String component = "Comparer";
     private Random rand = new Random();
 
 
@@ -54,8 +54,8 @@ public class SimilarityServiceImpl implements SimilarityService {
                 InputStream fis = null;
                 String success = "false";
                 try {
-                    SemilarAdapter semilarAdapter = new SemilarAdapter();
-                    semilarAdapter.buildModel(organization,compare,input.getRequirements());
+                    ComparerAdapter comparerAdapter = new ComparerAdapter();
+                    comparerAdapter.buildModel(organization,compare,input.getRequirements());
                     String result = "{\"result\":\"Success!\"}";
                     fis = new ByteArrayInputStream(result.getBytes());
                     success = "true";
@@ -90,8 +90,8 @@ public class SimilarityServiceImpl implements SimilarityService {
                 InputStream fis = null;
                 String success = "false";
                 try {
-                    SemilarAdapter semilarAdapter = new SemilarAdapter();
-                    semilarAdapter.buildModelAndCompute(id.getId(),organization,compare,threshold,input.getRequirements());
+                    ComparerAdapter comparerAdapter = new ComparerAdapter();
+                    comparerAdapter.buildModelAndCompute(id.getId(),organization,compare,threshold,input.getRequirements());
                     fis = new FileInputStream(file);
                     success = "true";
                 } catch (InternalErrorException e) {
@@ -112,46 +112,12 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public Result_id simReqReq(String url, String organization, String req1, String req2) throws BadRequestException, InternalErrorException, NotFoundException {
+    public String simReqReq(String url, String organization, String req1, String req2) throws BadRequestException, InternalErrorException, NotFoundException {
 
         Result_id id = get_id();
 
-        //Create file to save resulting dependencies
-        File file = create_file(path+id.getId());
-
-        //New thread
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                InputStream fis = null;
-                String success = "false";
-                try {
-                    ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdpapter(Component.valueOf(component));
-                    componentAdapter.simReqReq(id.getId(),organization,req1,req2);
-                    fis = new FileInputStream(file);
-                    success = "true";
-                } catch (InternalErrorException e) {
-                    fis = new ByteArrayInputStream(exception_to_JSON(500,"Internal error",e.getMessage()).getBytes());
-                } catch (BadRequestException e) {
-                    fis = new ByteArrayInputStream(exception_to_JSON(400,"Bad request",e.getMessage()).getBytes());
-                } catch (NotFoundException e) {
-                    fis = new ByteArrayInputStream(exception_to_JSON(404,"Not found",e.getMessage()).getBytes());
-                } catch (FileNotFoundException e) {
-                    fis = new ByteArrayInputStream(exception_to_JSON(500,"File error",e.getMessage()).getBytes());
-                }
-                finally {
-                    update_client(fis,url,id.getId(),success,"ReqReq");
-                    try {
-                        delete_file(file);
-                    } catch (InternalErrorException e) {
-                        System.out.println(e.getMessage());
-                    }
-                }
-            }
-        });
-
-        thread.start();
-        return id;
+        ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(Component.valueOf(component));
+        return componentAdapter.simReqReq(id.getId(),organization,req1,req2);
     }
 
     @Override
@@ -172,7 +138,7 @@ public class SimilarityServiceImpl implements SimilarityService {
                 InputStream fis = null;
                 String success = "false";
                 try {
-                    ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdpapter(Component.valueOf(component));
+                    ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(Component.valueOf(component));
                     componentAdapter.simReqProject(id.getId(),organization,req,threshold,project.getSpecifiedRequirements());
                     fis = new FileInputStream(file);
                     success = "true";
@@ -217,7 +183,7 @@ public class SimilarityServiceImpl implements SimilarityService {
                 InputStream fis = null;
                 String success = "false";
                 try {
-                    ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdpapter(Component.valueOf(component));
+                    ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(Component.valueOf(component));
                     componentAdapter.simProject(id.getId(),organization,threshold,project.getSpecifiedRequirements());
                     fis = new FileInputStream(file);
                     success = "true";
@@ -246,12 +212,17 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
+    public String getResponsePage(String organization, String responseId) throws BadRequestException, InternalErrorException, NotFinishedException {
+        ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(Component.valueOf(component));
+        return componentAdapter.getResponsePage(organization,responseId);
+    }
+
+    /*@Override
     public void clearDB() throws InternalErrorException, BadRequestException {
 
         SemilarAdapter semilarAdapter = new SemilarAdapter();
         semilarAdapter.clearDB();
-    }
-
+    }*/
 
 
 

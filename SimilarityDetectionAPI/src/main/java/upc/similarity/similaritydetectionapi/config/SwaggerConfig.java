@@ -26,14 +26,15 @@ public class SwaggerConfig {
     private static final String	description	    = "" +
             "<p>The component is based in td-idf numerical statistic. The aim of the API is to calculate the similarity score between multiple pairs of requirements."+
             "</p>" +
-            "<p>There are three different types of operations: </p>" +
+            "<p>There are six different methods: </p>" +
             "<ul>" +
             "<li><strong>AddReqs</strong>: Generates a model with the input requirements</li>" +
             "<li><strong>ReqReq</strong>: Compares two requirements</li>" +
             "<li><strong>ReqProject</strong>: Compares between a requirement and a set of requirements</li>" +
             "<li><strong>Project</strong>: Compares all possible pairs of requirements from a set of requirements</li>" +
-            "<li><strong>AddReqsAndCompute</strong>: Is a mixture between AddReqs and Project methods</li></ul>" +
-            "<p>The component needs to preprocess the requirements before doing any comparison. The operation BuildModel is responsible for that work.</p>" +
+            "<li><strong>AddReqsAndCompute</strong>: Is a mixture between AddReqs and Project methods</li>" +
+            "<li><strong>GetResponse</strong>: Returns in patches the resulting dependencies of the other methods</li></ul>" +
+            "<p>The component needs to preprocess the requirements before doing any comparison. The operation AddReqs is responsible for that work.</p>" +
             "<p>All the operations in this service are asynchronous. It is necessary to write a server URL as parameter in all of them. The result of the operation will be returned to that url. All operations follow the same pattern:</p>" +
             "<ol><li>The client calls the operation with all necessary parameters</li>" +
             "<li>The service receives the request and checks the main conditions</li>" +
@@ -58,7 +59,7 @@ public class SwaggerConfig {
                 .apiInfo(apiInfo())
                 .pathMapping("/")
                 .select()
-                .paths(PathSelectors.regex("/upc/similarity-detection/AddReqs|/upc/similarity-detection/Project|/upc/similarity-detection/ReqProject|/upc/similarity-detection/ReqReq|/upc/similarity-detection/AddReqsAndCompute"))
+                .paths(PathSelectors.regex("/upc/similarity-detection/AddReqs|/upc/similarity-detection/Project|/upc/similarity-detection/ReqProject|/upc/similarity-detection/ReqReq|/upc/similarity-detection/AddReqsAndCompute|/upc/similarity-detection/GetResponse"))
                 .apis(RequestHandlerSelectors.basePackage("upc.similarity.similaritydetectionapi")).paths(PathSelectors.regex("/upc.*"))
                 .build().tags(new Tag("Similarity detection Service", "API related to similarity detection"));
     }

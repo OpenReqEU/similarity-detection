@@ -4,12 +4,12 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>upc.similarity</groupId>
-	<artifactId>semilarapi</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<artifactId>comparerapi</artifactId>
+	<version>1.0</version>
 	<packaging>jar</packaging>
 
-	<name>semilarapi</name>
-	<description>API of Semilar algorism Optimum</description>
+	<name>ComparerApi</name>
+	<description>Compares different requirements with tf-idf algorithm</description>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>

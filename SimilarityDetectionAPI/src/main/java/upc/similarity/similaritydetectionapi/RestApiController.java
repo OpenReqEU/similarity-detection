@@ -28,7 +28,7 @@ public class RestApiController {
     //Model generator
 
     @CrossOrigin
-    @RequestMapping(value = "/AddReqs", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/AddReqs", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Builds a model with the input requirements", notes = "Builds a model with the entry requirements. " +
             "The generated model is assigned to the specified organization and stored in an internal database. Each organization" +
             " only can have one model at a time. If at the time of generating a new model the corresponding organization already has" +
@@ -54,14 +54,13 @@ public class RestApiController {
     }
 
     @CrossOrigin
-    @RequestMapping(value = "/AddReqsAndCompute", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/AddReqsAndCompute", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Builds a model with the input requirements and computes them", notes = "<p>Builds a model with the entry requirements. " +
             "The generated model is assigned to the specified organization and stored in an internal database. Each organization" +
             " only can have one model at a time. If at the time of generating a new model the corresponding organization already has" +
             " an existing model, it is replaced by the new one.</p><br><p>Also, it returns an array of dependencies between all possible pairs of " +
             " requirements from the requirements received as input.</p>")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
-            @ApiResponse(code=404, message = "Not Found"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Component Error")})
     public ResponseEntity<?> buildModelAndCompute(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
@@ -82,7 +81,7 @@ public class RestApiController {
     // Req - Req
 
     @CrossOrigin
-    @RequestMapping(value = "/ReqReq", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/ReqReq", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Similarity comparison between two requirements", notes = "Returns a dependency between the two input requirements. The similarity score is computed with the" +
             " model assigned to the specified organization. The two requirements must be in this model.")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
@@ -108,7 +107,7 @@ public class RestApiController {
     // Req - Project
 
     @CrossOrigin
-    @RequestMapping(value = "/ReqProject", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/ReqProject", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Similarity comparison between a requirement and all the requirements of a specific project", notes = "<p>Returns an array of dependencies " +
             "between the requirement and the project's requirements received as input. The similarity score is computed with the model assigned to the specified organization. " +
             "All the requirements must be inside this model.</p>")
@@ -138,7 +137,7 @@ public class RestApiController {
     // Project
 
     @CrossOrigin
-    @RequestMapping(value = "/Project", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/Project", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Similarity comparison between the requirements of one project", notes = "<p>Returns an array of dependencies between all possible pairs of " +
             "requirements from the project received as input. The similarity score is computed with the model assigned to the specified organization. All the requirements" +
             " must be inside this model.</p>")
@@ -160,6 +159,30 @@ public class RestApiController {
             return getResponseNotFound(e);
         } catch (InternalErrorException e) {
             return getInternalError(e);
+        }
+    }
+
+    //Responses
+
+    @CrossOrigin
+    @GetMapping(value = "/GetResponse", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Returns result dependencies of the other operations", notes = "<p>Returns the result dependencies of the Project, ReqProject and AddReqsAndCompute methods. The result is a " +
+            "json object formed by an array of dependencies which are returned in patches of 20,000. Each time this operation is called, the following 20,000 dependencies of the indicated response will be" +
+            " returned. An empty json will be returned when no more dependencies are left. </p>")
+    @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
+            @ApiResponse(code=423, message = "The computation is not finished yet"),
+            @ApiResponse(code=400, message = "Bad request"),
+            @ApiResponse(code=500, message = "Internal Error")})
+    public ResponseEntity<?> getResponsePage(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+                                             @ApiParam(value="Response identifier", required = true, example = "UPC") @RequestParam("response") String responseId) {
+        try {
+            return new ResponseEntity<>(similarityService.getResponsePage(organization,responseId), HttpStatus.OK);
+        } catch (BadRequestException e) {
+            return getResponseBadRequest(e);
+        } catch (InternalErrorException e) {
+            return getInternalError(e);
+        } catch (NotFinishedException e) {
+            return getNotFinishedError(e);
         }
     }
 
@@ -208,7 +231,7 @@ public class RestApiController {
     private ResponseEntity<?> getResponseNotFound(NotFoundException e) {
         e.printStackTrace();
         LinkedHashMap<String, String> result = new LinkedHashMap<>();
-        result.put("status", "410");
+        result.put("status", "404");
         result.put("error", "Not Found");
         result.put("message", e.getMessage());
         return new ResponseEntity<>(result, HttpStatus.NOT_FOUND);
@@ -217,7 +240,7 @@ public class RestApiController {
     private ResponseEntity<?> getResponseBadRequest(BadRequestException e) {
         e.printStackTrace();
         LinkedHashMap<String, String> result = new LinkedHashMap<>();
-        result.put("status", "411");
+        result.put("status", "400");
         result.put("error", "Bad request");
         result.put("message", e.getMessage());
         return new ResponseEntity<>(result, HttpStatus.BAD_REQUEST);
@@ -226,17 +249,17 @@ public class RestApiController {
     private ResponseEntity<?> getInternalError(InternalErrorException e) {
         e.printStackTrace();
         LinkedHashMap<String, String> result = new LinkedHashMap<>();
-        result.put("status", "510");
+        result.put("status", "500");
         result.put("error", "Server Error");
         result.put("message", e.getMessage());
         return new ResponseEntity<>(result, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    private ResponseEntity<?> getComponentError(ComponentException e) {
+    private ResponseEntity<?> getNotFinishedError(NotFinishedException e) {
         e.printStackTrace();
         LinkedHashMap<String, String> result = new LinkedHashMap<>();
-        result.put("status", "511");
-        result.put("error", "Component error");
+        result.put("status", "423");
+        result.put("error", "Locked");
         result.put("message", e.getMessage());
         return new ResponseEntity<>(result, HttpStatus.INTERNAL_SERVER_ERROR);
     }

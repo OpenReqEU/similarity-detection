@@ -7,24 +7,24 @@ import org.springframework.web.bind.annotation.*;
 import upc.similarity.semilarapi.entity.Requirement;
 import upc.similarity.semilarapi.exception.BadRequestException;
 import upc.similarity.semilarapi.exception.InternalErrorException;
-import upc.similarity.semilarapi.service.SemilarService;
+import upc.similarity.semilarapi.exception.NotFinishedException;
+import upc.similarity.semilarapi.service.ComparerService;
 
-import java.sql.SQLException;
 import java.util.List;
 
 @RestController
-@RequestMapping(value = "/")
+@RequestMapping(value = "/upc/Comparer")
 public class RestApiController {
 
     @Autowired
-    SemilarService semilarService;
+    ComparerService comparerService;
 
-    @RequestMapping(value = "/upc/Semilar/BuildModel", method = RequestMethod.POST)
+    @RequestMapping(value = "/BuildModel", method = RequestMethod.POST)
     public ResponseEntity<?> buildModel(@RequestParam("organization") String organization,
                                         @RequestParam("compare") String compare,
                                         @RequestBody List<Requirement> input) {
         try {
-            semilarService.buildModel(compare,organization,input);
+            comparerService.buildModel(compare,organization,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (BadRequestException e) {
             e.printStackTrace();
@@ -35,14 +35,12 @@ public class RestApiController {
         }
     }
 
-    @RequestMapping(value = "/upc/Semilar/SimReqReq", method = RequestMethod.POST)
+    @RequestMapping(value = "/SimReqReq", method = RequestMethod.POST)
     public ResponseEntity<?> simReqReq(@RequestParam("organization") String organization,
                                        @RequestParam("req1") String req1,
-                                       @RequestParam("req2") String req2,
-                                       @RequestParam("filename") String filename) {
+                                       @RequestParam("req2") String req2) {
         try {
-            semilarService.simReqReq(filename,organization,req1,req2);
-            return new ResponseEntity<>(null,HttpStatus.OK);
+            return new ResponseEntity<>(comparerService.simReqReq(organization,req1,req2),HttpStatus.OK);
         } catch (BadRequestException e) {
             e.printStackTrace();
             return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
@@ -52,14 +50,14 @@ public class RestApiController {
         }
     }
 
-    @RequestMapping(value = "/upc/Semilar/SimReqProject", method = RequestMethod.POST)
+    @RequestMapping(value = "/SimReqProject", method = RequestMethod.POST)
     public ResponseEntity<?> simReqProject(@RequestParam("organization") String organization,
                                            @RequestParam("req") String req,
-                                           @RequestParam("filename") String filename,
+                                           @RequestParam("filename") String responseId,
                                            @RequestParam("threshold") double threshold,
                                            @RequestBody List<String> project_reqs) {
         try {
-            semilarService.simReqProject(filename,organization,req,threshold,project_reqs);
+            comparerService.simReqProject(responseId,organization,req,threshold,project_reqs);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (BadRequestException e) {
             e.printStackTrace();
@@ -70,13 +68,13 @@ public class RestApiController {
         }
     }
 
-    @RequestMapping(value = "/upc/Semilar/SimProject", method = RequestMethod.POST)
+    @RequestMapping(value = "/SimProject", method = RequestMethod.POST)
     public ResponseEntity<?> simProject(@RequestParam("organization") String organization,
-                                        @RequestParam("filename") String filename,
+                                        @RequestParam("filename") String responseId,
                                         @RequestParam("threshold") double threshold,
                                         @RequestBody List<String> project_reqs) {
         try {
-            semilarService.simProject(filename,organization,threshold,project_reqs);
+            comparerService.simProject(responseId,organization,threshold,project_reqs);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (BadRequestException e) {
             e.printStackTrace();
@@ -87,14 +85,14 @@ public class RestApiController {
         }
     }
 
-    @RequestMapping(value = "/upc/Semilar/BuildModelAndCompute", method = RequestMethod.POST)
+    @RequestMapping(value = "/BuildModelAndCompute", method = RequestMethod.POST)
     public ResponseEntity<?> buildModelAndCompute(@RequestParam("organization") String organization,
                                                   @RequestParam("compare") String compare,
-                                                  @RequestParam("filename") String filename,
+                                                  @RequestParam("filename") String responseId,
                                                   @RequestParam("threshold") double threshold,
                                                   @RequestBody List<Requirement> input) {
         try {
-            semilarService.buildModelAndCompute(filename,compare,organization,threshold,input);
+            comparerService.buildModelAndCompute(responseId,compare,organization,threshold,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (BadRequestException e) {
             e.printStackTrace();
@@ -105,10 +103,27 @@ public class RestApiController {
         }
     }
 
-    @RequestMapping(value = "/upc/Semilar/Clear", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/GetResponsePage", method = RequestMethod.POST)
+    public ResponseEntity<?> getResponsePage(@RequestParam("organization") String organization,
+                                        @RequestParam("responseId") String responseId) {
+        try {
+            return new ResponseEntity<>(comparerService.getResponsePage(organization,responseId),HttpStatus.OK);
+        } catch (BadRequestException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
+        } catch (InternalErrorException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (NotFinishedException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(e,HttpStatus.LOCKED);
+        }
+    }
+
+    @RequestMapping(value = "/Clear", method = RequestMethod.DELETE)
     public ResponseEntity<?> clearDB(@RequestParam("organization") String organization) {
         try {
-            semilarService.clearDB(organization);
+            comparerService.clearDB(organization);
             System.out.println("DB cleared");
             return new ResponseEntity<>(null, HttpStatus.OK);
         } catch (InternalErrorException e) {

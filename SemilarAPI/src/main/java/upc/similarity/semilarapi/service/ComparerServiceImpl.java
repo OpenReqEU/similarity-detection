@@ -4,6 +4,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 import upc.similarity.semilarapi.dao.modelDAO;
@@ -11,11 +12,11 @@ import upc.similarity.semilarapi.dao.SQLiteDAO;
 import upc.similarity.semilarapi.entity.*;
 import upc.similarity.semilarapi.exception.BadRequestException;
 import upc.similarity.semilarapi.exception.InternalErrorException;
+import upc.similarity.semilarapi.exception.NotFinishedException;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -23,13 +24,14 @@ import java.util.*;
 
 import static java.lang.StrictMath.sqrt;
 
-@Service("semilarService")
-public class SemilarServiceImpl implements SemilarService {
+@Service("comparerService")
+public class ComparerServiceImpl implements ComparerService {
 
     private static Double cutoffParameter=-1.0;
     private static String component = "Similarity-UPC";
     private static String status = "proposed";
     private static String dependency_type = "duplicates";
+    private static int MAX_PAGE_DEPS = 20000;
     private modelDAO modelDAO = getValue();
 
     private modelDAO getValue() {
@@ -66,68 +68,88 @@ public class SemilarServiceImpl implements SemilarService {
 
 
     @Override
-    public void simReqReq(String filename, String organization, String req1, String req2) throws BadRequestException, InternalErrorException {
+    public Dependency simReqReq(String organization, String req1, String req2) throws BadRequestException, InternalErrorException {
         show_time("start");
         Model model = loadModel(organization);
-        if (!model.getDocs().containsKey(req1)) throw new BadRequestException("The requirement with id \"" + req1 + "\" is not present in the model loaded form the database");
-        if (!model.getDocs().containsKey(req2)) throw new BadRequestException("The requirement with id \"" + req2 + "\" is not present in the model loaded form the database");
+        if (!model.getDocs().containsKey(req1)) throw new BadRequestException("The requirement with id " + req1 + " is not present in the model loaded form the database");
+        if (!model.getDocs().containsKey(req2)) throw new BadRequestException("The requirement with id " + req2 + " is not present in the model loaded form the database");
         double score = cosine(model.getDocs(),req1,req2);
         Dependency result = new Dependency(score,req1,req2,status,dependency_type,component);
-
-        Path p = generateFile(filename);
-        String s = System.lineSeparator() + result.print_json() + System.lineSeparator() + "]}";
-        write_to_file(s,p);
-
         show_time("finish");
+        return result;
     }
 
     @Override
-    public void simReqProject(String filename, String organization, String req, double threshold, List<String> project_reqs) throws BadRequestException, InternalErrorException {
+    public void simReqProject(String responseId, String organization, String req, double threshold, List<String> project_reqs) throws BadRequestException, InternalErrorException {
         show_time("start computing");
         Model model = loadModel(organization);
-        if (!model.getDocs().containsKey(req)) throw new BadRequestException("The requirement with id \"" + req + "\" is not present in the model loaded form the database");
+        if (!model.getDocs().containsKey(req)) throw new BadRequestException("The requirement with id " + req + " is not present in the model loaded form the database");
 
-        Path p = generateFile(filename);
+        try {
+            modelDAO.saveResponse(organization,responseId);
+        } catch (SQLException e) {
+            throw new InternalErrorException("Error while saving new response to the database");
+        }
 
-        boolean firsttimeComa = true;
+
         int cont = 0;
-        String result = "";
+        int pages = 0;
+
+        JSONArray array = new JSONArray();
+
         for (String req2: project_reqs) {
             if (!req.equals(req2) && model.getDocs().containsKey(req2)) {
                 double score = cosine(model.getDocs(),req,req2);
                 if (score >= threshold) {
                     Dependency dependency = new Dependency(score, req, req2, status, dependency_type, component);
-                    String s = System.lineSeparator() + dependency.print_json();
-                    if (!firsttimeComa) s = "," + s;
-                    firsttimeComa = false;
-                    result = result.concat(s);
+                    array.put(dependency.toJSON());
                     ++cont;
-                    if (cont >= 5000) {
-                        write_to_file(result, p);
-                        result = "";
+                    if (cont >= MAX_PAGE_DEPS) {
+                        try {
+                            modelDAO.saveResponsePage(organization, responseId, pages, new JSONObject().put("dependencies", array).toString());
+                        } catch (SQLException e) {
+                            throw new InternalErrorException("Error while saving new response page to the database");
+                        }
+                        ++pages;
+                        array = new JSONArray();
                         cont = 0;
                     }
                 }
             }
         }
 
-        if (!result.equals("")) write_to_file(result,p);
-        String s = System.lineSeparator() + "]}";
-        write_to_file(s,p);
+        if (array.length() > 0) {
+            try {
+                modelDAO.saveResponsePage(organization, responseId, pages, new JSONObject().put("dependencies", array).toString());
+            } catch (SQLException e) {
+                throw new InternalErrorException("Error while saving new response page to the database");
+            }
+        }
+
+        try {
+            modelDAO.finishComputation(organization,responseId);
+        } catch (SQLException e) {
+            throw new InternalErrorException("Error while finishing computation");
+        }
 
         show_time("finish computing");
     }
 
     @Override
-    public void simProject(String filename, String organization, double threshold, List<String> project_reqs) throws BadRequestException, InternalErrorException {
+    public void simProject(String responseId, String organization, double threshold, List<String> project_reqs) throws BadRequestException, InternalErrorException {
         show_time("start computing");
         Model model = loadModel(organization);
 
-        Path p = generateFile(filename);
+        try {
+            modelDAO.saveResponse(organization,responseId);
+        } catch (SQLException e) {
+            throw new InternalErrorException("Error while saving new response to the database");
+        }
 
-        boolean firsttimeComa = true;
         int cont = 0;
-        String result = "";
+        int pages = 0;
+
+        JSONArray array = new JSONArray();
 
         for (int i = 0; i < project_reqs.size(); ++i) {
             System.out.println(project_reqs.size() - i);
@@ -139,26 +161,50 @@ public class SemilarServiceImpl implements SemilarService {
                         double score = cosine(model.getDocs(), req1, req2);
                         if (score >= threshold) {
                             Dependency dependency = new Dependency(score, req1, req2, status, dependency_type, component);
-                            String s = System.lineSeparator() + dependency.print_json();
-                            if (!firsttimeComa) s = "," + s;
-                            firsttimeComa = false;
-                            result = result.concat(s);
+                            array.put(dependency.toJSON());
                             ++cont;
+                            if (cont >= MAX_PAGE_DEPS) {
+                                try {
+                                    modelDAO.saveResponsePage(organization, responseId, pages, new JSONObject().put("dependencies", array).toString());
+                                } catch (SQLException e) {
+                                    throw new InternalErrorException("Error while saving new response page to the database");
+                                }
+                                ++pages;
+                                array = new JSONArray();
+                                cont = 0;
+                            }
                         }
                     }
                 }
-                if (cont >= 5000) {
-                    write_to_file(result, p);
-                    result = "";
-                    cont = 0;
-                }
             }
         }
-        if (!result.equals("")) write_to_file(result,p);
-        String s = System.lineSeparator() + "]}";
-        write_to_file(s,p);
+        if (array.length() > 0) {
+            try {
+                modelDAO.saveResponsePage(organization, responseId, pages, new JSONObject().put("dependencies", array).toString());
+            } catch (SQLException e) {
+                throw new InternalErrorException("Error while saving new response page to the database");
+            }
+        }
+
+        try {
+            modelDAO.finishComputation(organization,responseId);
+        } catch (SQLException e) {
+            throw new InternalErrorException("Error while finishing computation");
+        }
 
         show_time("finish computing");
+    }
+
+    @Override
+    public String getResponsePage(String organization, String responseId) throws BadRequestException, InternalErrorException, NotFinishedException {
+
+        String responsePage;
+        try {
+            responsePage = modelDAO.getResponsePage(organization, responseId);
+        } catch (SQLException e) {
+            throw new InternalErrorException("Error while loading new response page");
+        }
+        return responsePage;
     }
 
     @Override
@@ -175,13 +221,6 @@ public class SemilarServiceImpl implements SemilarService {
     /*
     auxiliary operations
      */
-
-    private Path generateFile(String filename) throws InternalErrorException {
-        Path p = Paths.get("../testing/output/"+filename);
-        String s = System.lineSeparator() + "{\"dependencies\": [";
-        write_to_file(s,p);
-        return p;
-    }
 
     private Model loadModel(String organization) throws BadRequestException, InternalErrorException {
         try {
