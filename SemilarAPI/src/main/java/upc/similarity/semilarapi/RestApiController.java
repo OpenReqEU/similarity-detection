@@ -5,9 +5,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import upc.similarity.semilarapi.entity.Requirement;
+import upc.similarity.semilarapi.entity.input.ReqProject;
 import upc.similarity.semilarapi.exception.BadRequestException;
 import upc.similarity.semilarapi.exception.InternalErrorException;
 import upc.similarity.semilarapi.exception.NotFinishedException;
+import upc.similarity.semilarapi.exception.NotFoundException;
 import upc.similarity.semilarapi.service.ComparerService;
 
 import java.util.List;
@@ -19,15 +21,15 @@ public class RestApiController {
     @Autowired
     ComparerService comparerService;
 
-    @RequestMapping(value = "/BuildModel", method = RequestMethod.POST)
+    @PostMapping(value = "/BuildModel")
     public ResponseEntity<?> buildModel(@RequestParam("organization") String organization,
                                         @RequestParam("compare") String compare,
+                                        @RequestParam("filename") String responseId,
                                         @RequestBody List<Requirement> input) {
         try {
-            comparerService.buildModel(compare,organization,input);
+            comparerService.buildModel(responseId,compare,organization,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (BadRequestException e) {
-            e.printStackTrace();
             return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
         } catch (InternalErrorException e) {
             e.printStackTrace();
@@ -35,32 +37,31 @@ public class RestApiController {
         }
     }
 
-    @RequestMapping(value = "/SimReqReq", method = RequestMethod.POST)
+    @PostMapping(value = "/SimReqReq")
     public ResponseEntity<?> simReqReq(@RequestParam("organization") String organization,
                                        @RequestParam("req1") String req1,
                                        @RequestParam("req2") String req2) {
         try {
             return new ResponseEntity<>(comparerService.simReqReq(organization,req1,req2),HttpStatus.OK);
-        } catch (BadRequestException e) {
-            e.printStackTrace();
-            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
+        } catch (NotFoundException e) {
+            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
         } catch (InternalErrorException e) {
             e.printStackTrace();
             return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    @RequestMapping(value = "/SimReqProject", method = RequestMethod.POST)
+    @PostMapping(value = "/SimReqProject")
     public ResponseEntity<?> simReqProject(@RequestParam("organization") String organization,
-                                           @RequestParam("req") String req,
                                            @RequestParam("filename") String responseId,
                                            @RequestParam("threshold") double threshold,
-                                           @RequestBody List<String> project_reqs) {
+                                           @RequestBody ReqProject project_reqs) {
         try {
-            comparerService.simReqProject(responseId,organization,req,threshold,project_reqs);
+            comparerService.simReqProject(responseId,organization,threshold,project_reqs);
             return new ResponseEntity<>(null,HttpStatus.OK);
+        } catch (NotFoundException e) {
+            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
         } catch (BadRequestException e) {
-            e.printStackTrace();
             return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
         } catch (InternalErrorException e) {
             e.printStackTrace();
@@ -68,24 +69,23 @@ public class RestApiController {
         }
     }
 
-    @RequestMapping(value = "/SimProject", method = RequestMethod.POST)
+    @PostMapping(value = "/SimProject")
     public ResponseEntity<?> simProject(@RequestParam("organization") String organization,
                                         @RequestParam("filename") String responseId,
                                         @RequestParam("threshold") double threshold,
                                         @RequestBody List<String> project_reqs) {
         try {
-            comparerService.simProject(responseId,organization,threshold,project_reqs);
+            comparerService.simProject(responseId,organization,threshold,project_reqs,false);
             return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (BadRequestException e) {
-            e.printStackTrace();
-            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
+        } catch (NotFoundException e) {
+            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
         } catch (InternalErrorException e) {
             e.printStackTrace();
             return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    @RequestMapping(value = "/BuildModelAndCompute", method = RequestMethod.POST)
+    @PostMapping(value = "/BuildModelAndCompute")
     public ResponseEntity<?> buildModelAndCompute(@RequestParam("organization") String organization,
                                                   @RequestParam("compare") String compare,
                                                   @RequestParam("filename") String responseId,
@@ -95,37 +95,37 @@ public class RestApiController {
             comparerService.buildModelAndCompute(responseId,compare,organization,threshold,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (BadRequestException e) {
-            e.printStackTrace();
             return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
         } catch (InternalErrorException e) {
-            e.printStackTrace();
             return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (NotFoundException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
         }
     }
 
-    @RequestMapping(value = "/GetResponsePage", method = RequestMethod.POST)
+    @GetMapping(value = "/GetResponsePage")
     public ResponseEntity<?> getResponsePage(@RequestParam("organization") String organization,
                                         @RequestParam("responseId") String responseId) {
         try {
             return new ResponseEntity<>(comparerService.getResponsePage(organization,responseId),HttpStatus.OK);
-        } catch (BadRequestException e) {
-            e.printStackTrace();
-            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
+        } catch (NotFoundException e) {
+            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
+        } catch (NotFinishedException e) {
+            return new ResponseEntity<>(e,HttpStatus.LOCKED);
         } catch (InternalErrorException e) {
             e.printStackTrace();
             return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
-        } catch (NotFinishedException e) {
-            e.printStackTrace();
-            return new ResponseEntity<>(e,HttpStatus.LOCKED);
         }
     }
 
-    @RequestMapping(value = "/Clear", method = RequestMethod.DELETE)
-    public ResponseEntity<?> clearDB(@RequestParam("organization") String organization) {
+    @DeleteMapping(value = "/ClearOrganizationResponses")
+    public ResponseEntity<?> clearOrganizationResponses(@RequestParam("organization") String organization) {
         try {
-            comparerService.clearDB(organization);
-            System.out.println("DB cleared");
+            comparerService.clearOrganizationResponses(organization);
             return new ResponseEntity<>(null, HttpStatus.OK);
+        } catch (NotFoundException e) {
+            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
         } catch (InternalErrorException e) {
             e.printStackTrace();
             return new ResponseEntity<>(e, HttpStatus.INTERNAL_SERVER_ERROR);

@@ -18,8 +18,8 @@ public class FileUploadService {
 	@CrossOrigin
 	@PostMapping(value = "/PostResult", consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value = "Testing result")
-    public void uploadFile(@RequestBody JSONObject json) {
-		write_to_file(json.toString());
+    public void uploadFile(@RequestBody String json) {
+		write_to_file(json);
     }
 
 	private void write_to_file(String data){

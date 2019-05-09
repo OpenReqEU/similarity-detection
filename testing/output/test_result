@@ -1,6 +1,0 @@
-
-{"dependencies": [
-{"dependency_score":0.09472012826032841,"fromid":"QM-1","toid":"QM-2","status":"proposed","dependency_type":"duplicates","description":["Similarity-UPC"]},
-{"dependency_score":0.07577840546060764,"fromid":"QM-1","toid":"QM-3","status":"proposed","dependency_type":"duplicates","description":["Similarity-UPC"]},
-{"dependency_score":0.050128143498951123,"fromid":"QM-2","toid":"QM-3","status":"proposed","dependency_type":"duplicates","description":["Similarity-UPC"]}
-]}

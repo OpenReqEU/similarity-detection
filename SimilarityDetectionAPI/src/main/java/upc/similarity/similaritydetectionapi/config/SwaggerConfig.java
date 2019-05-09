@@ -46,7 +46,7 @@ public class SwaggerConfig {
             "Example of JSON object: <em> {\"success\":\"true\",\"id\":\"1548924677975_523\",\"operation\":\"Proj\"} </em>. Shows if the request has been successful, the request identifier and the name of the request operation.<ul>" +
             "<li>(success==false) The InputStream contains the exception cause.</li>" +
             "<li>(success==true) The InputStream contains the result of the operation.</li></ul></li></ol>" +
-            "<p>The API uses UTF-8 charset. Also, it uses the OpenReq format for input and output JSONs (it is specified in the Models section).</p>";
+            "<p>The API uses UTF-8 charset. Also, it uses the OpenReq format for input JSONs (it is specified in the Models section).</p>";
 
     /**
      * API Documentation Generation.
@@ -59,7 +59,7 @@ public class SwaggerConfig {
                 .apiInfo(apiInfo())
                 .pathMapping("/")
                 .select()
-                .paths(PathSelectors.regex("/upc/similarity-detection/AddReqs|/upc/similarity-detection/Project|/upc/similarity-detection/ReqProject|/upc/similarity-detection/ReqReq|/upc/similarity-detection/AddReqsAndCompute|/upc/similarity-detection/GetResponse"))
+                .paths(PathSelectors.regex("/upc/similarity-detection/AddReqs|/upc/similarity-detection/Project|/upc/similarity-detection/ReqProject|/upc/similarity-detection/ReqReq|/upc/similarity-detection/AddReqsAndCompute|/upc/similarity-detection/GetResponse|/upc/similarity-detection/DeleteOrganizationResponses"))
                 .apis(RequestHandlerSelectors.basePackage("upc.similarity.similaritydetectionapi")).paths(PathSelectors.regex("/upc.*"))
                 .build().tags(new Tag("Similarity detection Service", "API related to similarity detection"));
     }

@@ -5,6 +5,7 @@ import org.json.JSONObject;
 import upc.similarity.semilarapi.entity.Model;
 import upc.similarity.semilarapi.exception.BadRequestException;
 import upc.similarity.semilarapi.exception.NotFinishedException;
+import upc.similarity.semilarapi.exception.NotFoundException;
 
 import java.sql.*;
 import java.util.HashMap;
@@ -21,6 +22,8 @@ public class SQLiteDAO implements modelDAO {
 
     @Override
     public void saveModel(String organization, Model model) throws SQLException {
+
+        //TODO do transactions when deleting tables and inserting data
 
         boolean found = true;
         try (Connection conn = DriverManager.getConnection(db_url);
@@ -47,7 +50,7 @@ public class SQLiteDAO implements modelDAO {
     }
 
     @Override
-    public Model getModel(String organization) throws SQLException, BadRequestException {
+    public Model getModel(String organization) throws SQLException, NotFoundException {
 
         Map<String, Map<String, Double>> docs = null;
         Map<String, Integer> corpusFrequency = null;
@@ -72,7 +75,7 @@ public class SQLiteDAO implements modelDAO {
     }
 
     @Override
-    public String getResponsePage(String organizationId, String responseId) throws SQLException, BadRequestException, NotFinishedException {
+    public String getResponsePage(String organizationId, String responseId) throws SQLException, NotFoundException, NotFinishedException {
         String sql = "SELECT actualPage, maxPages, finished FROM responses WHERE organizationId = ? AND responseId = ?";
 
         String result = null;
@@ -93,7 +96,7 @@ public class SQLiteDAO implements modelDAO {
                         actualPage = rs.getInt("actualPage");
                         maxPages = rs.getInt("maxPages");
                         finished = rs.getInt("finished");
-                    } else throw new BadRequestException("The organization " + organizationId + " has not a response with id " + responseId);
+                    } else throw new NotFoundException("The organization " + organizationId + " has not a response with id " + responseId);
                 }
 
                 if (finished == 0) throw new NotFinishedException("The computation is not finished yet");
@@ -123,17 +126,27 @@ public class SQLiteDAO implements modelDAO {
         }
     }
 
-
     @Override
-    public void clearDB(String organization) throws SQLException {
+    public void clearOrganizationResponses(String organization) throws SQLException, NotFoundException {
+        String sql1 = "SELECT responseId, maxPages, finished FROM responses WHERE organizationId = ?";
 
-        try(Connection conn = DriverManager.getConnection(db_url);
-            PreparedStatement ps = conn.prepareStatement("DELETE FROM models WHERE id = ?")) {
-            ps.setString(1, organization);
-            ps.execute();
+        try (Connection conn = DriverManager.getConnection(db_url)) {
+            existsOrganization(organization,conn);
+            try (PreparedStatement ps = conn.prepareStatement(sql1)) {
+                ps.setString(1, organization);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String responseId = rs.getString("responseId");
+                        int maxPages = rs.getInt("maxPages");
+                        int finished = rs.getInt("finished");
+                        if (finished == 1) {
+                            deleteResponsePages(organization,responseId,maxPages,conn);
+                            deleteResponse(organization,responseId,conn);
+                        }
+                    }
+                }
+            }
         }
-
-        deleteOrganizationTables(organization);
     }
 
     /*
@@ -177,6 +190,23 @@ public class SQLiteDAO implements modelDAO {
         }
     }
 
+    private void deleteResponsePages(String organizationId, String responseId, int maxPages, Connection conn) throws SQLException {
+        for (int i = 0; i < maxPages; ++i) {
+            deleteResponsePage(organizationId,responseId,i,conn);
+        }
+    }
+
+    private void deleteResponsePage(String organizationId, String responseId, int page, Connection conn) throws SQLException {
+        String sql = "DELETE FROM responsePages WHERE organizationId = ? AND responseId = ? AND page = ?";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1,organizationId);
+            ps.setString(2,responseId);
+            ps.setInt(3,page);
+            ps.executeUpdate();
+        }
+    }
+
     private void deleteResponse(String organizationId, String responseId, Connection conn) throws SQLException {
         String sql = "DELETE FROM responses WHERE organizationId = ? AND responseId = ?";
 
@@ -187,7 +217,7 @@ public class SQLiteDAO implements modelDAO {
         }
     }
 
-    private void existsOrganization(String organizationId, Connection conn) throws BadRequestException, SQLException {
+    private void existsOrganization(String organizationId, Connection conn) throws NotFoundException, SQLException {
 
         try (PreparedStatement ps = conn.prepareStatement("SELECT (count(*) > 0) as found FROM organizations WHERE id = ?")) {
             ps.setString(1, organizationId);
@@ -196,7 +226,7 @@ public class SQLiteDAO implements modelDAO {
                 // Only expecting a single result
                 if (rs.next()) {
                     boolean found = rs.getBoolean(1); // "found" column
-                    if (!found) throw new BadRequestException("The organization " + organizationId + " does not exist");
+                    if (!found) throw new NotFoundException("The organization " + organizationId + " does not exist");
                 }
             }
         }

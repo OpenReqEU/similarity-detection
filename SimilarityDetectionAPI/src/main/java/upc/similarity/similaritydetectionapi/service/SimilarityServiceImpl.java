@@ -47,12 +47,10 @@ public class SimilarityServiceImpl implements SimilarityService {
                 Result_json result = new Result_json(id.getId(),"AddReqs");
                 try {
                     ComparerAdapter comparerAdapter = new ComparerAdapter();
-                    comparerAdapter.buildModel(organization,compare,input.getRequirements());
+                    comparerAdapter.buildModel(id.getId(),organization,compare,input.getRequirements());
                     result.setCode(200);
-                } catch (InternalErrorException e) {
-                    result.setException(500,"Internal error",e.getMessage());
-                } catch (BadRequestException e) {
-                    result.setException(400,"Bad request",e.getMessage());
+                } catch (ComponentException e) {
+                    result.setException(e.getStatus(),e.getError(),e.getMessage());
                 }
                 finally {
                     update_client(result,url);
@@ -79,10 +77,8 @@ public class SimilarityServiceImpl implements SimilarityService {
                     ComparerAdapter comparerAdapter = new ComparerAdapter();
                     comparerAdapter.buildModelAndCompute(id.getId(),organization,compare,threshold,input.getRequirements());
                     result.setCode(200);
-                } catch (InternalErrorException e) {
-                    result.setException(500,"Internal error",e.getMessage());
-                } catch (BadRequestException e) {
-                    result.setException(400,"Bad request",e.getMessage());
+                } catch (ComponentException e) {
+                    result.setException(e.getStatus(),e.getError(),e.getMessage());
                 }
                 finally {
                     update_client(result,url);
@@ -95,7 +91,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public String simReqReq(String organization, String req1, String req2) throws BadRequestException, InternalErrorException, NotFoundException {
+    public String simReqReq(String organization, String req1, String req2) throws ComponentException {
 
         Result_id id = get_id();
 
@@ -104,7 +100,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public Result_id simReqProject(String url, String organization, double threshold, int max_number, String req, String project_id, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
+    public Result_id simReqProject(String url, String organization, double threshold, int max_number, List<String> req, String project_id, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
 
         if (threshold < 0 || threshold > 1) throw new BadRequestException("Threshold must be a number between 0 and 1");
         Project project = search_project(project_id,input.getProjects());
@@ -120,12 +116,8 @@ public class SimilarityServiceImpl implements SimilarityService {
                     ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(Component.valueOf(component));
                     componentAdapter.simReqProject(id.getId(),organization,req,threshold,project.getSpecifiedRequirements());
                     result.setCode(200);
-                } catch (InternalErrorException e) {
-                    result.setException(500,"Internal error",e.getMessage());
-                } catch (BadRequestException e) {
-                    result.setException(400,"Bad request",e.getMessage());
-                } catch (NotFoundException e) {
-                    result.setException(404,"Not found",e.getMessage());
+                } catch (ComponentException e) {
+                    result.setException(e.getStatus(),e.getError(),e.getMessage());
                 }
                 finally {
                     update_client(result,url);
@@ -153,12 +145,8 @@ public class SimilarityServiceImpl implements SimilarityService {
                     ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(Component.valueOf(component));
                     componentAdapter.simProject(id.getId(),organization,threshold,project.getSpecifiedRequirements());
                     result.setCode(200);
-                } catch (InternalErrorException e) {
-                    result.setException(500,"Internal error",e.getMessage());
-                } catch (BadRequestException e) {
-                    result.setException(400,"Bad request",e.getMessage());
-                } catch (NotFoundException e) {
-                    result.setException(404,"Not found",e.getMessage());
+                } catch (ComponentException e) {
+                    result.setException(e.getStatus(),e.getError(),e.getMessage());
                 }
                 finally {
                     update_client(result,url);
@@ -171,17 +159,16 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public String getResponsePage(String organization, String responseId) throws BadRequestException, InternalErrorException, NotFinishedException {
+    public String getResponsePage(String organization, String responseId) throws ComponentException {
         ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(Component.valueOf(component));
         return componentAdapter.getResponsePage(organization,responseId);
     }
 
-    /*@Override
-    public void clearDB() throws InternalErrorException, BadRequestException {
-
-        SemilarAdapter semilarAdapter = new SemilarAdapter();
-        semilarAdapter.clearDB();
-    }*/
+    @Override
+    public void deleteOrganizationResponses(String organization) throws ComponentException {
+        ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(Component.valueOf(component));
+        componentAdapter.deleteOrganizationResponses(organization);
+    }
 
 
 
@@ -236,7 +223,7 @@ public class SimilarityServiceImpl implements SimilarityService {
             if (project_ok(project_input) && project_input.getId().equals(project)) found = true;
         }
 
-        if (!found) throw new NotFoundException("There is not project with id \'" + project + "\' in the JSON provided"); //Error: project not found
+        if (!found) throw new NotFoundException("There is not project with id " + project + " in the JSON provided"); //Error: project not found
 
         return project_input;
     }

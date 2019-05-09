@@ -10,14 +10,13 @@ import org.springframework.stereotype.Service;
 import upc.similarity.semilarapi.dao.modelDAO;
 import upc.similarity.semilarapi.dao.SQLiteDAO;
 import upc.similarity.semilarapi.entity.*;
+import upc.similarity.semilarapi.entity.input.ReqProject;
 import upc.similarity.semilarapi.exception.BadRequestException;
 import upc.similarity.semilarapi.exception.InternalErrorException;
 import upc.similarity.semilarapi.exception.NotFinishedException;
+import upc.similarity.semilarapi.exception.NotFoundException;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -45,34 +44,61 @@ public class ComparerServiceImpl implements ComparerService {
     }
 
     @Override
-    public void buildModel(String compare, String organization, List<Requirement> reqs) throws BadRequestException, InternalErrorException {
+    public void buildModel(String responseId, String compare, String organization, List<Requirement> reqs) throws BadRequestException, InternalErrorException {
         show_time("start");
-        System.out.println(reqs.size());
-        saveModel(organization,generateModel(compare,reqs));
+        generateResponse(organization,responseId);
+        try {
+            saveModel(organization, generateModel(compare, reqs));
+        } catch (BadRequestException e) {
+            try {
+                modelDAO.saveResponsePage(organization, responseId, 0, createJsonException(400, "Bad request", e.getMessage()));
+                modelDAO.finishComputation(organization,responseId);
+                throw new BadRequestException(e.getMessage());
+            } catch (SQLException sq) {
+                throw new InternalErrorException("Error while saving exception to the database");
+            }
+        }
+        try {
+            modelDAO.saveResponsePage(organization, responseId, 0, new JSONObject().put("status",200).toString());
+            modelDAO.finishComputation(organization,responseId);
+        } catch (SQLException sq) {
+            throw new InternalErrorException("Error while saving result to the database");
+        }
         show_time("finish");
     }
 
     @Override
-    public void buildModelAndCompute(String filename, String compare, String organization, double threshold, List<Requirement> reqs) throws BadRequestException, InternalErrorException {
+    public void buildModelAndCompute(String responseId, String compare, String organization, double threshold, List<Requirement> reqs) throws BadRequestException, NotFoundException, InternalErrorException {
         show_time("start initialization");
-        Model model = generateModel(compare,reqs);
-        saveModel(organization,model);
+        generateResponse(organization,responseId);
+        try {
+            Model model = generateModel(compare, reqs);
+            saveModel(organization, model);
+        } catch (BadRequestException e) {
+            try {
+                modelDAO.saveResponsePage(organization, responseId, 0, createJsonException(400, "Bad request", e.getMessage()));
+                modelDAO.finishComputation(organization,responseId);
+                throw new BadRequestException(e.getMessage());
+            } catch (SQLException sq) {
+                throw new InternalErrorException("Error while saving exception to the database");
+            }
+        }
         show_time("finish initialization");
         List<String> idReqs = new ArrayList<>();
         for (Requirement requirement: reqs) {
             idReqs.add(requirement.getId());
         }
         reqs = null;
-        simProject(filename,organization,threshold,idReqs);
+        simProject(responseId,organization,threshold,idReqs,true);
     }
 
 
     @Override
-    public Dependency simReqReq(String organization, String req1, String req2) throws BadRequestException, InternalErrorException {
+    public Dependency simReqReq(String organization, String req1, String req2) throws NotFoundException, InternalErrorException {
         show_time("start");
         Model model = loadModel(organization);
-        if (!model.getDocs().containsKey(req1)) throw new BadRequestException("The requirement with id " + req1 + " is not present in the model loaded form the database");
-        if (!model.getDocs().containsKey(req2)) throw new BadRequestException("The requirement with id " + req2 + " is not present in the model loaded form the database");
+        if (!model.getDocs().containsKey(req1)) throw new NotFoundException("The requirement with id " + req1 + " is not present in the model loaded form the database");
+        if (!model.getDocs().containsKey(req2)) throw new NotFoundException("The requirement with id " + req2 + " is not present in the model loaded form the database");
         double score = cosine(model.getDocs(),req1,req2);
         Dependency result = new Dependency(score,req1,req2,status,dependency_type,component);
         show_time("finish");
@@ -80,50 +106,61 @@ public class ComparerServiceImpl implements ComparerService {
     }
 
     @Override
-    public void simReqProject(String responseId, String organization, String req, double threshold, List<String> project_reqs) throws BadRequestException, InternalErrorException {
+    public void simReqProject(String responseId, String organization, double threshold, ReqProject project_reqs) throws NotFoundException, InternalErrorException, BadRequestException {
         show_time("start computing");
-        Model model = loadModel(organization);
-        if (!model.getDocs().containsKey(req)) throw new BadRequestException("The requirement with id " + req + " is not present in the model loaded form the database");
 
+        generateResponse(organization,responseId);
+
+        Model model = null;
         try {
-            modelDAO.saveResponse(organization,responseId);
-        } catch (SQLException e) {
-            throw new InternalErrorException("Error while saving new response to the database");
+            model = loadModel(organization);
+            for (String req: project_reqs.getReqs_to_compare()) {
+                if (project_reqs.getProject_reqs().contains(req)) throw new BadRequestException("The requirement with id " + req + " is already inside the project");
+            }
+        } catch (NotFoundException e) {
+            try {
+                modelDAO.saveResponsePage(organization, responseId, 0, createJsonException(400, "Bad request", e.getMessage()));
+                modelDAO.finishComputation(organization,responseId);
+                throw new NotFoundException(e.getMessage());
+            } catch (SQLException sq) {
+                throw new InternalErrorException("Error while saving exception to the database");
+            }
+        } catch (BadRequestException e) {
+            try {
+                modelDAO.saveResponsePage(organization, responseId, 0, createJsonException(400, "Bad request", e.getMessage()));
+                modelDAO.finishComputation(organization,responseId);
+                throw new BadRequestException(e.getMessage());
+            } catch (SQLException sq) {
+                throw new InternalErrorException("Error while saving exception to the database");
+            }
         }
-
 
         int cont = 0;
         int pages = 0;
 
         JSONArray array = new JSONArray();
-
-        for (String req2: project_reqs) {
-            if (!req.equals(req2) && model.getDocs().containsKey(req2)) {
-                double score = cosine(model.getDocs(),req,req2);
-                if (score >= threshold) {
-                    Dependency dependency = new Dependency(score, req, req2, status, dependency_type, component);
-                    array.put(dependency.toJSON());
-                    ++cont;
-                    if (cont >= MAX_PAGE_DEPS) {
-                        try {
-                            modelDAO.saveResponsePage(organization, responseId, pages, new JSONObject().put("dependencies", array).toString());
-                        } catch (SQLException e) {
-                            throw new InternalErrorException("Error while saving new response page to the database");
+        for (String req1: project_reqs.getReqs_to_compare()) {
+            for (String req2 : project_reqs.getProject_reqs()) {
+                if (!req1.equals(req2) && model.getDocs().containsKey(req2)) {
+                    double score = cosine(model.getDocs(), req1, req2);
+                    if (score >= threshold) {
+                        Dependency dependency = new Dependency(score, req1, req2, status, dependency_type, component);
+                        array.put(dependency.toJSON());
+                        ++cont;
+                        if (cont >= MAX_PAGE_DEPS) {
+                            generateResponsePage(responseId, organization, pages, array);
+                            ++pages;
+                            array = new JSONArray();
+                            cont = 0;
                         }
-                        ++pages;
-                        array = new JSONArray();
-                        cont = 0;
                     }
                 }
             }
+            project_reqs.getProject_reqs().add(req1);
         }
 
         if (array.length() > 0) {
-            try {
-                modelDAO.saveResponsePage(organization, responseId, pages, new JSONObject().put("dependencies", array).toString());
-            } catch (SQLException e) {
-                throw new InternalErrorException("Error while saving new response page to the database");
-            }
+            generateResponsePage(responseId, organization, pages, array);
         }
 
         try {
@@ -136,14 +173,22 @@ public class ComparerServiceImpl implements ComparerService {
     }
 
     @Override
-    public void simProject(String responseId, String organization, double threshold, List<String> project_reqs) throws BadRequestException, InternalErrorException {
+    public void simProject(String responseId, String organization, double threshold, List<String> project_reqs, boolean responseCreated) throws NotFoundException, InternalErrorException {
         show_time("start computing");
-        Model model = loadModel(organization);
 
+        if (!responseCreated) generateResponse(organization,responseId);
+
+        Model model = null;
         try {
-            modelDAO.saveResponse(organization,responseId);
-        } catch (SQLException e) {
-            throw new InternalErrorException("Error while saving new response to the database");
+            model = loadModel(organization);
+        } catch (NotFoundException e) {
+            try {
+                modelDAO.saveResponsePage(organization, responseId, 0, createJsonException(400, "Bad request", e.getMessage()));
+                modelDAO.finishComputation(organization,responseId);
+                throw new NotFoundException(e.getMessage());
+            } catch (SQLException sq) {
+                throw new InternalErrorException("Error while saving exception to the database");
+            }
         }
 
         int cont = 0;
@@ -152,7 +197,6 @@ public class ComparerServiceImpl implements ComparerService {
         JSONArray array = new JSONArray();
 
         for (int i = 0; i < project_reqs.size(); ++i) {
-            System.out.println(project_reqs.size() - i);
             String req1 = project_reqs.get(i);
             if (model.getDocs().containsKey(req1)) {
                 for (int j = i + 1; j < project_reqs.size(); ++j) {
@@ -164,11 +208,7 @@ public class ComparerServiceImpl implements ComparerService {
                             array.put(dependency.toJSON());
                             ++cont;
                             if (cont >= MAX_PAGE_DEPS) {
-                                try {
-                                    modelDAO.saveResponsePage(organization, responseId, pages, new JSONObject().put("dependencies", array).toString());
-                                } catch (SQLException e) {
-                                    throw new InternalErrorException("Error while saving new response page to the database");
-                                }
+                                generateResponsePage(responseId, organization, pages, array);
                                 ++pages;
                                 array = new JSONArray();
                                 cont = 0;
@@ -179,11 +219,7 @@ public class ComparerServiceImpl implements ComparerService {
             }
         }
         if (array.length() > 0) {
-            try {
-                modelDAO.saveResponsePage(organization, responseId, pages, new JSONObject().put("dependencies", array).toString());
-            } catch (SQLException e) {
-                throw new InternalErrorException("Error while saving new response page to the database");
-            }
+            generateResponsePage(responseId, organization, pages, array);
         }
 
         try {
@@ -195,8 +231,19 @@ public class ComparerServiceImpl implements ComparerService {
         show_time("finish computing");
     }
 
+    private void generateResponsePage(String responseId, String organization, int pages, JSONArray array) throws InternalErrorException {
+        JSONObject json = new JSONObject();
+        if (pages == 0) json.put("status",200);
+        json.put("dependencies",array);
+        try {
+            modelDAO.saveResponsePage(organization, responseId, pages,json.toString());
+        } catch (SQLException e) {
+            throw new InternalErrorException("Error while saving new response page to the database");
+        }
+    }
+
     @Override
-    public String getResponsePage(String organization, String responseId) throws BadRequestException, InternalErrorException, NotFinishedException {
+    public String getResponsePage(String organization, String responseId) throws NotFoundException, InternalErrorException, NotFinishedException {
 
         String responsePage;
         try {
@@ -208,9 +255,9 @@ public class ComparerServiceImpl implements ComparerService {
     }
 
     @Override
-    public void clearDB(String organization) throws InternalErrorException {
+    public void clearOrganizationResponses(String organization) throws InternalErrorException, NotFoundException {
         try {
-            modelDAO.clearDB(organization);
+            modelDAO.clearOrganizationResponses(organization);
         } catch (SQLException e) {
             throw new InternalErrorException("Error while clearing the database");
         }
@@ -222,7 +269,23 @@ public class ComparerServiceImpl implements ComparerService {
     auxiliary operations
      */
 
-    private Model loadModel(String organization) throws BadRequestException, InternalErrorException {
+    private void generateResponse(String organization, String responseId) throws InternalErrorException {
+        try {
+            modelDAO.saveResponse(organization,responseId);
+        } catch (SQLException e) {
+            throw new InternalErrorException("Error while saving new response to the database");
+        }
+    }
+
+    private String createJsonException(int status, String error, String message) {
+        JSONObject result = new JSONObject();
+        result.put("status",status);
+        result.put("error",error);
+        result.put("message",message);
+        return result.toString();
+    }
+
+    private Model loadModel(String organization) throws NotFoundException, InternalErrorException {
         try {
             return modelDAO.getModel(organization);
         } catch (SQLException e) {
@@ -467,14 +530,5 @@ public class ComparerServiceImpl implements ComparerService {
             norm+=value*value;
         }
         return sqrt(norm);
-    }
-
-    private void write_to_file(String text, Path p) throws InternalErrorException {
-        try (BufferedWriter writer = Files.newBufferedWriter(p, StandardOpenOption.APPEND)) {
-            writer.write(text);
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-            throw new InternalErrorException("Write start to file fail");
-        }
     }
 }
