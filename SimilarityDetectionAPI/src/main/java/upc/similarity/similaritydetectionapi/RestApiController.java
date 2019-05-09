@@ -34,9 +34,8 @@ public class RestApiController {
             " only can have one model at a time. If at the time of generating a new model the corresponding organization already has" +
             " an existing model, it is replaced by the new one.", tags = "Main methods")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
-            @ApiResponse(code=404, message = "Not Found"),
             @ApiResponse(code=400, message = "Bad request"),
-            @ApiResponse(code=500, message = "Component Error")})
+            @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity<?> buildModel(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                         @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
                                         @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/PostResult") @RequestParam("url") String url,
@@ -58,7 +57,7 @@ public class RestApiController {
             " requirements from the requirements received as input.</p>", tags = "Main methods")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
-            @ApiResponse(code=500, message = "Component Error")})
+            @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity<?> buildModelAndCompute(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                                   @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
                                                   @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
@@ -79,9 +78,8 @@ public class RestApiController {
     @ApiOperation(value = "Similarity comparison between two requirements", notes = "Returns a dependency between the two input requirements. The similarity score is computed with the" +
             " model assigned to the specified organization. The two requirements must be in this model.", tags = "Main methods")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
-            @ApiResponse(code=404, message = "Not Found"),
-            @ApiResponse(code=400, message = "Bad request"),
-            @ApiResponse(code=500, message = "Component Error")})
+            @ApiResponse(code=404, message = "Not found"),
+            @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity<?> simReqReq(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                        @ApiParam(value="Id of the first requirement to compare", required = true, example = "SQ-132") @RequestParam("req1") String req1,
                                        @ApiParam(value="Id of the second requirement to compare", required = true, example = "SQ-98") @RequestParam("req2") String req2) {
@@ -100,9 +98,8 @@ public class RestApiController {
             "between the list of requirements and the project's requirements received as input. The similarity score is computed with the model assigned to the specified organization. " +
             "All the requirements must be inside this model.</p>", tags = "Main methods")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
-            @ApiResponse(code=404, message = "Not Found"),
-            @ApiResponse(code=400, message = "Bad request"),
-            @ApiResponse(code=500, message = "Internal Error")})
+            @ApiResponse(code=404, message = "Not found"),
+            @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity<?> simReqProject(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                            @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                            /*@ApiParam(value="Maximum number of dependencies in the output", required = true, example = "5") @RequestParam("max_number") int max_number,*/
@@ -126,9 +123,8 @@ public class RestApiController {
             "requirements from the project received as input. The similarity score is computed with the model assigned to the specified organization. All the requirements" +
             " must be inside this model.</p>", tags = "Main methods")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
-            @ApiResponse(code=404, message = "Not Found"),
-            @ApiResponse(code=400, message = "Bad request"),
-            @ApiResponse(code=500, message = "Internal Error")})
+            @ApiResponse(code=404, message = "Not found"),
+            @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity<?> simProject(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                         @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                         @ApiParam(value="Id of the project to compare", required = true, example = "SQ") @RequestParam("project") String project,
@@ -146,13 +142,13 @@ public class RestApiController {
 
     @CrossOrigin
     @GetMapping(value = "/GetResponse", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Returns result dependencies of the other operations", notes = "<p>Returns the result dependencies of the Project, ReqProject and AddReqsAndCompute methods. The result is a " +
-            "json object formed by an array of dependencies which are returned in patches of 20,000. Each time this operation is called, the following 20,000 dependencies of the indicated response will be" +
-            " returned. An empty json will be returned when no more dependencies are left. </p>", tags = "Auxiliary methods")
+    @ApiOperation(value = "Returns result dependencies of the other operations", notes = "<p>Returns the result json of the Project, ReqProject and AddReqsAndCompute methods. The result is a " +
+            "json object formed by a status attribute. If the status is 200 the json also contains an array of dependencies which are returned in patches of 20,000 . Each time this operation is called, the following 20,000 dependencies of the indicated response will be" +
+            " returned. An empty json will be returned when no more dependencies are left. Nevertheless, if the status attribute is not equal to 200, the json contains the exception message. </p>", tags = "Auxiliary methods")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=423, message = "The computation is not finished yet"),
-            @ApiResponse(code=400, message = "Bad request"),
-            @ApiResponse(code=500, message = "Internal Error")})
+            @ApiResponse(code=404, message = "Not found"),
+            @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity<?> getResponsePage(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                              @ApiParam(value="Response identifier", required = true, example = "UPC") @RequestParam("response") String responseId) {
         try {
@@ -167,8 +163,8 @@ public class RestApiController {
     @ApiOperation(value = "Deletes the organization responses", notes = "<p>Deletes the organization responses that are finished from the database.</p>", tags = "Auxiliary methods")
     @ApiResponses(value = {
             @ApiResponse(code=200, message = "OK"),
-            @ApiResponse(code=400, message = "Bad request"),
-            @ApiResponse(code=500, message = "Internal Error")})
+            @ApiResponse(code=404, message = "Not found"),
+            @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity<?> deleteOrganizationResponses(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization) {
         try {
             similarityService.deleteOrganizationResponses(organization);

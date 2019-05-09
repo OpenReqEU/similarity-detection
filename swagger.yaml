@@ -1,13 +1,14 @@
 swagger: '2.0'
 info:
-  description: '<p>The component is based in <a href="http://deeptutor2.memphis.edu/Semilar-Web/public/downloads/ACL-13.SEMILAR.DEMO.pdf">Semilar</a> semantic similarity library. The aim of the API is to calculate the similarity score between multiple pairs of requirements.</p><p>There are three different types of operations: </p><ul><li>ReqReq: Compares two requirements</li><li>ReqProj: Compares between a list of requirements and a set of requirements</li><li>Proj: Compares all possible pairs of requirements from a set of requirements</li></ul><p> Also there are two ways to compare requirements. The default method consists in comparing the name of the requirements. The other way lies in comparing the name and the text of the requirements and return the maximum of the two.</p><p>The component needs to preprocess the requirements before doing any comparison. The operation AddReqs is responsible for that work. We use opennlp library in preprocessing requirements </p><p>All the operations in this service are asynchronous. It is necessary to write a server URL as parameter in all of them. The result of the operation will be returned to that url. All operations follow the same pattern:</p><ol><li>The client calls the operation with all necessary parameters</li><li>The service receives the request and checks the main conditions</li><li>The service returns if the client request has been accepted or not and closes the connection<ul><li>(httpStatus!=200) The request has not been accepted. The message body contains the exception cause.</li><li>(httpStatus==200) The request has been accepted. The similarity calculation runs in the background. The message body contains the request identifier i.e. <em>{"id": "1548924677975_523"}</em></li></ul><li>When the calculation finishes (only if the request has been accepted) the service opens a connection with the server url specified as parameter.<br>It sends a multipart file with a JSON object and an InputStream. The JSON object contains the information about the request and the InputStream contains the resulting body.<br>Example of JSON object: <em> {"success":"true","id":"1548924677975_523","operation":"Proj"} </em>. Shows if the request has been successful, the request identifier and the name of the request operation.<ul><li>(success==false) The InputStream contains the exception cause.</li><li>(success==true) The InputStream contains the result of the operation.</li></ul></li></ol><p>The API uses UTF-8 charset. Also, it uses the OpenReq format for input and output JSONs (it is specified in the Models section).</p>'
+  version: '1.0'
+  description: '<p>The component is based in td-idf numerical statistic. The aim of the API is to calculate the similarity score between multiple pairs of requirements.</p><p>There are five main methods: </p><ul><li><strong>AddReqs</strong>: Generates a model with the input requirements</li><li><strong>ReqReq</strong>: Compares two requirements</li><li><strong>ReqProject</strong>: Compares between a list of requirements and a set of requirements</li><li><strong>Project</strong>: Compares all possible pairs of requirements from a set of requirements</li><li><strong>AddReqsAndCompute</strong>: Is a mixture between AddReqs and Project methods</li></ul><p>And two auxiliary operations: </p><ul><li><strong>GetResponse</strong>: Returns in patches the resulting dependencies of the other methods</li><li><strong>DeleteOrganizationResponses</strong>: Deletes the organization responses from the database</li></ul><p>The component needs to preprocess the requirements before doing any comparison. The operation AddReqs is responsible for that work.</p><p>The operations AddReqs, ReqProject, Project and AddReqsAndCompute are asynchronous. It is necessary to write a server URL as parameter in all of them. The outcome of the operation will be returned to that url. All these operations follow the same pattern:</p><ol><li>The client calls the operation with all necessary parameters</li><li>The service receives the request and checks the main conditions</li><li>The service returns if the client request has been accepted or not and closes the connection<ul><li>(httpStatus!=200) The request has not been accepted. The message body contains the exception cause.</li><li>(httpStatus==200) The request has been accepted. The similarity calculation runs in the background. The message body contains the request identifier i.e. <em>{"id": "1548924677975_523"}</em></li></ul><li>When the calculation finishes (only if the request has been accepted) the service opens a connection with the server url specified as parameter. It sends a Json object that contains the outcome of the computation:<br><ul><li>(success) Example: {"code": 200,"id": "1557395889689_587","operation": "AddReqs"}.</li><li>(!success) Example: {"code": 400,"id": "1557396039530_583","error": "Bad request","message": "The requirement with id QM-3 is already inside the project","operation": "ReqProject"}.</li><li>The resulting dependencies can be obtained via the GetResponse method.</li></ul></li></ol><p>The API uses UTF-8 charset. Also, it uses the OpenReq format for input JSONs (it is specified in the Models section).</p>'
   title: SIMILARITY DETECTION COMPONENT
   contact:
     name: UPC-GESSI (OPENReq)
     url: 'http://openreq.eu/'
   license:
     name: License
-host: '217.172.12.199:9404'
+host: 'localhost:9404'
 basePath: /
 tags:
   - name: Similarity detection Service
@@ -15,68 +16,200 @@ tags:
   - name: rest-api-controller
     description: Rest Api Controller
 paths:
-  /upc/similarity-detection/DB/AddReqs:
+  /upc/similarity-detection/AddReqs:
     post:
       tags:
-        - rest-api-controller
-      summary: Preprocess a set of requirements
-      description: 'Processes the input requirements and saves them. It is necessary to compute the similarity score of any pair of requirements. The processing of large requirements can take a long time. The resulting input stream is not useful. If already exists another requirement with the same id in the database, it is replaced by the new one.<br><br> Example: <em> {"result":"Success!"} </em>'
-      operationId: addRequirementsUsingPOST
+        - Main methods
+      summary: Builds a model with the input requirements
+      description: 'Builds a model with the entry requirements. The generated model is assigned to the specified organization and stored in an internal database. Each organization only can have one model at a time. If at the time of generating a new model the corresponding organization already has an existing model, it is replaced by the new one.'
+      operationId: buildModelUsingPOST
       consumes:
         - application/json
       produces:
         - '*/*'
       parameters:
+        - name: compare
+          in: query
+          description: Use text attribute?
+          required: false
+          type: boolean
+          allowEmptyValue: false
+          x-example: true
         - in: body
           name: input
-          description: OpenreqJson with requirements
+          description: OpenReqJson with requirements
           required: true
           schema:
             $ref: '#/definitions/Requirements'
+        - name: organization
+          in: query
+          description: Organization
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: UPC
         - name: url
           in: query
           description: The url where the result of the operation will be returned
           required: true
           type: string
           allowEmptyValue: false
-          x-example: 'http://localhost:9406/upload/Test'
+          x-example: 'http://localhost:9406/upload/PostResult'
       responses:
         '200':
           description: OK
           schema:
             type: object
-        '410':
-          description: Not Found
-        '411':
+        '400':
           description: Bad request
-        '511':
-          description: Component Error
+        '500':
+          description: Internal error
+      deprecated: false
+  /upc/similarity-detection/AddReqsAndCompute:
+    post:
+      tags:
+        - Main methods
+      summary: Builds a model with the input requirements and computes them
+      description: '<p>Builds a model with the entry requirements. The generated model is assigned to the specified organization and stored in an internal database. Each organization only can have one model at a time. If at the time of generating a new model the corresponding organization already has an existing model, it is replaced by the new one.</p><br><p>Also, it returns an array of dependencies between all possible pairs of  requirements from the requirements received as input.</p>'
+      operationId: buildModelAndComputeUsingPOST
+      consumes:
+        - application/json
+      produces:
+        - '*/*'
+      parameters:
+        - name: compare
+          in: query
+          description: Use text attribute?
+          required: false
+          type: boolean
+          allowEmptyValue: false
+          x-example: true
+        - in: body
+          name: input
+          description: OpenReqJson with requirements
+          required: true
+          schema:
+            $ref: '#/definitions/Requirements'
+        - name: organization
+          in: query
+          description: Organization
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: UPC
+        - name: threshold
+          in: query
+          description: Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have
+          required: true
+          type: number
+          format: double
+          allowEmptyValue: false
+          x-example: 0.1
+        - name: url
+          in: query
+          description: The url where the result of the operation will be returned
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: 'http://localhost:9406/upload/PostResult'
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: object
+        '400':
+          description: Bad request
+        '500':
+          description: Internal error
+      deprecated: false
+  /upc/similarity-detection/DeleteOrganizationResponses:
+    delete:
+      tags:
+        - Auxiliary methods
+      summary: Deletes the organization responses
+      description: <p>Deletes the organization responses that are finished from the database.</p>
+      operationId: deleteOrganizationResponsesUsingDELETE
+      produces:
+        - application/json
+      parameters:
+        - name: organization
+          in: query
+          description: Organization
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: UPC
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: object
+        '404':
+          description: Not found
+        '500':
+          description: Internal error
+      deprecated: false
+  /upc/similarity-detection/GetResponse:
+    get:
+      tags:
+        - Auxiliary methods
+      summary: Returns result dependencies of the other operations
+      description: '<p>Returns the result json of the Project, ReqProject and AddReqsAndCompute methods. The result is a json object formed by a status attribute. If the status is 200 the json also contains an array of dependencies which are returned in patches of 20,000 . Each time this operation is called, the following 20,000 dependencies of the indicated response will be returned. An empty json will be returned when no more dependencies are left. Nevertheless, if the status attribute is not equal to 200, the json contains the exception message. </p>'
+      operationId: getResponsePageUsingGET
+      produces:
+        - application/json
+      parameters:
+        - name: organization
+          in: query
+          description: Organization
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: UPC
+        - name: response
+          in: query
+          description: Response identifier
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: UPC
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: object
+        '404':
+          description: Not found
+        '423':
+          description: The computation is not finished yet
+        '500':
+          description: Internal error
       deprecated: false
   /upc/similarity-detection/Project:
     post:
       tags:
-        - rest-api-controller
+        - Main methods
       summary: Similarity comparison between the requirements of one project
-      description: 'The resulting input stream contains an array of dependencies with the similarity dependencies among all the pairs of the requirements of the selected project. Every dependency will only be returned if doesn''t exist another similar or duplicate dependency between the two requirements.<br> <br> Example: <em> {"dependencies":[{"toid":"QM-2","dependency_type":"similar","dependency_score":0.6666667,"description":["Similarity-Semilar"],"fromid":"QM-1","status":"proposed"},{"toid":"QM-3","dependency_type":"similar","dependency_score":0.4,"description":["Similarity-Semilar"],"fromid":"QM-1","status":"proposed"},{"toid":"QM-3","dependency_type":"similar","dependency_score":0.4,"description":["Similarity-Semilar"],"fromid":"QM-2","status":"proposed"}]} </em>'
+      description: <p>Returns an array of dependencies between all possible pairs of requirements from the project received as input. The similarity score is computed with the model assigned to the specified organization. All the requirements must be inside this model.</p>
       operationId: simProjectUsingPOST
       consumes:
         - application/json
       produces:
         - application/json
       parameters:
-        - name: compare
-          in: query
-          description: Use text attribute in comparison?
-          required: false
-          type: string
-          allowEmptyValue: false
-          x-example: 'false'
         - in: body
-          name: json
-          description: OpenreqJson with the project and the project's requirements
+          name: input
+          description: OpenReqJson with the project
           required: true
           schema:
             $ref: '#/definitions/JsonProject'
+        - name: organization
+          in: query
+          description: Organization
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: UPC
         - name: project
           in: query
           description: Id of the project to compare
@@ -86,58 +219,54 @@ paths:
           x-example: SQ
         - name: threshold
           in: query
-          description: Float between 0 and 1 that establishes the minimum similarity score that the added dependencies should have
+          description: Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have
           required: true
           type: number
-          format: float
+          format: double
           allowEmptyValue: false
-          x-example: 0.3
+          x-example: 0.1
         - name: url
           in: query
           description: The url where the result of the operation will be returned
           required: true
           type: string
           allowEmptyValue: false
-          x-example: 'http://localhost:9406/upload/Test'
+          x-example: 'http://localhost:9406/upload/PostResult'
       responses:
         '200':
           description: OK
           schema:
             type: object
-        '410':
-          description: Not Found
-        '411':
-          description: Bad request
-        '510':
-          description: Internal Error
-        '511':
-          description: Component Error
+        '404':
+          description: Not found
+        '500':
+          description: Internal error
       deprecated: false
   /upc/similarity-detection/ReqProject:
     post:
       tags:
-        - rest-api-controller
-      summary: Similarity comparison between a set of requirements and all the requirements of a specific project
-      description: The resulting input stream contains an array of dependencies with the similarity dependencies between the selected requirements and all the requirements of the project specified. Every dependency will only be returned if doesn't exist another similar or duplicate dependency between the two requirements.
+        - Main methods
+      summary: Similarity comparison between a list of requirements and all the requirements of a specific project
+      description: <p>Returns an array of dependencies between the list of requirements and the project's requirements received as input. The similarity score is computed with the model assigned to the specified organization. All the requirements must be inside this model.</p>
       operationId: simReqProjectUsingPOST
       consumes:
         - application/json
       produces:
         - application/json
       parameters:
-        - name: compare
-          in: query
-          description: Use text attribute in comparison?
-          required: false
-          type: string
-          allowEmptyValue: false
-          x-example: 'false'
         - in: body
-          name: json
-          description: Json with requirements
+          name: input
+          description: OpenReqJson with the project
           required: true
           schema:
             $ref: '#/definitions/JsonProject'
+        - name: organization
+          in: query
+          description: Organization
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: UPC
         - name: project
           in: query
           description: Id of the project to compare
@@ -147,7 +276,7 @@ paths:
           x-example: SM
         - name: req
           in: query
-          description: Ids of the requirements to compare
+          description: Id of the requirements to compare
           required: true
           type: array
           items:
@@ -156,58 +285,48 @@ paths:
           allowEmptyValue: false
         - name: threshold
           in: query
-          description: Float between 0 and 1 that establishes the minimum similarity score that the added dependencies should have
+          description: Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have
           required: true
           type: number
-          format: float
+          format: double
           allowEmptyValue: false
-          x-example: 0.3
+          x-example: 0.1
         - name: url
           in: query
           description: The url where the result of the operation will be returned
           required: true
           type: string
           allowEmptyValue: false
-          x-example: 'http://localhost:9406/upload/Test'
+          x-example: 'http://localhost:9406/upload/PostResult'
       responses:
         '200':
           description: OK
           schema:
             type: object
-        '410':
-          description: Not Found
-        '411':
-          description: Bad request
-        '510':
-          description: Internal Error
-        '511':
-          description: Component Error
+        '404':
+          description: Not found
+        '500':
+          description: Internal error
       deprecated: false
   /upc/similarity-detection/ReqReq:
     post:
       tags:
-        - rest-api-controller
+        - Main methods
       summary: Similarity comparison between two requirements
-      description: '<p>The resulting input stream contains an array of dependencies with the similarity dependency between the two selected requirements. The dependency is only returned if doesn''t exist another similar or duplicate dependency between the two requirements.</p><p> <br> Example:<em> {"dependencies":[{"toid":"QM-2","dependency_type":"similar","dependency_score":0.6666667,"description":["Similarity-Semilar"],"fromid":"QM-1","status":"proposed"}]}</em> </p>'
+      description: Returns a dependency between the two input requirements. The similarity score is computed with the model assigned to the specified organization. The two requirements must be in this model.
       operationId: simReqReqUsingPOST
       consumes:
         - application/json
       produces:
         - application/json
       parameters:
-        - name: compare
+        - name: organization
           in: query
-          description: Use text attribute in comparison?
-          required: false
+          description: Organization
+          required: true
           type: string
           allowEmptyValue: false
-          x-example: 'false'
-        - in: body
-          name: json
-          description: OpenreqJson with the two requirements
-          required: true
-          schema:
-            $ref: '#/definitions/JsonReqReq'
+          x-example: UPC
         - name: req1
           in: query
           description: Id of the first requirement to compare
@@ -222,76 +341,26 @@ paths:
           type: string
           allowEmptyValue: false
           x-example: SQ-98
-        - name: url
-          in: query
-          description: The url where the result of the operation will be returned
-          required: true
-          type: string
-          allowEmptyValue: false
-          x-example: 'http://localhost:9406/upload/Test'
       responses:
         '200':
           description: OK
           schema:
             type: object
-        '410':
-          description: Not Found
-        '411':
-          description: Bad request
-        '511':
-          description: Component Error
+        '404':
+          description: Not found
+        '500':
+          description: Internal error
       deprecated: false
 definitions:
-  Dependency:
-    type: object
-    properties:
-      dependency_score:
-        type: number
-        format: float
-      dependency_type:
-        type: string
-      description:
-        type: array
-        items:
-          type: string
-      fromid:
-        type: string
-      status:
-        type: string
-      toid:
-        type: string
-    title: Dependency
-    description: 'A dependency with fromid, toid, dependency_type, status, description (component) and dependency_score'
   JsonProject:
     type: object
     properties:
-      dependencies:
-        type: array
-        items:
-          $ref: '#/definitions/Dependency'
       projects:
         type: array
         items:
           $ref: '#/definitions/Project'
-      requirements:
-        type: array
-        items:
-          $ref: '#/definitions/Requirement'
     title: JsonProject
-    description: 'OpenReqJson with requirements, projects and dependencies'
-  JsonReqReq:
-    type: object
-    properties:
-      dependencies:
-        type: array
-        items:
-          $ref: '#/definitions/Dependency'
-      requirements:
-        type: array
-        items:
-          $ref: '#/definitions/Requirement'
-    title: JsonReqReq
-    description: OpenReqJson with requirements and dependencies
+    description: OpenReqJson with projects
   Project:
     type: object
     properties:

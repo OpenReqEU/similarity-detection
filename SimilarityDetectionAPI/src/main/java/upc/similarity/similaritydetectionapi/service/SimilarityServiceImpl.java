@@ -223,7 +223,7 @@ public class SimilarityServiceImpl implements SimilarityService {
             if (project_ok(project_input) && project_input.getId().equals(project)) found = true;
         }
 
-        if (!found) throw new NotFoundException("There is not project with id " + project + " in the JSON provided"); //Error: project not found
+        if (!found) throw new NotFoundException("There is not a project with id " + project + " in the JSON provided"); //Error: project not found
 
         return project_input;
     }
