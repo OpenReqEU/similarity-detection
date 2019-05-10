@@ -248,7 +248,7 @@ public class SimilarityServiceImpl implements SimilarityService {
         try {
             HttpResponse response = httpclient.execute(httppost);
             httpStatus = response.getStatusLine().getStatusCode();
-            if ((httpStatus <= 200) || (httpStatus > 300)) System.out.println("SUCCESS");
+            if ((httpStatus >= 200) && (httpStatus < 300)) System.out.println("SUCCESS");
             else System.out.println("ERROR connecting with external server");
         } catch (IOException e) {
             e.printStackTrace();
