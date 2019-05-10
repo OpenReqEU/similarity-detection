@@ -348,95 +348,17 @@ public class ComparerServiceImpl implements ComparerService {
     }
 
     private String clean_text(String text, int clean) {
-        text = text.replaceAll("_", "");
-        if (clean == 0) return text;
-        else if (clean == 1) {
-
-            String[] aux = text.split(" ");
-            text = "";
-            for (String word: aux) {
-                if (word.equals(word.toUpperCase())) word = word.toLowerCase();
-                text = text.concat(" " + word);
+        text = text.replaceAll("(\\{.*?})", " code ");
+        text = text.replaceAll("[.$,;\\\"/:|!?=%,()><_0-9\\-\\[\\]{}']", " ");
+        String[] aux2 = text.split(" ");
+        String result = "";
+        for (String a : aux2) {
+            if (a.length() > 1) {
+                result = result.concat(" " + a);
             }
-
-            //text = text.replace("n't", "");
-
-            text = text.replace("..", ".");
-            text = text.replace(":", " ");
-            text = text.replace("\"", "");
-            text = text.replace("\\r", ".");
-            text = text.replace("..", ".");
-            text = text.replace("\\n", ".");
-            text = text.replace("..", ".");
-            text = text.replace("!", ".");
-            text = text.replace("..", ".");
-            text = text.replace("?", ".");
-            text = text.replace("..", ".");
-            text = text.replace("=", " ");
-            text = text.replace(">", " ");
-            text = text.replace("<", " ");
-            text = text.replace("%", " ");
-            text = text.replace("#", " ");
-            text = text.replace(",", " ");
-            text = text.replace("(", " ");
-            text = text.replace(")", " ");
-            text = text.replace("{", " ");
-            text = text.replace("}", " ");
-            text = text.replace("-", " ");
-
-            String result = "";
-            String[] r = text.split("(?=\\p{Upper})");
-            for (String word: r) result = result.concat(" " + word);
-
-
-            return result;
         }
-        else {
-            text = text.replaceAll("(\\{code.*?\\{code)","");
-
-            String[] aux = text.split(" ");
-            text = "";
-            for (String word: aux) {
-                if (word.equals(word.toUpperCase())) word = word.toLowerCase();
-                text = text.concat(" " + word);
-            }
-
-            text = text.replace("..", ".");
-            text = text.replace("\"", "");
-            text = text.replace(":", " ");
-            text = text.replace("\\r", ".");
-            text = text.replace("..", ".");
-            text = text.replace("\\n", ".");
-            text = text.replace("..", ".");
-            text = text.replace("!", ".");
-            text = text.replace("..", ".");
-            text = text.replace("?", ".");
-            text = text.replace("..", ".");
-            text = text.replace("=", " ");
-            text = text.replace("%", " ");
-            text = text.replace("#", " ");
-            text = text.replace(",", " ");
-            text = text.replace("(", " ");
-            text = text.replace(")", " ");
-            text = text.replace("{", " ");
-            text = text.replace("}", " ");
-            text = text.replace("-", " ");
-            text = text.replace(">", " ");
-            text = text.replace("<", " ");
-
-            String result = "";
-            String[] r = text.split("(?=\\p{Upper})");
-            for (String word: r) result = result.concat(" " + word);
-
-            text = "";
-            for (String word: result.split(" ")) {
-                if (word.length() < 20) text = text.concat(" " + word);
-            }
-            return result;
-        }
+        return result;
     }
-
-
 
     private Map<String, Map<String, Double>> extractKeywords(List<String> corpus, List<String> ids, Map<String, Integer> corpusFrequency) throws InternalErrorException {
         List<List<String>> docs = new ArrayList<>();
@@ -474,7 +396,7 @@ public class ComparerServiceImpl implements ComparerService {
     }
 
     private double idf(int size, int frequency) {
-        return Math.log(size / (frequency+1.0));
+        return Math.log(size / (frequency + 1.0));
     }
 
 
