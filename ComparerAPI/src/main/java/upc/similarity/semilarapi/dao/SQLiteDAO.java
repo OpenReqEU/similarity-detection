@@ -21,6 +21,41 @@ public class SQLiteDAO implements modelDAO {
     }
 
     @Override
+    public void createDatabase() throws SQLException {
+
+        String sql1 = "CREATE TABLE IF NOT EXISTS organizations (\n"
+                + "	id varchar PRIMARY KEY"
+                + ");";
+
+        String sql2 = "CREATE TABLE IF NOT EXISTS responses (\n"
+                + "	organizationId varchar, \n"
+                + " responseId varchar, \n"
+                + " actualPage integer, \n"
+                + " maxPages integer, \n"
+                + " finished integer, \n"
+                + " PRIMARY KEY(organizationId, responseId)"
+                + ");";
+
+        String sql3 = "CREATE TABLE IF NOT EXISTS responsePages (\n"
+                + "	organizationId varchar, \n"
+                + " responseId varchar, \n"
+                + " page integer, \n"
+                + " jsonResponse text, \n"
+                + " FOREIGN KEY(organizationId) REFERENCES responses(organizationId), \n"
+                + " FOREIGN KEY(responseId) REFERENCES responses(responseId), \n"
+                + " PRIMARY KEY(organizationId, responseId, page)"
+                + ");";
+
+
+        try (Connection conn = DriverManager.getConnection(db_url);
+             Statement stmt = conn.createStatement()) {
+            stmt.execute(sql1);
+            stmt.execute(sql2);
+            stmt.execute(sql3);
+        }
+    }
+
+    @Override
     public void saveModel(String organization, Model model) throws SQLException {
 
         //TODO do transactions when deleting tables and inserting data
@@ -43,9 +78,13 @@ public class SQLiteDAO implements modelDAO {
             insertOrganization(organization);
         }
         try (Connection conn = DriverManager.getConnection(db_url)) {
+            // set auto-commit mode to false
+            conn.setAutoCommit(false);
             createOrganizationTables(organization, conn);
             saveDocs(organization, model.getDocs(), conn);
             saveCorpusFrequency(organization, model.getCorpusFrequency(), conn);
+            // commit work
+            conn.commit();
         }
     }
 
@@ -82,7 +121,7 @@ public class SQLiteDAO implements modelDAO {
 
         try (Connection conn = DriverManager.getConnection(db_url)) {
 
-            existsOrganization(organizationId,conn);
+            existsOrganizationResponses(organizationId,conn);
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, organizationId);
@@ -153,43 +192,6 @@ public class SQLiteDAO implements modelDAO {
     auxiliary operations
      */
 
-    private void createDatabase() {
-
-        String sql1 = "CREATE TABLE IF NOT EXISTS organizations (\n"
-                + "	id varchar PRIMARY KEY"
-                + ");";
-
-        String sql2 = "CREATE TABLE IF NOT EXISTS responses (\n"
-                + "	organizationId varchar, \n"
-                + " responseId varchar, \n"
-                + " actualPage integer, \n"
-                + " maxPages integer, \n"
-                + " finished integer, \n"
-                + " PRIMARY KEY(organizationId, responseId)"
-                + ");";
-
-        String sql3 = "CREATE TABLE IF NOT EXISTS responsePages (\n"
-                + "	organizationId varchar, \n"
-                + " responseId varchar, \n"
-                + " page integer, \n"
-                + " jsonResponse text, \n"
-                + " FOREIGN KEY(organizationId) REFERENCES responses(organizationId), \n"
-                + " FOREIGN KEY(responseId) REFERENCES responses(responseId), \n"
-                + " PRIMARY KEY(organizationId, responseId, page)"
-                + ");";
-
-
-        try (Connection conn = DriverManager.getConnection(db_url);
-             Statement stmt = conn.createStatement()) {
-            // create a new table
-            stmt.execute(sql1);
-            stmt.execute(sql2);
-            stmt.execute(sql3);
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
-        }
-    }
-
     private void deleteResponsePages(String organizationId, String responseId, int maxPages, Connection conn) throws SQLException {
         for (int i = 0; i < maxPages; ++i) {
             deleteResponsePage(organizationId,responseId,i,conn);
@@ -231,6 +233,22 @@ public class SQLiteDAO implements modelDAO {
             }
         }
     }
+
+    private void existsOrganizationResponses(String organizationId, Connection conn) throws NotFoundException, SQLException {
+
+        try (PreparedStatement ps = conn.prepareStatement("SELECT (count(*) > 0) as found FROM responses WHERE organizationId = ?")) {
+            ps.setString(1, organizationId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                // Only expecting a single result
+                if (rs.next()) {
+                    boolean found = rs.getBoolean(1); // "found" column
+                    if (!found) throw new NotFoundException("The organization " + organizationId + " has no responses");
+                }
+            }
+        }
+    }
+
 
 
     private void insertResponse(String organizationId, String responseId) throws SQLException {

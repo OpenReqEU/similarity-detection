@@ -132,4 +132,15 @@ public class RestApiController {
         }
     }
 
+    @DeleteMapping(value = "/ClearDatabase")
+    public ResponseEntity<?> clearDatabase() {
+        try {
+            comparerService.clearDatabase();
+            return new ResponseEntity<>(null, HttpStatus.OK);
+        } catch (InternalErrorException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(e, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 }

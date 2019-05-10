@@ -38,6 +38,8 @@ public abstract class ComponentAdapter {
 
     public abstract void deleteOrganizationResponses(String organization) throws ComponentException;
 
+    public abstract void deleteDatabase() throws ComponentException;
+
     /*
     Auxiliary operations
      */

@@ -27,4 +27,6 @@ public interface ComparerService {
 
     public void clearOrganizationResponses(String organization) throws NotFoundException, InternalErrorException;
 
+    public void clearDatabase() throws InternalErrorException;
+
 }

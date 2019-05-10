@@ -22,5 +22,7 @@ public interface modelDAO {
 
     public void clearOrganizationResponses(String organization) throws SQLException, NotFoundException;
 
+    public void createDatabase() throws SQLException;
+
 
 }

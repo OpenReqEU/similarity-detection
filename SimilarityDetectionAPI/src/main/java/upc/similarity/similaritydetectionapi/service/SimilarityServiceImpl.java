@@ -170,6 +170,12 @@ public class SimilarityServiceImpl implements SimilarityService {
         componentAdapter.deleteOrganizationResponses(organization);
     }
 
+    @Override
+    public void deleteDatabase() throws ComponentException {
+        ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(Component.valueOf(component));
+        componentAdapter.deleteDatabase();
+    }
+
 
 
 

@@ -20,10 +20,11 @@ There are five main methods:
     - Project: Compares all possible pairs of requirements from a set of requirements
     - AddReqsAndCompute: Is a mixture between AddReqs and Project methods
 
-And two auxiliary operations:
+And three auxiliary operations:
 
     - GetResponse: Returns in patches the resulting dependencies of the other methods
     - DeleteOrganizationResponses: Deletes the organization responses from the database
+    - DeleteDatabase: Deletes all data from the database
 
 The component needs to preprocess the requirements before doing any comparison. The operation AddReqs is responsible for that work.
 

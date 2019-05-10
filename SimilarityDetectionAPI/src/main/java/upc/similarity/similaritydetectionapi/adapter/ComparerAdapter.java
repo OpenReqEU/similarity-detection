@@ -68,6 +68,12 @@ public class ComparerAdapter extends ComponentAdapter{
     }
 
     @Override
+    public void deleteDatabase() throws ComponentException {
+
+        connection_component_delete(URL + "ClearDatabase");
+    }
+
+    @Override
     protected void throw_component_exception(Exception e, String message) throws InternalErrorException {
         throw new InternalErrorException("Comparer Exception:" + message + ". " + e.getMessage());
     }

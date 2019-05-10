@@ -23,4 +23,6 @@ public interface SimilarityService {
 
     public void deleteOrganizationResponses(String organization) throws ComponentException;
 
+    public void deleteDatabase() throws ComponentException;
+
 }

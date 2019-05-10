@@ -142,7 +142,7 @@ public class RestApiController {
 
     @CrossOrigin
     @GetMapping(value = "/GetResponse", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Returns result dependencies of the other operations", notes = "<p>Returns the result json of the Project, ReqProject and AddReqsAndCompute methods. The result is a " +
+    @ApiOperation(value = "Returns result dependencies of the other operations", notes = "<p>Returns the result json of the AddReqs, Project, ReqProject and AddReqsAndCompute methods. The result is a " +
             "json object formed by a status attribute. If the status is 200 the json also contains an array of dependencies which are returned in patches of 20,000 . Each time this operation is called, the following 20,000 dependencies of the indicated response will be" +
             " returned. An empty json will be returned when no more dependencies are left. Nevertheless, if the status attribute is not equal to 200, the json contains the exception message. </p>", tags = "Auxiliary methods")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
@@ -168,6 +168,21 @@ public class RestApiController {
     public ResponseEntity<?> deleteOrganizationResponses(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization) {
         try {
             similarityService.deleteOrganizationResponses(organization);
+            return new ResponseEntity<>(null, HttpStatus.OK);
+        } catch (ComponentException e) {
+            return getComponentError(e);
+        }
+    }
+
+    @CrossOrigin
+    @DeleteMapping(value = "/DeleteDatabase", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Deletes all data", notes = "<p>Deletes all data from the database.</p>", tags = "Auxiliary methods")
+    @ApiResponses(value = {
+            @ApiResponse(code=200, message = "OK"),
+            @ApiResponse(code=500, message = "Internal error")})
+    public ResponseEntity<?> deleteDatabase() {
+        try {
+            similarityService.deleteDatabase();
             return new ResponseEntity<>(null, HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);

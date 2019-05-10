@@ -263,6 +263,21 @@ public class ComparerServiceImpl implements ComparerService {
         }
     }
 
+    @Override
+    public void clearDatabase() throws InternalErrorException {
+        try {
+            File file = new File("../models.db");
+            if (!file.delete()) throw new InternalErrorException("Database does not exist");
+            file = new File("../models.db");
+            if (!file.createNewFile()) throw new InternalErrorException("Error while clearing the database");
+            modelDAO.createDatabase();
+        } catch (IOException e) {
+            throw new InternalErrorException("Error while clearing the database");
+        } catch (SQLException e) {
+            throw new InternalErrorException("Error while clearing the database");
+        }
+    }
+
 
 
     /*
@@ -459,7 +474,7 @@ public class ComparerServiceImpl implements ComparerService {
     }
 
     private double idf(int size, int frequency) {
-        return Math.log(size / frequency+1);
+        return Math.log(size / (frequency+1.0));
     }
 
 

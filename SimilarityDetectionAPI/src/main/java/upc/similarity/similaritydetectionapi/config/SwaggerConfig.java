@@ -34,10 +34,11 @@ public class SwaggerConfig {
             "<li><strong>Project</strong>: Compares all possible pairs of requirements from a set of requirements</li>" +
             "<li><strong>AddReqsAndCompute</strong>: Is a mixture between AddReqs and Project methods</li>" +
             "</ul>" +
-            "<p>And two auxiliary operations: </p>" +
+            "<p>And three auxiliary operations: </p>" +
             "<ul>" +
             "<li><strong>GetResponse</strong>: Returns in patches the resulting dependencies of the other methods</li>" +
             "<li><strong>DeleteOrganizationResponses</strong>: Deletes the organization responses from the database</li>" +
+            "<li><strong>DeleteDatabase</strong>: Deletes all data from the database</li>" +
             "</ul>" +
             "<p>The component needs to preprocess the requirements before doing any comparison. The operation AddReqs is responsible for that work.</p>" +
             "<p>The operations AddReqs, ReqProject, Project and AddReqsAndCompute are asynchronous. It is necessary to write a server URL as parameter in all of them. The outcome of the operation will be returned to that url. All these operations follow the same pattern:</p>" +
@@ -64,7 +65,7 @@ public class SwaggerConfig {
                 .apiInfo(apiInfo())
                 .pathMapping("/")
                 .select()
-                .paths(PathSelectors.regex("/upc/similarity-detection/AddReqs|/upc/similarity-detection/Project|/upc/similarity-detection/ReqProject|/upc/similarity-detection/ReqReq|/upc/similarity-detection/AddReqsAndCompute|/upc/similarity-detection/GetResponse|/upc/similarity-detection/DeleteOrganizationResponses"))
+                .paths(PathSelectors.regex("/upc/similarity-detection/AddReqs|/upc/similarity-detection/Project|/upc/similarity-detection/ReqProject|/upc/similarity-detection/ReqReq|/upc/similarity-detection/AddReqsAndCompute|/upc/similarity-detection/GetResponse|/upc/similarity-detection/DeleteOrganizationResponses|/upc/similarity-detection/DeleteDatabase"))
                 .apis(RequestHandlerSelectors.basePackage("upc.similarity.similaritydetectionapi")).paths(PathSelectors.regex("/upc.*"))
                 .build().tags(new Tag("Similarity detection Service", "API related to similarity detection"));
     }
