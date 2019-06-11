@@ -26,7 +26,7 @@ import static java.lang.StrictMath.sqrt;
 @Service("comparerService")
 public class ComparerServiceImpl implements ComparerService {
 
-    private static Double cutoffParameter=-1.0;
+    private static Double cutoffParameter=10.0;
     private static String component = "Similarity-UPC";
     private static String status = "proposed";
     private static String dependency_type = "duplicates";
@@ -387,7 +387,7 @@ public class ComparerServiceImpl implements ComparerService {
                 Double idf = idf(docs.size(), corpusFrequency.get(s));
                 Integer tf = wordBag.get(i).get(s);
                 double tfidf = idf * tf;
-                if (tfidf>=cutoffParameter) aux.put(s, tfidf);
+                if (tfidf>=cutoffParameter && s.length() > 1) aux.put(s, tfidf);
             }
             tfidfComputed.put(corpus.get(i),aux);
             ++i;
