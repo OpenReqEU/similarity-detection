@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -18,37 +19,29 @@ import java.util.Map;
 @ApiModel(value = "Requirement", description = "A requirement with id and text")
 public class Requirement implements Serializable {
 
+    @ApiModelProperty(example = "UPC-98")
     @JsonProperty(value="id")
     private String id;
+    @ApiModelProperty(example = "Check swagger version.")
     @JsonProperty(value="name")
     private String name;
+    @ApiModelProperty(example = "The swagger version is deprecated. Please update the service asap.")
     @JsonProperty(value="text")
     private String text;
-    @JsonProperty(value="created_at")
-    private Long created_at;
 
-    /*@JsonProperty(value="comments")
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    private List<Comment> comments;
 
-    private Map<String, Object> optional = new HashMap<>();
-
-    @JsonAnySetter
-    public void addOptional(String name, Object value) {
-        optional.put(name, value);
-    }
-
-    @JsonAnyGetter
-    public Map<String, Object> getOptional() {
-        return optional;
-    }*/
-
-    public Requirement() {
-        //comments = new ArrayList<>();
-    }
+    public Requirement() {}
 
     public String getId() {
         return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getText() {
+        return text;
     }
 
     public JSONObject toJSON() {
@@ -56,12 +49,6 @@ public class Requirement implements Serializable {
         json.put("id",id);
         json.put("name",name);
         json.put("text",text);
-        json.put("created_at",created_at);
-        /*JSONArray json_comments = new JSONArray();
-        for (Comment comment: comments) {
-            json_comments.put(comment.toJSON());
-        }
-        json.put("comments",json_comments);*/
         return json;
     }
 }

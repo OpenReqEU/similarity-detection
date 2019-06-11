@@ -81,8 +81,8 @@ public class RestApiController {
             @ApiResponse(code=404, message = "Not found"),
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity<?> simReqReq(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
-                                       @ApiParam(value="Id of the first requirement to compare", required = true, example = "SQ-132") @RequestParam("req1") String req1,
-                                       @ApiParam(value="Id of the second requirement to compare", required = true, example = "SQ-98") @RequestParam("req2") String req2) {
+                                       @ApiParam(value="Id of the first requirement to compare", required = true, example = "UPC-98") @RequestParam("req1") String req1,
+                                       @ApiParam(value="Id of the second requirement to compare", required = true, example = "UPC-97") @RequestParam("req2") String req2) {
         try {
             return new ResponseEntity<>(similarityService.simReqReq(organization,req1,req2), HttpStatus.OK);
         } catch (ComponentException e) {
@@ -150,7 +150,7 @@ public class RestApiController {
             @ApiResponse(code=404, message = "Not found"),
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity<?> getResponsePage(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
-                                             @ApiParam(value="Response identifier", required = true, example = "UPC") @RequestParam("response") String responseId) {
+                                             @ApiParam(value="Response identifier", required = true, example = "12345678_89") @RequestParam("response") String responseId) {
         try {
             return new ResponseEntity<>(similarityService.getResponsePage(organization,responseId), HttpStatus.OK);
         } catch (ComponentException e) {
