@@ -38,7 +38,6 @@ import upc.similarity.similaritydetectionapi.config.TestConfig;
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment= SpringBootTest.WebEnvironment.DEFINED_PORT)
 @AutoConfigureMockMvc
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ControllerTests {
 
     @Autowired
@@ -56,7 +55,7 @@ public class ControllerTests {
 
     @Test
     public void addRequirements() throws Exception {
-        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Comparer/.*"))
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -80,7 +79,7 @@ public class ControllerTests {
 
     @Test
     public void addRequirementsAndCompute() throws Exception {
-        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Comparer/.*"))
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -103,7 +102,7 @@ public class ControllerTests {
 
     @Test
     public void project() throws Exception {
-        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Comparer/.*"))
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -126,7 +125,7 @@ public class ControllerTests {
 
     @Test
     public void reqProject() throws Exception {
-        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Comparer/.*"))
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -149,7 +148,7 @@ public class ControllerTests {
 
     @Test
     public void reqReq() throws Exception {
-        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Comparer/.*"))
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -161,7 +160,7 @@ public class ControllerTests {
 
     @Test
     public void getResponse() throws Exception {
-        stubFor(com.github.tomakehurst.wiremock.client.WireMock.get(urlPathMatching("/upc/Comparer/.*"))
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.get(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -173,7 +172,7 @@ public class ControllerTests {
 
     @Test
     public void deleteResponses() throws Exception {
-        stubFor(com.github.tomakehurst.wiremock.client.WireMock.delete(urlPathMatching("/upc/Comparer/.*"))
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.delete(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -184,7 +183,7 @@ public class ControllerTests {
 
     @Test
     public void deleteDatabase() throws Exception {
-        stubFor(com.github.tomakehurst.wiremock.client.WireMock.delete(urlPathMatching("/upc/Comparer/.*"))
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.delete(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -192,26 +191,6 @@ public class ControllerTests {
         this.mockMvc.perform(delete("/upc/similarity-detection/DeleteDatabase").param("organization", "UPC")).andDo(print())
                 .andExpect(status().isOk()).andExpect(status().isOk());
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -233,7 +212,7 @@ public class ControllerTests {
         return json.getString("id");
     }
 
-    protected String read_file(String path) throws Exception {
+    private String read_file(String path) throws Exception {
         String result = "";
         String line = "";
         try(FileReader fileReader = new FileReader(path);

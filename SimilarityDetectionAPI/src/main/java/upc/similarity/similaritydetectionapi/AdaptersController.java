@@ -1,12 +1,9 @@
 package upc.similarity.similaritydetectionapi;
 
 import upc.similarity.similaritydetectionapi.adapter.ComponentAdapter;
-import upc.similarity.similaritydetectionapi.adapter.ComparerAdapter;
+import upc.similarity.similaritydetectionapi.adapter.CompareAdapter;
 import upc.similarity.similaritydetectionapi.exception.InternalErrorException;
 import upc.similarity.similaritydetectionapi.values.Component;
-
-import java.util.Arrays;
-import java.util.List;
 
 public class AdaptersController {
 
@@ -23,7 +20,7 @@ public class AdaptersController {
     public ComponentAdapter getAdapter(Component component) throws InternalErrorException {
         switch(component) {
             case Comparer:
-                return new ComparerAdapter();
+                return new CompareAdapter();
             default:
                 throw new InternalErrorException("The component " + component + " does not exist.");
         }

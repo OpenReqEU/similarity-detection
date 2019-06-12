@@ -10,7 +10,7 @@ import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 import upc.similarity.similaritydetectionapi.AdaptersController;
 import upc.similarity.similaritydetectionapi.adapter.ComponentAdapter;
-import upc.similarity.similaritydetectionapi.adapter.ComparerAdapter;
+import upc.similarity.similaritydetectionapi.adapter.CompareAdapter;
 import upc.similarity.similaritydetectionapi.entity.Dependency;
 import upc.similarity.similaritydetectionapi.entity.Project;
 import upc.similarity.similaritydetectionapi.entity.input_output.JsonProject;
@@ -46,8 +46,8 @@ public class SimilarityServiceImpl implements SimilarityService {
             public void run() {
                 Result_json result = new Result_json(id.getId(),"AddReqs");
                 try {
-                    ComparerAdapter comparerAdapter = new ComparerAdapter();
-                    comparerAdapter.buildModel(id.getId(),organization,compare,input.getRequirements());
+                    CompareAdapter compareAdapter = new CompareAdapter();
+                    compareAdapter.buildModel(id.getId(),organization,compare,input.getRequirements());
                     result.setCode(200);
                 } catch (ComponentException e) {
                     result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -75,8 +75,8 @@ public class SimilarityServiceImpl implements SimilarityService {
             public void run() {
                 Result_json result = new Result_json(id.getId(),"AddReqsAndCompute");
                 try {
-                    ComparerAdapter comparerAdapter = new ComparerAdapter();
-                    comparerAdapter.buildModelAndCompute(id.getId(),organization,compare,threshold,input.getRequirements());
+                    CompareAdapter compareAdapter = new CompareAdapter();
+                    compareAdapter.buildModelAndCompute(id.getId(),organization,compare,threshold,input.getRequirements());
                     result.setCode(200);
                 } catch (ComponentException e) {
                     result.setException(e.getStatus(),e.getError(),e.getMessage());

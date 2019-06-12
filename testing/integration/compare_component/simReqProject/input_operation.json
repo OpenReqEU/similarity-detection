@@ -1,0 +1,4 @@
+{
+    "reqs_to_compare": ["UPC-1"],
+    "project_reqs": ["UPC-2","UPC-3","UPC-4"]
+}

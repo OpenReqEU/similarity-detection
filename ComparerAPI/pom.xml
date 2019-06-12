@@ -4,11 +4,11 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>upc.similarity</groupId>
-	<artifactId>comparerapi</artifactId>
+	<artifactId>compareapi</artifactId>
 	<version>1.0</version>
 	<packaging>jar</packaging>
 
-	<name>ComparerApi</name>
+	<name>CompareApi</name>
 	<description>Compares different requirements with tf-idf algorithm</description>
 
 	<parent>
