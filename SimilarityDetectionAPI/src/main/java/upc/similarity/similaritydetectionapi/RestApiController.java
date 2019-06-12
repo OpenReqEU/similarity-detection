@@ -1,11 +1,13 @@
 package upc.similarity.similaritydetectionapi;
 
 import io.swagger.annotations.*;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import upc.similarity.similaritydetectionapi.config.TestConfig;
 import upc.similarity.similaritydetectionapi.entity.input_output.JsonProject;
 import upc.similarity.similaritydetectionapi.entity.input_output.Requirements;
 import upc.similarity.similaritydetectionapi.exception.*;
@@ -84,7 +86,8 @@ public class RestApiController {
                                        @ApiParam(value="Id of the first requirement to compare", required = true, example = "UPC-98") @RequestParam("req1") String req1,
                                        @ApiParam(value="Id of the second requirement to compare", required = true, example = "UPC-97") @RequestParam("req2") String req2) {
         try {
-            return new ResponseEntity<>(similarityService.simReqReq(organization,req1,req2), HttpStatus.OK);
+            String aux = similarityService.simReqReq(organization,req1,req2);
+            return new ResponseEntity<>(aux, HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }
@@ -187,6 +190,15 @@ public class RestApiController {
         } catch (ComponentException e) {
             return getComponentError(e);
         }
+    }
+
+    @CrossOrigin
+    @PostMapping(value = "/Test", produces = MediaType.APPLICATION_JSON_VALUE)
+    public void test(@RequestBody String result) {
+        JSONObject json = new JSONObject(result);
+        TestConfig testConfig = TestConfig.getInstance();
+        testConfig.setResult(json);
+        testConfig.setComputationFinished(true);
     }
 
     /*

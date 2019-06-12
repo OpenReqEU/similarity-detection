@@ -1,0 +1,8 @@
+{
+    "dependency_score": 0, 
+    "fromid": "UPC-1", 
+    "toid": "UPC-2",
+    "status": "proposed",
+    "dependency_type": "duplicates",
+    "description": ["Similarity-UPC"]
+}

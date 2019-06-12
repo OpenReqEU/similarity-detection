@@ -5,6 +5,9 @@ import upc.similarity.similaritydetectionapi.adapter.ComparerAdapter;
 import upc.similarity.similaritydetectionapi.exception.InternalErrorException;
 import upc.similarity.similaritydetectionapi.values.Component;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class AdaptersController {
 
     private static AdaptersController instance;
@@ -19,10 +22,6 @@ public class AdaptersController {
 
     public ComponentAdapter getAdapter(Component component) throws InternalErrorException {
         switch(component) {
-            /*case DKPro:
-                return new DKProAdapter();
-            case Gensim:
-                return new GensimAdapter();*/
             case Comparer:
                 return new ComparerAdapter();
             default:
@@ -30,4 +29,5 @@ public class AdaptersController {
         }
 
     }
+
 }

@@ -66,6 +66,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     public Result_id buildModelAndCompute(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException {
 
         if (!input.OK()) throw new BadRequestException("The provided json has not requirements");
+        if (threshold < 0 || threshold > 1) throw new BadRequestException("Threshold must be a number between 0 and 1");
         Result_id id = get_id();
 
         //New thread
