@@ -322,7 +322,6 @@ public class CompareServiceImpl implements CompareService {
         try {
             modelDAO.saveModel(organization, model);
         } catch (SQLException e) {
-            e.printStackTrace();
             throw new InternalErrorException("Error while saving the new model to the database");
         }
     }
