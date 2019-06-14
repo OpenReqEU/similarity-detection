@@ -4,6 +4,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import upc.similarity.compareapi.config.Control;
 import upc.similarity.compareapi.exception.InternalErrorException;
 
 import java.io.IOException;
@@ -15,7 +16,7 @@ import java.util.Map;
 
 public class Tfidf {
 
-    private static double cutoffParameter=-1.0;
+    private static double cutoffParameter=10;
     private static Tfidf instance = new Tfidf();
 
     private Tfidf() {}
@@ -26,6 +27,7 @@ public class Tfidf {
             try {
                 docs.add(englishAnalyze(s));
             } catch (IOException e) {
+                Control.getInstance().showErrorMessage("Error while loading preprocess pipeline");
                 throw new InternalErrorException("Error loading preprocess pipeline");
             }
         }
@@ -41,7 +43,6 @@ public class Tfidf {
             wordBag.add(tf(doc,corpusFrequency));
         }
         int i = 0;
-        int count = 0;
         for (List<String> doc : docs) {
             HashMap<String, Double> aux = new HashMap<>();
             for (String s : doc) {
@@ -49,7 +50,6 @@ public class Tfidf {
                 Integer tf = wordBag.get(i).get(s);
                 double tfidf = idf * tf;
                 if (tfidf>=cutoffParameter) aux.put(s, tfidf);
-                else ++count;
             }
             tfidfComputed.put(corpus.get(i),aux);
             ++i;
@@ -62,7 +62,7 @@ public class Tfidf {
     }
 
     private Map<String, Integer> tf(List<String> doc, Map<String, Integer> corpusFrequency) {
-        Map<String, Integer> frequency = new HashMap<String, Integer>();
+        Map<String, Integer> frequency = new HashMap<>();
         for (String s : doc) {
             if (frequency.containsKey(s)) frequency.put(s, frequency.get(s) + 1);
             else {
@@ -91,7 +91,7 @@ public class Tfidf {
     }
 
     private List<String> analyze(String text, Analyzer analyzer) throws IOException {
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
         TokenStream tokenStream = analyzer.tokenStream(null, new StringReader(text));
         CharTermAttribute attr = tokenStream.addAttribute(CharTermAttribute.class);
         tokenStream.reset();

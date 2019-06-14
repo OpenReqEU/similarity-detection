@@ -13,7 +13,7 @@ import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import upc.similarity.compareapi.dao.SQLiteDAO;
+import upc.similarity.compareapi.dao.SQLiteDatabase;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -43,8 +43,8 @@ public class ControllerTests {
         String absoluteFilePath = "../models_test.db";
         File file = new File(absoluteFilePath);
         boolean result = file.createNewFile();
-        SQLiteDAO.setDb_name("models_test.db");
-        SQLiteDAO db = new SQLiteDAO();
+        SQLiteDatabase.setDbName("models_test.db");
+        SQLiteDatabase db = new SQLiteDatabase();
         db.createDatabase();
     }
 

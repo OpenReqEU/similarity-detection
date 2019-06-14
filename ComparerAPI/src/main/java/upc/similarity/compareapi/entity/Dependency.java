@@ -2,6 +2,7 @@ package upc.similarity.compareapi.entity;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONObject;
+import upc.similarity.compareapi.config.Control;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -13,7 +14,7 @@ public class Dependency implements Serializable {
     private static ObjectMapper mapper = new ObjectMapper();
 
     @JsonProperty(value="dependency_score")
-    private double dependency_score;
+    private double dependencyScore;
     @JsonProperty(value="fromid")
     private String fromid;
     @JsonProperty(value="toid")
@@ -21,7 +22,7 @@ public class Dependency implements Serializable {
     @JsonProperty(value="status")
     private String status;
     @JsonProperty(value="dependency_type")
-    private String dependency_type;
+    private String dependencyType;
     @JsonProperty(value="description")
     private List<String> description;
 
@@ -29,12 +30,12 @@ public class Dependency implements Serializable {
         description = new ArrayList<>();
     }
 
-    public Dependency(double dependency_score, String fromid, String toid, String status, String dependency_type, String component) {
-        this.dependency_score = dependency_score;
+    public Dependency(double dependencyScore, String fromid, String toid, String status, String dependencyType, String component) {
+        this.dependencyScore = dependencyScore;
         this.fromid = fromid;
         this.toid = toid;
         this.status = status;
-        this.dependency_type = dependency_type;
+        this.dependencyType = dependencyType;
         this.description = new ArrayList<>();
         description.add(component);
     }
@@ -43,8 +44,8 @@ public class Dependency implements Serializable {
     Get
      */
 
-    public double getDependency_score() {
-        return dependency_score;
+    public double getDependencyScore() {
+        return dependencyScore;
     }
 
     public String getFromid() {
@@ -59,8 +60,8 @@ public class Dependency implements Serializable {
         return status;
     }
 
-    public String getDependency_type() {
-        return dependency_type;
+    public String getDependencyType() {
+        return dependencyType;
     }
 
     public List<String> getDescription() {
@@ -71,8 +72,8 @@ public class Dependency implements Serializable {
     Set
      */
 
-    public void setDependency_score(double dependency_score) {
-        this.dependency_score = dependency_score;
+    public void setDependencyScore(double dependency_score) {
+        this.dependencyScore = dependency_score;
     }
 
     public void setFromid(String fromid) {
@@ -87,8 +88,8 @@ public class Dependency implements Serializable {
         this.status = status;
     }
 
-    public void setDependency_type(String dependency_type) {
-        this.dependency_type = dependency_type;
+    public void setDependencyType(String dependency_type) {
+        this.dependencyType = dependency_type;
     }
 
     public void setDescription(List<String> description) {
@@ -99,28 +100,19 @@ public class Dependency implements Serializable {
     Auxiliary operations
      */
 
-    public String print_json() {
-        String jsonInString = "";
-        try {
-            jsonInString = mapper.writeValueAsString(this);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return jsonInString;
-    }
-
     public JSONObject toJSON() {
         String jsonInString = "";
         try {
             jsonInString = mapper.writeValueAsString(this);
         } catch (Exception e) {
-            e.printStackTrace();
+            Control.getInstance().showErrorMessage(e.getMessage());
+            throw new InternalError("Error while converting dependency to jsonObject");
         }
         return new JSONObject(jsonInString);
     }
 
     @Override
     public String toString() {
-        return "Dependency between requirement " + fromid + "and requirement " + toid + " with type " + dependency_type + ", status " + status + " and score " + dependency_score + ".";
+        return "Dependency between requirement " + fromid + "and requirement " + toid + " with type " + dependencyType + ", status " + status + " and score " + dependencyScore + ".";
     }
 }

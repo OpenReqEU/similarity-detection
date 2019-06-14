@@ -11,22 +11,22 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-public class SQLiteDAO implements modelDAO {
+public class SQLiteDatabase implements DatabaseModel {
 
-    private static String db_name = "models.db";
-    private static String db_url = "jdbc:sqlite:../"+db_name;
+    private static String dbName = "models.db";
+    private static String dbUrl = "jdbc:sqlite:../"+dbName;
 
-    public SQLiteDAO() throws ClassNotFoundException {
+    public SQLiteDatabase() throws ClassNotFoundException {
         Class.forName("org.sqlite.JDBC");
     }
 
-    public static void setDb_name(String db_name) {
-        SQLiteDAO.db_name = db_name;
-        db_url = "jdbc:sqlite:../"+db_name;
+    public static void setDbName(String db_name) {
+        SQLiteDatabase.dbName = db_name;
+        dbUrl = "jdbc:sqlite:../"+db_name;
     }
 
-    public static String getDb_name() {
-        return db_name;
+    public static String getDbName() {
+        return dbName;
     }
 
     @Override
@@ -56,7 +56,7 @@ public class SQLiteDAO implements modelDAO {
                 + ");";
 
 
-        try (Connection conn = DriverManager.getConnection(db_url);
+        try (Connection conn = DriverManager.getConnection(dbUrl);
              Statement stmt = conn.createStatement()) {
             stmt.execute(sql1);
             stmt.execute(sql2);
@@ -67,17 +67,14 @@ public class SQLiteDAO implements modelDAO {
     @Override
     public void saveModel(String organization, Model model) throws SQLException {
 
-        //TODO do transactions when deleting tables and inserting data
-
         boolean found = true;
-        try (Connection conn = DriverManager.getConnection(db_url);
+        try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement ps = conn.prepareStatement("SELECT (count(*) > 0) as found FROM organizations WHERE id = ?")) {
             ps.setString(1, organization);
 
             try (ResultSet rs = ps.executeQuery()) {
-                // Only expecting a single result
                 if (rs.next()) {
-                    found = rs.getBoolean(1); // "found" column
+                    found = rs.getBoolean(1);
                 }
             }
         }
@@ -86,13 +83,11 @@ public class SQLiteDAO implements modelDAO {
         } else {
             insertOrganization(organization);
         }
-        try (Connection conn = DriverManager.getConnection(db_url)) {
-            // set auto-commit mode to false
+        try (Connection conn = DriverManager.getConnection(dbUrl)) {
             conn.setAutoCommit(false);
             createOrganizationTables(organization, conn);
             saveDocs(organization, model.getDocs(), conn);
             saveCorpusFrequency(organization, model.getCorpusFrequency(), conn);
-            // commit work
             conn.commit();
         }
     }
@@ -103,7 +98,7 @@ public class SQLiteDAO implements modelDAO {
         Map<String, Map<String, Double>> docs = null;
         Map<String, Integer> corpusFrequency = null;
 
-        try (Connection conn = DriverManager.getConnection(db_url)) {
+        try (Connection conn = DriverManager.getConnection(dbUrl)) {
             existsOrganization(organization,conn);
             docs = loadDocs(organization,conn);
             corpusFrequency = loadCorpusFrequency(organization,conn);
@@ -128,7 +123,7 @@ public class SQLiteDAO implements modelDAO {
 
         String result = null;
 
-        try (Connection conn = DriverManager.getConnection(db_url)) {
+        try (Connection conn = DriverManager.getConnection(dbUrl)) {
 
             existsOrganizationResponses(organizationId,conn);
 
@@ -165,7 +160,7 @@ public class SQLiteDAO implements modelDAO {
     public void finishComputation(String organizationId, String responseId) throws SQLException {
         String sql = "UPDATE responses SET finished = ? WHERE organizationId = ? AND responseId = ?";
 
-        try (Connection conn = DriverManager.getConnection(db_url);
+        try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1,1);
             ps.setString(2,organizationId);
@@ -178,7 +173,7 @@ public class SQLiteDAO implements modelDAO {
     public void clearOrganizationResponses(String organization) throws SQLException, NotFoundException {
         String sql1 = "SELECT responseId, maxPages, finished FROM responses WHERE organizationId = ?";
 
-        try (Connection conn = DriverManager.getConnection(db_url)) {
+        try (Connection conn = DriverManager.getConnection(dbUrl)) {
             existsOrganization(organization,conn);
             try (PreparedStatement ps = conn.prepareStatement(sql1)) {
                 ps.setString(1, organization);
@@ -263,7 +258,7 @@ public class SQLiteDAO implements modelDAO {
     private void insertResponse(String organizationId, String responseId) throws SQLException {
         String sql = "INSERT INTO responses(organizationId, responseId, actualPage, maxPages, finished) VALUES (?,?,?,?,?)";
 
-        try (Connection conn = DriverManager.getConnection(db_url);
+        try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1,organizationId);
             ps.setString(2,responseId);
@@ -278,7 +273,7 @@ public class SQLiteDAO implements modelDAO {
         String sql1 = "INSERT INTO responsePages(organizationId, responseId, page, jsonResponse) VALUES (?,?,?,?)";
         String sql3 = "UPDATE responses SET maxPages = ? WHERE organizationId = ? AND responseID = ?";
 
-        try (Connection conn = DriverManager.getConnection(db_url)) {
+        try (Connection conn = DriverManager.getConnection(dbUrl)) {
 
             try (PreparedStatement ps = conn.prepareStatement(sql1)) {
                 ps.setString(1, organizationId);
@@ -355,7 +350,7 @@ public class SQLiteDAO implements modelDAO {
         String sql1 = "DROP TABLE docs_"+organization;
         String sql2 = "DROP TABLE corpus_"+organization;
 
-        try (Connection conn = DriverManager.getConnection(db_url);
+        try (Connection conn = DriverManager.getConnection(dbUrl);
              Statement stmt = conn.createStatement()) {
             stmt.execute(sql1);
             stmt.execute(sql2);
@@ -367,7 +362,7 @@ public class SQLiteDAO implements modelDAO {
 
         String sql = "INSERT INTO organizations(id) VALUES (?)";
 
-        try (Connection conn = DriverManager.getConnection(db_url);
+        try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1,organization);
             ps.execute();
@@ -385,14 +380,14 @@ public class SQLiteDAO implements modelDAO {
             String sql = "INSERT INTO docs_"+organization+"(id, definition) VALUES (?,?)";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1,key);
-                ps.setString(2,words_conversion_toJSON(words).toString());
+                ps.setString(2,wordsConversionToJson(words).toString());
                 ps.execute();
             }
             it.remove();
         }
     }
 
-    private JSONArray words_conversion_toJSON(Map<String, Double> map) {
+    private JSONArray wordsConversionToJson(Map<String, Double> map) {
         JSONArray result = new JSONArray();
         Iterator it = map.entrySet().iterator();
         while (it.hasNext()) {
@@ -410,12 +405,12 @@ public class SQLiteDAO implements modelDAO {
 
         String sql = "INSERT INTO corpus_"+organization+"(definition) VALUES (?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1,corpusFrequency_toJSON(corpusFrequency));
+            ps.setString(1,corpusFrequencyToJson(corpusFrequency));
             ps.execute();
         }
     }
 
-    private String corpusFrequency_toJSON(Map<String, Integer> corpusFrequency) {
+    private String corpusFrequencyToJson(Map<String, Integer> corpusFrequency) {
         JSONArray result = new JSONArray();
         Iterator it = corpusFrequency.entrySet().iterator();
         while (it.hasNext()) {
@@ -441,14 +436,14 @@ public class SQLiteDAO implements modelDAO {
             while (rs.next()) {
                 String key = rs.getString("id");
                 String definition = rs.getString("definition");
-                result.put(key,docs_conversion_toMap(definition));
+                result.put(key,docsConversionToMap(definition));
             }
         }
 
         return result;
     }
 
-    private Map<String, Double> docs_conversion_toMap(String rawJson) {
+    private Map<String, Double> docsConversionToMap(String rawJson) {
         JSONArray json = new JSONArray(rawJson);
         Map<String, Double> result = new HashMap<>();
         for (int i = 0; i < json.length(); ++i) {
@@ -471,14 +466,14 @@ public class SQLiteDAO implements modelDAO {
 
             if (rs.next()) {
                 String corpus = rs.getString("definition");
-                result = corpus_toMap(corpus);
+                result = corpusToMap(corpus);
             } else throw new SQLException("Error loading corpus");
         }
 
         return result;
     }
 
-    private Map<String, Integer> corpus_toMap(String corpus) {
+    private Map<String, Integer> corpusToMap(String corpus) {
         Map<String, Integer> result = new HashMap<>();
         JSONArray json = new JSONArray(corpus);
         for (int i = 0; i < json.length(); ++i) {

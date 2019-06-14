@@ -39,7 +39,7 @@ public class RestApiController {
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
-    public ResponseEntity<?> buildModel(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+    public ResponseEntity buildModel(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                         @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
                                         @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/PostResult") @RequestParam("url") String url,
                                         @ApiParam(value="OpenReqJson with requirements", required = true) @RequestBody Requirements input) {
@@ -61,7 +61,7 @@ public class RestApiController {
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
-    public ResponseEntity<?> buildModelAndCompute(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+    public ResponseEntity buildModelAndCompute(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                                   @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
                                                   @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                                   @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/PostResult") @RequestParam("url") String url,
@@ -83,7 +83,7 @@ public class RestApiController {
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=404, message = "Not found"),
             @ApiResponse(code=500, message = "Internal error")})
-    public ResponseEntity<?> simReqReq(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+    public ResponseEntity simReqReq(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                        @ApiParam(value="Id of the first requirement to compare", required = true, example = "UPC-98") @RequestParam("req1") String req1,
                                        @ApiParam(value="Id of the second requirement to compare", required = true, example = "UPC-97") @RequestParam("req2") String req2) {
         try {
@@ -104,7 +104,7 @@ public class RestApiController {
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=404, message = "Not found"),
             @ApiResponse(code=500, message = "Internal error")})
-    public ResponseEntity<?> simReqProject(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+    public ResponseEntity simReqProject(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                            @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                            /*@ApiParam(value="Maximum number of dependencies in the output", required = true, example = "5") @RequestParam("max_number") int max_number,*/
                                            @ApiParam(value="Id of the requirements to compare", required = true) @RequestParam("req") List<String> req,
@@ -129,7 +129,7 @@ public class RestApiController {
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=404, message = "Not found"),
             @ApiResponse(code=500, message = "Internal error")})
-    public ResponseEntity<?> simProject(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+    public ResponseEntity simProject(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                         @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                         @ApiParam(value="Id of the project to compare", required = true, example = "SQ") @RequestParam("project") String project,
                                         @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/PostResult") @RequestParam("url") String url,
@@ -153,7 +153,7 @@ public class RestApiController {
             @ApiResponse(code=423, message = "The computation is not finished yet"),
             @ApiResponse(code=404, message = "Not found"),
             @ApiResponse(code=500, message = "Internal error")})
-    public ResponseEntity<?> getResponsePage(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+    public ResponseEntity getResponsePage(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                              @ApiParam(value="Response identifier", required = true, example = "12345678_89") @RequestParam("response") String responseId) {
         try {
             return new ResponseEntity<>(similarityService.getResponsePage(organization,responseId), HttpStatus.OK);
@@ -169,7 +169,7 @@ public class RestApiController {
             @ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=404, message = "Not found"),
             @ApiResponse(code=500, message = "Internal error")})
-    public ResponseEntity<?> deleteOrganizationResponses(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization) {
+    public ResponseEntity deleteOrganizationResponses(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization) {
         try {
             similarityService.deleteOrganizationResponses(organization);
             return new ResponseEntity<>(null, HttpStatus.OK);
@@ -184,7 +184,7 @@ public class RestApiController {
     @ApiResponses(value = {
             @ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=500, message = "Internal error")})
-    public ResponseEntity<?> deleteDatabase() {
+    public ResponseEntity deleteDatabase() {
         try {
             similarityService.deleteDatabase();
             return new ResponseEntity<>(null, HttpStatus.OK);
@@ -214,7 +214,7 @@ public class RestApiController {
         }
     }
 
-    private ResponseEntity<?> getComponentError(ComponentException e) {
+    private ResponseEntity getComponentError(ComponentException e) {
         if (e.getStatus() == 500) Control.getInstance().showStackTrace(e);
         LinkedHashMap<String, String> result = new LinkedHashMap<>();
         result.put("status", e.getStatus()+"");

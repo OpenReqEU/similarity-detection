@@ -14,9 +14,6 @@ public class Requirement implements Serializable {
     @JsonProperty(value="text")
     private String text;
 
-
-    public Requirement() {}
-
     /*
     Get
      */
@@ -52,11 +49,6 @@ public class Requirement implements Serializable {
     /*
     Auxiliary operations
      */
-
-    public boolean isOK() {
-        if (id == null) return false;
-        else return true;
-    }
 
     @Override
     public String toString() {

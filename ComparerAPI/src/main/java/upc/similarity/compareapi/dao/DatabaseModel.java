@@ -6,7 +6,7 @@ import upc.similarity.compareapi.exception.NotFoundException;
 
 import java.sql.SQLException;
 
-public interface modelDAO {
+public interface DatabaseModel {
 
     public void saveModel(String organization, Model model) throws SQLException;
 

@@ -7,16 +7,16 @@ import java.util.List;
 
 public class ReqProject implements Serializable {
 
-    private List<String> reqs_to_compare;
-    private List<String> project_reqs;
+    private List<String> reqsToCompare;
+    private List<String> projectReqs;
 
     @JsonProperty(value="reqs_to_compare")
-    public List<String> getReqs_to_compare() {
-        return reqs_to_compare;
+    public List<String> getReqsToCompare() {
+        return reqsToCompare;
     }
 
     @JsonProperty(value="project_reqs")
-    public List<String> getProject_reqs() {
-        return project_reqs;
+    public List<String> getProjectReqs() {
+        return projectReqs;
     }
 }
