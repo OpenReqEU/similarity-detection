@@ -25,8 +25,8 @@ import java.util.*;
 @Service("similarityService")
 public class SimilarityServiceImpl implements SimilarityService {
 
-    private static Component component = Component.Compare;
-    private static String thresholdNotOk = "Threshold must be a number between 0 and 1";
+    private static Component component = Component.TfidfCompare;
+    private static String thresholdNotOk = "The threshold must be a number between 0 and 1 both included";
     private Random rand = new Random();
 
 
@@ -101,10 +101,10 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simReqProject(String url, String organization, double threshold, int max_number, List<String> req, String project_id, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
+    public ResultId simReqProject(String url, String organization, double threshold, int maxNumber, List<String> req, String projectId, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
 
         if (threshold < 0 || threshold > 1) throw new BadRequestException(thresholdNotOk);
-        Project project = searchProject(project_id,input.getProjects());
+        Project project = searchProject(projectId,input.getProjects());
 
         ResultId id = getId();
 
@@ -131,10 +131,10 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simProject(String url, String organization, double threshold, int max_number, String project_id, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
+    public ResultId simProject(String url, String organization, double threshold, int maxNumber, String projectId, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
 
         if (threshold < 0 || threshold > 1) throw new BadRequestException("Threshold must be a number between 0 and 1");
-        Project project = searchProject(project_id,input.getProjects());
+        Project project = searchProject(projectId,input.getProjects());
         ResultId id = getId();
 
         //New thread
@@ -220,7 +220,7 @@ public class SimilarityServiceImpl implements SimilarityService {
             if ((httpStatus >= 200) && (httpStatus < 300)) control.showInfoMessage("The connection with the external server was successful");
             else control.showErrorMessage("An error occurred when connecting with the external server");
         } catch (IOException e) {
-            e.printStackTrace();
+            control.showErrorMessage(e.getMessage());
         }
     }
 

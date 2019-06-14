@@ -1,13 +1,11 @@
 package upc.similarity.compareapi.config;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.logging.*;
 
 public class Control {
 
     private static Control instance = new Control();
-    private final Logger LOG = Logger.getLogger("CompareComponent.Control");
+    private final Logger log = Logger.getLogger("CompareComponent.Control");
 
     public static Control getInstance() {
         return instance;
@@ -18,26 +16,15 @@ public class Control {
         SimpleFormatter simpleFormatter = new SimpleFormatter();
         consoleHandler.setFormatter(simpleFormatter);
         consoleHandler.setLevel(Level.ALL);
-        LOG.addHandler(consoleHandler);
+        log.addHandler(consoleHandler);
     }
 
     public void showInfoMessage(String text) {
-        LOG.log(Level.INFO, text);
+        log.log(Level.INFO, text);
     }
 
     public void showErrorMessage(String text) {
-        LOG.log(Level.SEVERE, text);
-    }
-
-    public void showStackTrace(Exception e) {
-        LOG.log(Level.SEVERE, getStackTrace(e));
-    }
-
-    private String getStackTrace(Exception e) {
-        StringWriter sWriter = new StringWriter();
-        PrintWriter pWriter = new PrintWriter(sWriter);
-        e.printStackTrace(pWriter);
-        return sWriter.toString();
+        log.log(Level.SEVERE, text);
     }
 
 

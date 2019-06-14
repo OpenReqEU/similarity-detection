@@ -10,7 +10,7 @@ public class CosineSimilarity {
 
     private static CosineSimilarity instance = new CosineSimilarity();
 
-    private CosineSimilarity() {};
+    private CosineSimilarity() {}
 
     public static CosineSimilarity getInstance() {
         return instance;

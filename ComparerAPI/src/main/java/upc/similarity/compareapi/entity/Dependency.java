@@ -72,8 +72,8 @@ public class Dependency implements Serializable {
     Set
      */
 
-    public void setDependencyScore(double dependency_score) {
-        this.dependencyScore = dependency_score;
+    public void setDependencyScore(double dependencyScore) {
+        this.dependencyScore = dependencyScore;
     }
 
     public void setFromid(String fromid) {
@@ -88,8 +88,8 @@ public class Dependency implements Serializable {
         this.status = status;
     }
 
-    public void setDependencyType(String dependency_type) {
-        this.dependencyType = dependency_type;
+    public void setDependencyType(String dependencyType) {
+        this.dependencyType = dependencyType;
     }
 
     public void setDescription(List<String> description) {

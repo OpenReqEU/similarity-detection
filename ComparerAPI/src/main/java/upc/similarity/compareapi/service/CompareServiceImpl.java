@@ -30,8 +30,9 @@ public class CompareServiceImpl implements CompareService {
     private static String dependencyType = "duplicates";
     private static int maxDepsForPage = 20000;
     private static String badRequestMessage = "Bad request";
-    private static String savingExceptionErrorMessage = "Error while saving a exception to the database";
-    private DatabaseModel DatabaseModel = getValue();
+    private static String notFoundMessage = "Not found";
+    private static String sqlErrorMessage = "Database error";
+    private DatabaseModel databaseModel = getValue();
     private Control control = Control.getInstance();
 
     private DatabaseModel getValue() {
@@ -51,21 +52,13 @@ public class CompareServiceImpl implements CompareService {
         try {
             saveModel(organization, generateModel(compare, requirements));
         } catch (BadRequestException e) {
-            try {
-                DatabaseModel.saveResponsePage(organization, responseId, 0, createJsonException(400, badRequestMessage, e.getMessage()));
-                DatabaseModel.finishComputation(organization,responseId);
-                throw new BadRequestException(e.getMessage());
-            } catch (SQLException sq) {
-                control.showErrorMessage(sq.getMessage());
-                throw new InternalErrorException(savingExceptionErrorMessage);
-            }
+            saveBadRequestException(organization, responseId, e);
         }
         try {
-            DatabaseModel.saveResponsePage(organization, responseId, 0, new JSONObject().put("status",200).toString());
-            DatabaseModel.finishComputation(organization,responseId);
+            databaseModel.saveResponsePage(organization, responseId, 0, new JSONObject().put("status",200).toString());
+            databaseModel.finishComputation(organization,responseId);
         } catch (SQLException sq) {
-            control.showErrorMessage(sq.getMessage());
-            throw new InternalErrorException("Error while saving result to the database");
+            treatSQLException(sq);
         }
         control.showInfoMessage("BuildModel: Finish computing");
     }
@@ -78,14 +71,7 @@ public class CompareServiceImpl implements CompareService {
             Model model = generateModel(compare, requirements);
             saveModel(organization, model);
         } catch (BadRequestException e) {
-            try {
-                DatabaseModel.saveResponsePage(organization, responseId, 0, createJsonException(400, badRequestMessage, e.getMessage()));
-                DatabaseModel.finishComputation(organization,responseId);
-                throw new BadRequestException(e.getMessage());
-            } catch (SQLException sq) {
-                control.showErrorMessage(sq.getMessage());
-                throw new InternalErrorException(savingExceptionErrorMessage);
-            }
+            saveBadRequestException(organization, responseId, e);
         }
         List<String> requirementsIds = new ArrayList<>();
         for (Requirement requirement: requirements) {
@@ -120,23 +106,9 @@ public class CompareServiceImpl implements CompareService {
                 if (projectRequirements.getProjectReqs().contains(req)) throw new BadRequestException("The requirement with id " + req + " is already inside the project");
             }
         } catch (NotFoundException e) {
-            try {
-                DatabaseModel.saveResponsePage(organization, responseId, 0, createJsonException(400, badRequestMessage, e.getMessage()));
-                DatabaseModel.finishComputation(organization,responseId);
-                throw new NotFoundException(e.getMessage());
-            } catch (SQLException sq) {
-                control.showErrorMessage(sq.getMessage());
-                throw new InternalErrorException(savingExceptionErrorMessage);
-            }
+            saveNotFoundException(organization, responseId, e);
         } catch (BadRequestException e) {
-            try {
-                DatabaseModel.saveResponsePage(organization, responseId, 0, createJsonException(400, badRequestMessage, e.getMessage()));
-                DatabaseModel.finishComputation(organization,responseId);
-                throw new BadRequestException(e.getMessage());
-            } catch (SQLException sq) {
-                control.showErrorMessage(sq.getMessage());
-                throw new InternalErrorException(savingExceptionErrorMessage);
-            }
+            saveBadRequestException(organization, responseId, e);
         }
 
         int cont = 0;
@@ -144,35 +116,32 @@ public class CompareServiceImpl implements CompareService {
 
         JSONArray array = new JSONArray();
         for (String req1: projectRequirements.getReqsToCompare()) {
-            for (String req2 : projectRequirements.getProjectReqs()) {
-                if (!req1.equals(req2) && model.getDocs().containsKey(req2)) {
-                    double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
-                    if (score >= threshold) {
-                        Dependency dependency = new Dependency(score, req1, req2, status, dependencyType, component);
-                        array.put(dependency.toJSON());
-                        ++cont;
-                        if (cont >= maxDepsForPage) {
-                            generateResponsePage(responseId, organization, pages, array);
-                            ++pages;
-                            array = new JSONArray();
-                            cont = 0;
+            if (model.getDocs().containsKey(req1)) {
+                for (String req2 : projectRequirements.getProjectReqs()) {
+                    if (!req1.equals(req2) && model.getDocs().containsKey(req2)) {
+                        double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
+                        if (score >= threshold) {
+                            Dependency dependency = new Dependency(score, req1, req2, status, dependencyType, component);
+                            array.put(dependency.toJSON());
+                            ++cont;
+                            if (cont >= maxDepsForPage) {
+                                generateResponsePage(responseId, organization, pages, array);
+                                ++pages;
+                                array = new JSONArray();
+                                cont = 0;
+                            }
                         }
                     }
                 }
+                projectRequirements.getProjectReqs().add(req1);
             }
-            projectRequirements.getProjectReqs().add(req1);
         }
 
         if (array.length() > 0) {
             generateResponsePage(responseId, organization, pages, array);
         }
 
-        try {
-            DatabaseModel.finishComputation(organization,responseId);
-        } catch (SQLException sq) {
-            control.showErrorMessage(sq.getMessage());
-            throw new InternalErrorException("Error while finishing computation");
-        }
+        finishComputation(organization, responseId);
         control.showInfoMessage("SimReqProject: Finish computing");
     }
 
@@ -187,14 +156,7 @@ public class CompareServiceImpl implements CompareService {
         try {
             model = loadModel(organization);
         } catch (NotFoundException e) {
-            try {
-                DatabaseModel.saveResponsePage(organization, responseId, 0, createJsonException(400, badRequestMessage, e.getMessage()));
-                DatabaseModel.finishComputation(organization,responseId);
-                throw new NotFoundException(e.getMessage());
-            } catch (SQLException sq) {
-                control.showErrorMessage(sq.getMessage());
-                throw new InternalErrorException(savingExceptionErrorMessage);
-            }
+            saveNotFoundException(organization, responseId, e);
         }
 
         int cont = 0;
@@ -228,12 +190,7 @@ public class CompareServiceImpl implements CompareService {
             generateResponsePage(responseId, organization, pages, array);
         }
 
-        try {
-            DatabaseModel.finishComputation(organization,responseId);
-        } catch (SQLException sq) {
-            control.showErrorMessage(sq.getMessage());
-            throw new InternalErrorException("Error while finishing computation");
-        }
+        finishComputation(organization, responseId);
         control.showInfoMessage("SimProject: Finish computing");
     }
 
@@ -242,7 +199,7 @@ public class CompareServiceImpl implements CompareService {
 
         String responsePage;
         try {
-            responsePage = DatabaseModel.getResponsePage(organization, responseId);
+            responsePage = databaseModel.getResponsePage(organization, responseId);
         } catch (SQLException sq) {
             control.showErrorMessage(sq.getMessage());
             throw new InternalErrorException("Error while loading new response page");
@@ -253,7 +210,7 @@ public class CompareServiceImpl implements CompareService {
     @Override
     public void clearOrganizationResponses(String organization) throws InternalErrorException, NotFoundException {
         try {
-            DatabaseModel.clearOrganizationResponses(organization);
+            databaseModel.clearOrganizationResponses(organization);
         } catch (SQLException sq) {
             control.showErrorMessage(sq.getMessage());
             throw new InternalErrorException("Error while clearing the organization responses");
@@ -267,7 +224,7 @@ public class CompareServiceImpl implements CompareService {
             Files.delete(path);
             File file = new File("../"+ SQLiteDatabase.getDbName());
             if (!file.createNewFile()) throw new InternalErrorException("Error while clearing the database. Error while creating new database file.");
-            DatabaseModel.createDatabase();
+            databaseModel.createDatabase();
         } catch (IOException e) {
             control.showErrorMessage(e.getMessage());
             throw new InternalErrorException(e.getMessage());
@@ -283,12 +240,46 @@ public class CompareServiceImpl implements CompareService {
     auxiliary operations
      */
 
+    private void saveBadRequestException(String organization, String responseId, BadRequestException e) throws BadRequestException, InternalErrorException {
+        try {
+            databaseModel.saveResponsePage(organization, responseId, 0, createJsonException(400, badRequestMessage, e.getMessage()));
+            databaseModel.finishComputation(organization, responseId);
+            throw e;
+        } catch (SQLException sq) {
+            treatSQLException(sq);
+        }
+    }
+
+    private void saveNotFoundException(String organization, String responseId, NotFoundException e) throws NotFoundException, InternalErrorException {
+        try {
+            databaseModel.saveResponsePage(organization, responseId, 0, createJsonException(404, notFoundMessage, e.getMessage()));
+            databaseModel.finishComputation(organization, responseId);
+            throw e;
+        } catch (SQLException sq) {
+            treatSQLException(sq);
+        }
+    }
+
+    private void treatSQLException(SQLException sq) throws InternalErrorException {
+        control.showErrorMessage(sq.getMessage());
+        throw new InternalErrorException(sqlErrorMessage);
+    }
+
+    private void finishComputation(String organization, String responseId) throws InternalErrorException {
+        try {
+            databaseModel.finishComputation(organization,responseId);
+        } catch (SQLException sq) {
+            control.showErrorMessage(sq.getMessage());
+            throw new InternalErrorException("Error while finishing computation");
+        }
+    }
+
     private void generateResponsePage(String responseId, String organization, int pages, JSONArray array) throws InternalErrorException {
         JSONObject json = new JSONObject();
         if (pages == 0) json.put("status",200);
         json.put("dependencies",array);
         try {
-            DatabaseModel.saveResponsePage(organization, responseId, pages,json.toString());
+            databaseModel.saveResponsePage(organization, responseId, pages,json.toString());
         } catch (SQLException sq) {
             control.showErrorMessage(sq.getMessage());
             throw new InternalErrorException("Error while saving new response page to the database");
@@ -297,7 +288,7 @@ public class CompareServiceImpl implements CompareService {
 
     private void generateResponse(String organization, String responseId) throws InternalErrorException {
         try {
-            DatabaseModel.saveResponse(organization,responseId);
+            databaseModel.saveResponse(organization,responseId);
         } catch (SQLException sq) {
             control.showErrorMessage(sq.getMessage());
             throw new InternalErrorException("Error while saving new response to the database");
@@ -314,40 +305,40 @@ public class CompareServiceImpl implements CompareService {
 
     private Model loadModel(String organization) throws NotFoundException, InternalErrorException {
         try {
-            return DatabaseModel.getModel(organization);
+            return databaseModel.getModel(organization);
         } catch (SQLException sq) {
             control.showErrorMessage(sq.getMessage());
             throw new InternalErrorException("Error while loading the model from the database");
         }
     }
 
-    private Model generateModel(String compare, List<Requirement> reqs) throws BadRequestException, InternalErrorException {
+    private Model generateModel(String compare, List<Requirement> requirements) throws BadRequestException, InternalErrorException {
         Tfidf tfidf = Tfidf.getInstance();
         Map<String, Integer> corpusFrequency = new HashMap<>();
         List<String> text = new ArrayList<>();
         List<String> ids = new ArrayList<>();
-        buildCorpus(compare,reqs,text,ids);
+        buildCorpus(compare,requirements,text,ids);
         Map<String, Map<String, Double>> docs = tfidf.extractKeywords(text,ids,corpusFrequency);
         return new Model(docs,corpusFrequency);
     }
 
     private void saveModel(String organization, Model model) throws InternalErrorException {
         try {
-            DatabaseModel.saveModel(organization, model);
+            databaseModel.saveModel(organization, model);
         } catch (SQLException sq) {
             control.showErrorMessage(sq.getMessage());
             throw new InternalErrorException("Error while saving the new model to the database");
         }
     }
 
-    private void buildCorpus(String compare, List<Requirement> requirements, List<String> array_text, List<String> array_ids) throws BadRequestException {
+    private void buildCorpus(String compare, List<Requirement> requirements, List<String> arrayText, List<String> arrayIds) throws BadRequestException {
         for (Requirement requirement: requirements) {
             if (requirement.getId() == null) throw new BadRequestException("There is a requirement without id.");
-            array_ids.add(requirement.getId());
+            arrayIds.add(requirement.getId());
             String text = "";
             if (requirement.getName() != null) text = text.concat(cleanText(requirement.getName()) + ". ");
             if ((compare.equals("true")) && (requirement.getText() != null)) text = text.concat(cleanText(requirement.getText()));
-            array_text.add(text);
+            arrayText.add(text);
         }
     }
 

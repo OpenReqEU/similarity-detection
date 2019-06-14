@@ -13,14 +13,14 @@ public class CompareAdapter extends ComponentAdapter{
 
     public void buildModel(String filename, String organization, boolean compare, List<Requirement> requirements) throws ComponentException {
 
-        JSONArray requirementsJson = list_requirements_to_JSON(requirements);
+        JSONArray requirementsJson = listRequirementsToJson(requirements);
 
         connectionComponentPost(URL + "BuildModel?compare=" + compare + "&organization=" + organization + "&filename=" + filename, requirementsJson);
     }
 
     public void buildModelAndCompute(String filename, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException {
 
-        JSONArray requirementsJson = list_requirements_to_JSON(requirements);
+        JSONArray requirementsJson = listRequirementsToJson(requirements);
 
         connectionComponentPost(URL + "BuildModelAndCompute?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, requirementsJson);
     }
@@ -39,20 +39,20 @@ public class CompareAdapter extends ComponentAdapter{
         JSONArray projectRequirements = new JSONArray();
         for (String aux: requirements) projectRequirements.put(aux);
 
-        JSONObject json_to_send = new JSONObject();
-        json_to_send.put("reqs_to_compare",requirementsToCompare);
-        json_to_send.put("project_reqs",projectRequirements);
+        JSONObject jsonToSend = new JSONObject();
+        jsonToSend.put("reqs_to_compare",requirementsToCompare);
+        jsonToSend.put("project_reqs",projectRequirements);
 
-        connectionComponentPost(URL + "SimReqProject?organization=" + organization + "&filename=" + filename + "&threshold=" + threshold, json_to_send);
+        connectionComponentPost(URL + "SimReqProject?organization=" + organization + "&filename=" + filename + "&threshold=" + threshold, jsonToSend);
     }
 
     @Override
     public void simProject(String filename, String organization, double threshold, List<String> reqs) throws ComponentException {
 
-        JSONArray json_to_send = new JSONArray();
-        for (String aux: reqs) json_to_send.put(aux);
+        JSONArray jsonToSend = new JSONArray();
+        for (String aux: reqs) jsonToSend.put(aux);
 
-        connectionComponentPost(URL + "SimProject?organization=" + organization + "&filename=" + filename + "&threshold=" + threshold, json_to_send);
+        connectionComponentPost(URL + "SimProject?organization=" + organization + "&filename=" + filename + "&threshold=" + threshold, jsonToSend);
     }
 
     @Override
@@ -74,11 +74,11 @@ public class CompareAdapter extends ComponentAdapter{
     }
 
     @Override
-    protected void throw_component_exception(Exception e, String message) throws InternalErrorException {
+    protected void throwComponentException(Exception e, String message) throws InternalErrorException {
         throw new InternalErrorException("Comparer Exception:" + message + ". " + e.getMessage());
     }
 
-    protected void check_exceptions(int status, String resJSON) throws ComponentException {
+    protected void checkExceptions(int status, String resJSON) throws ComponentException {
 
         if (status != 200) {
             JSONObject result = new JSONObject(resJSON);

@@ -66,18 +66,18 @@ public abstract class ComponentAdapter {
             jsonResponse = EntityUtils.toString(response.getEntity());
 
         } catch (IOException e) {
-            throw_component_exception(e,"Error connecting with the component");
+            throwComponentException(e,"Error connecting with the component");
         }
-        if (httpStatus != 200) check_exceptions(httpStatus,jsonResponse);
+        if (httpStatus != 200) checkExceptions(httpStatus,jsonResponse);
 
         return jsonResponse;
     }
 
-    protected abstract void throw_component_exception(Exception e, String message) throws InternalErrorException;
+    protected abstract void throwComponentException(Exception e, String message) throws InternalErrorException;
 
-    protected abstract void check_exceptions(int status, String response) throws ComponentException;
+    protected abstract void checkExceptions(int status, String response) throws ComponentException;
 
-    protected JSONArray list_requirements_to_JSON(List<Requirement> requirements) {
+    protected JSONArray listRequirementsToJson(List<Requirement> requirements) {
 
         JSONArray jsonRequirements = new JSONArray();
 

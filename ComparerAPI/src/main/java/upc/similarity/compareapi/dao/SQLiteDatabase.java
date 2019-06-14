@@ -20,9 +20,9 @@ public class SQLiteDatabase implements DatabaseModel {
         Class.forName("org.sqlite.JDBC");
     }
 
-    public static void setDbName(String db_name) {
-        SQLiteDatabase.dbName = db_name;
-        dbUrl = "jdbc:sqlite:../"+db_name;
+    public static void setDbName(String dbName) {
+        SQLiteDatabase.dbName = dbName;
+        dbUrl = "jdbc:sqlite:../"+dbName;
     }
 
     public static String getDbName() {
@@ -229,9 +229,8 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.setString(1, organizationId);
 
             try (ResultSet rs = ps.executeQuery()) {
-                // Only expecting a single result
                 if (rs.next()) {
-                    boolean found = rs.getBoolean(1); // "found" column
+                    boolean found = rs.getBoolean(1);
                     if (!found) throw new NotFoundException("The organization " + organizationId + " does not exist");
                 }
             }
@@ -244,9 +243,8 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.setString(1, organizationId);
 
             try (ResultSet rs = ps.executeQuery()) {
-                // Only expecting a single result
                 if (rs.next()) {
-                    boolean found = rs.getBoolean(1); // "found" column
+                    boolean found = rs.getBoolean(1);
                     if (!found) throw new NotFoundException("The organization " + organizationId + " has no responses");
                 }
             }
