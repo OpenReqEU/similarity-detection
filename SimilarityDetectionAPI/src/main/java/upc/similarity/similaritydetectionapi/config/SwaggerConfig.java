@@ -24,8 +24,8 @@ import java.util.HashSet;
 public class SwaggerConfig {
 
     private static final String	LICENSE_TEXT	    = "License";
-    private static final String	title		    = "SIMILARITY DETECTION COMPONENT";
-    private static final String	description	    = "" +
+    private static final String	TITLE		    = "SIMILARITY DETECTION COMPONENT";
+    private static final String	DESCRIPTION    = "" +
             "<p>The component is based in td-idf numerical statistic. The aim of the API is to calculate the similarity score between multiple pairs of requirements."+
             "</p>" +
             "<p>There are five main methods: </p>" +
@@ -81,7 +81,7 @@ public class SwaggerConfig {
      * @return
      */
     private ApiInfo apiInfo() {
-        return new ApiInfoBuilder().title(title).description(description).license(LICENSE_TEXT)
+        return new ApiInfoBuilder().title(TITLE).description(DESCRIPTION).license(LICENSE_TEXT)
                 .contact(new Contact("UPC-GESSI (OPENReq)", "http://openreq.eu/", ""))
                 .build();
     }

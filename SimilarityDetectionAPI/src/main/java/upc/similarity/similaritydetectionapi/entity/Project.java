@@ -20,18 +20,6 @@ public class Project implements Serializable {
     @JsonProperty(value="specifiedRequirements")
     private List<String> specifiedRequirements;
 
-    private Map<String, Object> optional = new HashMap<>();
-
-    @JsonAnySetter
-    public void addOptional(String name, Object value) {
-        optional.put(name, value);
-    }
-
-    @JsonAnyGetter
-    public Map<String, Object> getOptional() {
-        return optional;
-    }
-
     public String getId() {
         return id;
     }

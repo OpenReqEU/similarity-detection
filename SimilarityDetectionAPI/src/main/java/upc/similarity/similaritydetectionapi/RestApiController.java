@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import upc.similarity.similaritydetectionapi.config.Control;
 import upc.similarity.similaritydetectionapi.config.TestConfig;
 import upc.similarity.similaritydetectionapi.entity.input_output.JsonProject;
 import upc.similarity.similaritydetectionapi.entity.input_output.Requirements;
@@ -43,7 +44,7 @@ public class RestApiController {
                                         @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/PostResult") @RequestParam("url") String url,
                                         @ApiParam(value="OpenReqJson with requirements", required = true) @RequestBody Requirements input) {
         try {
-            url_ok(url);
+            urlOk(url);
             return new ResponseEntity<>(similarityService.buildModel(url,organization,compare,input),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
@@ -66,7 +67,7 @@ public class RestApiController {
                                                   @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/PostResult") @RequestParam("url") String url,
                                                   @ApiParam(value="OpenReqJson with requirements", required = true) @RequestBody Requirements input) {
         try {
-            url_ok(url);
+            urlOk(url);
             return new ResponseEntity<>(similarityService.buildModelAndCompute(url,organization,compare,threshold,input),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
@@ -111,7 +112,7 @@ public class RestApiController {
                                            @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/PostResult") @RequestParam("url") String url,
                                            @ApiParam(value="OpenReqJson with the project", required = true) @RequestBody JsonProject input) {
         try {
-            url_ok(url);
+            urlOk(url);
             return new ResponseEntity<>(similarityService.simReqProject(url,organization,threshold,0,req,project,input), HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
@@ -134,7 +135,7 @@ public class RestApiController {
                                         @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/PostResult") @RequestParam("url") String url,
                                         @ApiParam(value="OpenReqJson with the project", required = true) @RequestBody JsonProject input) {
         try {
-            url_ok(url);
+            urlOk(url);
             return new ResponseEntity<>(similarityService.simProject(url,organization,threshold,0,project,input), HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
@@ -205,22 +206,16 @@ public class RestApiController {
     auxiliary operations
      */
 
-    private void url_ok(String url) throws BadRequestException {
+    private void urlOk(String url) throws BadRequestException {
         try {
             new URL(url).toURI();
-            /*HttpURLConnection connection = (HttpURLConnection) siteURL.openConnection();
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(3000);
-            connection.connect();
-            int code = connection.getResponseCode();
-            if (code != 200) throw new BadRequestException("Output server doesn't return status code 200");*/
         } catch (Exception e) {
             throw new BadRequestException("Output server doesn't exist");
         }
     }
 
     private ResponseEntity<?> getComponentError(ComponentException e) {
-        if (e.getStatus() == 500) e.printStackTrace();
+        if (e.getStatus() == 500) Control.getInstance().showStackTrace(e);
         LinkedHashMap<String, String> result = new LinkedHashMap<>();
         result.put("status", e.getStatus()+"");
         result.put("error", e.getError());

@@ -22,7 +22,7 @@ public class JsonProject implements Serializable {
         return projects;
     }
 
-    public boolean OK() {
-        return !(projects.size() == 0);
+    public boolean inputOk() {
+        return !projects.isEmpty();
     }
 }

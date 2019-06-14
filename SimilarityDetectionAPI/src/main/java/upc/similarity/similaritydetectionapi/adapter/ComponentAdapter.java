@@ -1,6 +1,5 @@
 package upc.similarity.similaritydetectionapi.adapter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
@@ -12,13 +11,10 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
-import org.json.JSONObject;
-import upc.similarity.similaritydetectionapi.entity.Dependency;
 import upc.similarity.similaritydetectionapi.entity.Requirement;
 import upc.similarity.similaritydetectionapi.exception.*;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 public abstract class ComponentAdapter {
@@ -44,88 +40,52 @@ public abstract class ComponentAdapter {
     Auxiliary operations
      */
 
-    protected String connection_component_post(String URL, Object json) throws ComponentException {
-        HttpPost httppost = new HttpPost(URL);
+    protected String connectionComponentPost(String url, Object json) throws ComponentException {
+        HttpPost httppost = new HttpPost(url);
         if (json != null) httppost.setEntity(new StringEntity(json.toString(), ContentType.APPLICATION_JSON));
-        return connection_component(httppost);
+        return connectionComponent(httppost);
     }
 
-    protected String connection_component_get(String URL) throws ComponentException {
-        HttpGet httpget = new HttpGet(URL);
-        return connection_component(httpget);
+    protected String connectionComponentGet(String url) throws ComponentException {
+        HttpGet httpget = new HttpGet(url);
+        return connectionComponent(httpget);
     }
 
-    protected String connection_component_delete(String URL) throws ComponentException {
-        HttpDelete httpDelete = new HttpDelete(URL);
-        return connection_component(httpDelete);
+    protected String connectionComponentDelete(String url) throws ComponentException {
+        HttpDelete httpDelete = new HttpDelete(url);
+        return connectionComponent(httpDelete);
     }
 
-    private String connection_component(HttpRequestBase httprequest) throws ComponentException {
+    private String connectionComponent(HttpRequestBase httpRequest) throws ComponentException {
         HttpClient httpclient = HttpClients.createDefault();
         int httpStatus = 200;
-        String json_response = "";
+        String jsonResponse = "";
         try {
-            HttpResponse response = httpclient.execute(httprequest);
+            HttpResponse response = httpclient.execute(httpRequest);
             httpStatus = response.getStatusLine().getStatusCode();
-            json_response = EntityUtils.toString(response.getEntity());
+            jsonResponse = EntityUtils.toString(response.getEntity());
 
         } catch (IOException e) {
             throw_component_exception(e,"Error connecting with the component");
         }
-        if (httpStatus != 200) check_exceptions(httpStatus,json_response);
+        if (httpStatus != 200) check_exceptions(httpStatus,jsonResponse);
 
-        return json_response;
+        return jsonResponse;
     }
 
     protected abstract void throw_component_exception(Exception e, String message) throws InternalErrorException;
 
     protected abstract void check_exceptions(int status, String response) throws ComponentException;
 
-    protected List<Dependency> JSON_to_dependencies(JSONObject json) throws InternalErrorException {
-
-        ObjectMapper mapper = new ObjectMapper();
-        List<Dependency> dependencies = new ArrayList<>();
-
-        try {
-            JSONArray json_deps = json.getJSONArray("dependencies");
-            for (int i = 0; i < json_deps.length(); ++i) {
-                dependencies.add(mapper.readValue(json_deps.getJSONObject(i).toString(), Dependency.class));
-            }
-        } catch (Exception e) {
-            throw new InternalErrorException("Error manipulating the input json");
-        }
-
-        return dependencies;
-    }
-
     protected JSONArray list_requirements_to_JSON(List<Requirement> requirements) {
 
-        JSONArray json_reqs = new JSONArray();
+        JSONArray jsonRequirements = new JSONArray();
 
         for (Requirement req: requirements) {
-            json_reqs.put(req.toJSON());
+            jsonRequirements.put(req.toJSON());
         }
 
-        return json_reqs;
-    }
-
-    protected JSONArray list_dependencies_to_JSON(List<Dependency> dependencies) {
-
-        JSONArray json_deps = new JSONArray();
-
-        for (Dependency dep: dependencies) {
-            json_deps.put(dep.toJSON());
-        }
-
-        return json_deps;
-    }
-
-    protected List<Dependency> JSON_to_list_dependencies(JSONArray array) {
-        List<Dependency> result = new ArrayList<>();
-        for (int i = 0; i < array.length(); ++i) {
-            result.add(new Dependency(array.getJSONObject(i)));
-        }
-        return result;
+        return jsonRequirements;
     }
 
 }

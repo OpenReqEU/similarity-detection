@@ -18,12 +18,8 @@ public class AdaptersController {
     }
 
     public ComponentAdapter getAdapter(Component component) throws InternalErrorException {
-        switch(component) {
-            case Comparer:
-                return new CompareAdapter();
-            default:
-                throw new InternalErrorException("The component " + component + " does not exist.");
-        }
+        if (component.equals(Component.Compare)) return new CompareAdapter();
+        else throw new InternalErrorException("The component " + component + " does not exist.");
 
     }
 

@@ -2,7 +2,7 @@ package upc.similarity.similaritydetectionapi.entity.input_output;
 
 import org.json.JSONObject;
 
-public class Result_json {
+public class ResultJson {
 
     private String id;
     private String operation;
@@ -10,7 +10,7 @@ public class Result_json {
     private String error;
     private String message;
 
-    public Result_json(String id, String operation) {
+    public ResultJson(String id, String operation) {
         this.id = id;
         this.operation = operation;
     }

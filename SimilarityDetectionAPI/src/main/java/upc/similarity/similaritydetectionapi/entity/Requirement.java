@@ -1,19 +1,12 @@
 package upc.similarity.similaritydetectionapi.entity;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @ApiModel(value = "Requirement", description = "A requirement with id and text")
@@ -28,9 +21,6 @@ public class Requirement implements Serializable {
     @ApiModelProperty(example = "The swagger version is deprecated. Please update the service asap.")
     @JsonProperty(value="text")
     private String text;
-
-
-    public Requirement() {}
 
     public String getId() {
         return id;

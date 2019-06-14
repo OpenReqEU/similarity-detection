@@ -1,10 +1,10 @@
 package upc.similarity.similaritydetectionapi.entity.input_output;
 
-public class Result_id {
+public class ResultId {
 
     private String id;
 
-    public Result_id (String id) {
+    public ResultId (String id) {
         this.id = id;
     }
 

@@ -2,7 +2,6 @@ package upc.similarity.similaritydetectionapi.entity.input_output;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
-import org.json.JSONArray;
 import upc.similarity.similaritydetectionapi.entity.Requirement;
 
 import java.io.Serializable;
@@ -13,22 +12,17 @@ import java.util.List;
 public class Requirements implements Serializable {
 
     @JsonProperty(value="requirements")
-    private List<Requirement> requirements;
+    private List<Requirement> requirementsArray;
 
     public Requirements() {
-        requirements = new ArrayList<>();
-    }
-
-    public Requirements(List<Requirement> requirements) {
-        this.requirements = requirements;
+        requirementsArray = new ArrayList<>();
     }
 
     public List<Requirement> getRequirements() {
-        return requirements;
+        return requirementsArray;
     }
 
-    public boolean OK() {
-        if (requirements.size() == 0) return false;
-        else return true;
+    public boolean inputOk() {
+        return !requirementsArray.isEmpty();
     }
 }
