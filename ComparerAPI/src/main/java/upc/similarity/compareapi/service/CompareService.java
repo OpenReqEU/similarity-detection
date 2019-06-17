@@ -29,4 +29,16 @@ public interface CompareService {
 
     public void clearDatabase() throws InternalErrorException;
 
+
+
+
+
+
+
+
+
+    public void simProjectTest(String responseId, String organization, double threshold, List<String> projectRequirements, boolean responseCreated) throws NotFoundException, InternalErrorException;
+
+
+
 }

@@ -161,6 +161,9 @@ public class CompareServiceImpl implements CompareService {
 
         int cont = 0;
         int pages = 0;
+        long number_dependencies = 0;
+
+        control.showInfoMessage("Number requirements: " + projectRequirements.size());
 
         JSONArray array = new JSONArray();
 
@@ -172,6 +175,7 @@ public class CompareServiceImpl implements CompareService {
                     if (!req2.equals(req1) && model.getDocs().containsKey(req2)) {
                         double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
                         if (score >= threshold) {
+                            ++number_dependencies;
                             Dependency dependency = new Dependency(score, req1, req2, status, dependencyType, component);
                             array.put(dependency.toJSON());
                             ++cont;
@@ -184,6 +188,61 @@ public class CompareServiceImpl implements CompareService {
                         }
                     }
                 }
+            }
+        }
+        if (array.length() > 0) {
+            generateResponsePage(responseId, organization, pages, array);
+        }
+
+        control.showInfoMessage("Number dependencies: " + number_dependencies);
+
+        finishComputation(organization, responseId);
+        control.showInfoMessage("SimProject: Finish computing");
+    }
+
+    @Override
+    public void simProjectTest(String responseId, String organization, double threshold, List<String> projectRequirements, boolean responseCreated) throws NotFoundException, InternalErrorException {
+        control.showInfoMessage("SimProject: Start computing");
+        CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
+
+        if (!responseCreated) generateResponse(organization,responseId);
+
+        Model model = null;
+        try {
+            model = loadModel(organization);
+        } catch (NotFoundException e) {
+            saveNotFoundException(organization, responseId, e);
+        }
+
+        int cont = 0;
+        int pages = 0;
+        String fileName = "../testing/output/analysis_cutoff";
+
+        JSONArray array = new JSONArray();
+
+        for (int i = 0; i < projectRequirements.size(); ++i) {
+            String req1 = projectRequirements.get(i);
+            if (model.getDocs().containsKey(req1)) {
+                long number_dependencies = 0;
+                for (int j = 0; j < projectRequirements.size(); ++j) {
+                    String req2 = projectRequirements.get(j);
+                    if (!req2.equals(req1) && model.getDocs().containsKey(req2)) {
+                        double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
+                        if (score >= threshold) {
+                            ++number_dependencies;
+                            Dependency dependency = new Dependency(score, req1, req2, status, dependencyType, component);
+                            array.put(dependency.toJSON());
+                            ++cont;
+                            if (cont >= maxDepsForPage) {
+                                generateResponsePage(responseId, organization, pages, array);
+                                ++pages;
+                                array = new JSONArray();
+                                cont = 0;
+                            }
+                        }
+                    }
+                }
+                writeToFile(fileName, number_dependencies+"");
             }
         }
         if (array.length() > 0) {
@@ -239,6 +298,16 @@ public class CompareServiceImpl implements CompareService {
     /*
     auxiliary operations
      */
+
+    private void writeToFile(String fileName, String text) {
+        try (FileWriter fw = new FileWriter(fileName, true);
+             BufferedWriter bw = new BufferedWriter(fw)) {
+                bw.write(text);
+                bw.newLine();
+        } catch (IOException e) {
+            control.showErrorMessage(e.getMessage());
+        }
+    }
 
     private void saveBadRequestException(String organization, String responseId, BadRequestException e) throws BadRequestException, InternalErrorException {
         try {
