@@ -77,7 +77,7 @@ public class CompareServiceImpl implements CompareService {
         for (Requirement requirement: requirements) {
             requirementsIds.add(requirement.getId());
         }
-        simProject(responseId,organization,threshold,requirementsIds,true);
+        simProjectTest(responseId,organization,threshold,requirementsIds,true);
         control.showInfoMessage("BuildModelAndCompute: Finish computing");
     }
 
@@ -217,6 +217,7 @@ public class CompareServiceImpl implements CompareService {
         int cont = 0;
         int pages = 0;
         String fileName = "../testing/output/analysis_cutoff";
+
 
         JSONArray array = new JSONArray();
 

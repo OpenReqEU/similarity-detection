@@ -18,10 +18,13 @@ import java.util.Map;
 
 public class Tfidf {
 
-    private static double cutoffParameter=10;
     private static Tfidf instance = new Tfidf();
 
     private Tfidf() {}
+
+    private double computeCutOffParameter(long totalSize) {
+        return (totalSize > 100) ? 10 : (-6.38 + 3.51*Math.log(totalSize));
+    }
 
     public Map<String, Map<String, Double>> extractKeywords(List<String> corpus, List<String> ids, Map<String, Integer> corpusFrequency) throws InternalErrorException {
         List<List<String>> docs = new ArrayList<>();
@@ -39,125 +42,25 @@ public class Tfidf {
     }
 
     private Map<String,Map<String, Double>> tfIdf(List<List<String>> docs, List<String> corpus, Map<String, Integer> corpusFrequency) {
+        double cutOffParameter = computeCutOffParameter(docs.size());
+        Control.getInstance().showInfoMessage("Cutoff: " + cutOffParameter);
         Map<String,Map<String, Double>> tfidfComputed = new HashMap<>();
         List<Map<String, Integer>> wordBag = new ArrayList<>();
         for (List<String> doc : docs) {
             wordBag.add(tf(doc,corpusFrequency));
         }
         int i = 0;
-        long total = 0;
-        long i_0 = 0;
-        long i_1 = 0;
-        long i_2 = 0;
-        long i_3 = 0;
-        long i_4 = 0;
-        long i_5 = 0;
-        long i_6 = 0;
-        long i_7 = 0;
-        long i_8 = 0;
-        long i_9 = 0;
-        long i_10 = 0;
         for (List<String> doc : docs) {
             HashMap<String, Double> aux = new HashMap<>();
             for (String s : doc) {
                 Double idf = idf(docs.size(), corpusFrequency.get(s));
                 Integer tf = wordBag.get(i).get(s);
                 double tfidf = idf * tf;
-                ++total;
-                if (tfidf>=cutoffParameter) aux.put(s, tfidf);
-                int value = (int) Math.floor(tfidf);
-                switch (value) {
-                    case 0:
-                        ++i_1;
-                        ++i_2;
-                        ++i_3;
-                        ++i_4;
-                        ++i_5;
-                        ++i_6;
-                        ++i_7;
-                        ++i_8;
-                        ++i_9;
-                        ++i_10;
-                    case 1:
-                        ++i_2;
-                        ++i_3;
-                        ++i_4;
-                        ++i_5;
-                        ++i_6;
-                        ++i_7;
-                        ++i_8;
-                        ++i_9;
-                        ++i_10;
-                        break;
-                    case 2:
-                        ++i_3;
-                        ++i_4;
-                        ++i_5;
-                        ++i_6;
-                        ++i_7;
-                        ++i_8;
-                        ++i_9;
-                        ++i_10;
-                        break;
-                    case 3:
-                        ++i_4;
-                        ++i_5;
-                        ++i_6;
-                        ++i_7;
-                        ++i_8;
-                        ++i_9;
-                        ++i_10;
-                        break;
-                    case 4:
-                        ++i_5;
-                        ++i_6;
-                        ++i_7;
-                        ++i_8;
-                        ++i_9;
-                        ++i_10;
-                        break;
-                    case 5:
-                        ++i_6;
-                        ++i_7;
-                        ++i_8;
-                        ++i_9;
-                        ++i_10;
-                        break;
-                    case 6:
-                        ++i_7;
-                        ++i_8;
-                        ++i_9;
-                        ++i_10;
-                        break;
-                    case 7:
-                        ++i_8;
-                        ++i_9;
-                        ++i_10;
-                        break;
-                    case 8:
-                        ++i_9;
-                        ++i_10;
-                        break;
-                    case 9:
-                        ++i_10;
-                        break;
-                }
+                if (tfidf>=cutOffParameter) aux.put(s, tfidf);
             }
             tfidfComputed.put(corpus.get(i),aux);
             ++i;
         }
-        System.out.println("total: " + total);
-        System.out.println(i_0);
-        System.out.println(i_1);
-        System.out.println(i_2);
-        System.out.println(i_3);
-        System.out.println(i_4);
-        System.out.println(i_5);
-        System.out.println(i_6);
-        System.out.println(i_7);
-        System.out.println(i_8);
-        System.out.println(i_9);
-        System.out.println(i_10);
         return tfidfComputed;
     }
 
