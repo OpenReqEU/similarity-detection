@@ -17,7 +17,9 @@ public interface CompareService {
 
     public Dependency simReqReq(String organization, String req1, String req2) throws NotFoundException, InternalErrorException;
 
-    public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements) throws NotFoundException, InternalErrorException, BadRequestException;
+    public void simReqOrganization(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException;
+
+    public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements, boolean responseCreated) throws NotFoundException, InternalErrorException, BadRequestException;
 
     public void simProject(String responseId, String organization, double threshold, List<String> projectRequirements, boolean responseCreated) throws NotFoundException, InternalErrorException;
 
@@ -28,17 +30,5 @@ public interface CompareService {
     public void clearOrganizationResponses(String organization) throws NotFoundException, InternalErrorException;
 
     public void clearDatabase() throws InternalErrorException;
-
-
-
-
-
-
-
-
-
-    public void simProjectTest(String responseId, String organization, double threshold, List<String> projectRequirements, boolean responseCreated) throws NotFoundException, InternalErrorException;
-
-
 
 }

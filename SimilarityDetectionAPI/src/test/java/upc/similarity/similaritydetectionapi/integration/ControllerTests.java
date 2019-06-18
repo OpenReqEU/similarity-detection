@@ -87,6 +87,22 @@ public class ControllerTests {
     }
 
     @Test
+    public void simReqOrganization() throws Exception {
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("")));
+        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/SimReqOrganization").param("organization", "UPC").param("url", callback)
+                .param("compare", "true").param("threshold", "0.12").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"simReqOrganization/input_reqs.json")))
+                .andExpect(status().isOk()).andReturn();
+        TestConfig testConfig = TestConfig.getInstance();
+        while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
+        testConfig.setComputationFinished(false);
+        assertEquals(createJsonResult(200, aux_getResponseId(result), "SimReqOrganization"), testConfig.getResult().toString());
+    }
+
+    @Test
     public void addRequirementsAndComputeNotRequirements() throws Exception {
         this.mockMvc.perform(post("/upc/similarity-detection/AddReqsAndCompute").param("organization", "UPC").param("url", callback)
                 .param("compare", "true").param("threshold", "0.12").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"addReqs/input_requirements_empty.json")))

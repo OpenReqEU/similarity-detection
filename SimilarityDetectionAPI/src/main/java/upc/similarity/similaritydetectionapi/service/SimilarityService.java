@@ -19,6 +19,8 @@ public interface SimilarityService {
 
     public ResultId buildModelAndCompute(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException;
 
+    public ResultId simReqOrganization(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException;
+
     public String getResponsePage(String organization, String responseId) throws ComponentException;
 
     public void deleteOrganizationResponses(String organization) throws ComponentException;

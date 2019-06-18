@@ -49,13 +49,31 @@ public class RestApiController {
         }
     }
 
+    @PostMapping(value = "/SimReqOrganization")
+    public ResponseEntity simReqProject(@RequestParam("organization") String organization,
+                                        @RequestParam("filename") String responseId,
+                                        @RequestParam("compare") String compare,
+                                        @RequestParam("threshold") double threshold,
+                                        @RequestBody List<Requirement> requirements) {
+        try {
+            compareService.simReqOrganization(responseId,compare,organization,threshold,requirements);
+            return new ResponseEntity<>(null,HttpStatus.OK);
+        } catch (NotFoundException e) {
+            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
+        } catch (BadRequestException e) {
+            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
+        } catch (InternalErrorException e) {
+            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @PostMapping(value = "/SimReqProject")
     public ResponseEntity simReqProject(@RequestParam("organization") String organization,
                                            @RequestParam("filename") String responseId,
                                            @RequestParam("threshold") double threshold,
                                            @RequestBody ReqProject projectRequirements) {
         try {
-            compareService.simReqProject(responseId,organization,threshold,projectRequirements);
+            compareService.simReqProject(responseId,organization,threshold,projectRequirements,false);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (NotFoundException e) {
             return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);

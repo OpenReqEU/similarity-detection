@@ -50,7 +50,7 @@ public class CompareServiceImpl implements CompareService {
         control.showInfoMessage("BuildModel: Start computing");
         generateResponse(organization,responseId);
         try {
-            saveModel(organization, generateModel(compare, requirements));
+            saveModel(organization, generateModel(compare, deleteDuplicates(requirements)));
         } catch (BadRequestException e) {
             saveBadRequestException(organization, responseId, e);
         }
@@ -68,7 +68,7 @@ public class CompareServiceImpl implements CompareService {
         control.showInfoMessage("BuildModelAndCompute: Start computing");
         generateResponse(organization,responseId);
         try {
-            Model model = generateModel(compare, requirements);
+            Model model = generateModel(compare, deleteDuplicates(requirements));
             saveModel(organization, model);
         } catch (BadRequestException e) {
             saveBadRequestException(organization, responseId, e);
@@ -77,7 +77,7 @@ public class CompareServiceImpl implements CompareService {
         for (Requirement requirement: requirements) {
             requirementsIds.add(requirement.getId());
         }
-        simProjectTest(responseId,organization,threshold,requirementsIds,true);
+        simProject(responseId,organization,threshold,requirementsIds,true);
         control.showInfoMessage("BuildModelAndCompute: Finish computing");
     }
 
@@ -93,11 +93,69 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements) throws NotFoundException, InternalErrorException, BadRequestException {
+    public void simReqOrganization(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException {
+        control.showInfoMessage("SimReqOrganization: Start computing");
+        generateResponse(organization,responseId);
+
+        Model model = null;
+        try {
+            model = loadModel(organization);
+        } catch (NotFoundException e) {
+            saveNotFoundException(organization, responseId, e);
+        }
+
+        List<String> projectRequirements = new ArrayList<>(model.getDocs().keySet());
+        List<Requirement> requirementsNotDuplicated = null;
+        try {
+            requirementsNotDuplicated = deleteDuplicates(requirements);
+        } catch (BadRequestException e) {
+            saveBadRequestException(organization, responseId, e);
+        }
+        List<String> requirementsToCompare = new ArrayList<>();
+
+        Map<String, Integer> corpusFrequency = model.getCorpusFrequency();
+        Map<String, Integer> oldCorpusFrequency = new HashMap<>();
+        Iterator it = corpusFrequency.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next();
+            String word = (String) pair.getKey();
+            int value = (int) pair.getValue();
+            oldCorpusFrequency.put(word, value);
+        }
+
+        Map<String, Map<String, Double>> docs = model.getDocs();
+        for (Requirement requirement: requirementsNotDuplicated) {
+            String id = requirement.getId();
+            requirementsToCompare.add(id);
+            if (docs.containsKey(id)) { //problem: if the requirement had this word before applying cutoff parameter
+                projectRequirements.remove(id);
+                Map<String, Double> words = docs.get(id);
+                for (String word: words.keySet()) {
+                    int value = corpusFrequency.get(word);
+                    if (value == 1) corpusFrequency.remove(word);
+                    else corpusFrequency.put(word, value-1);
+                }
+                docs.remove(id);
+            }
+        }
+
+        try {
+            updateModel(compare, requirementsNotDuplicated,model,oldCorpusFrequency);
+            saveModel(organization, model);
+        } catch (BadRequestException e) {
+            saveBadRequestException(organization, responseId, e);
+        }
+        simReqProject(responseId,organization , threshold, new ReqProject(requirementsToCompare, projectRequirements), true);
+
+        control.showInfoMessage("SimReqOrganization: Finish computing");
+    }
+
+    @Override
+    public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements, boolean responseCreated) throws NotFoundException, InternalErrorException, BadRequestException {
         control.showInfoMessage("SimReqProject: Start computing");
         CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
 
-        generateResponse(organization,responseId);
+        if (!responseCreated) generateResponse(organization,responseId);
 
         Model model = null;
         try {
@@ -201,60 +259,6 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void simProjectTest(String responseId, String organization, double threshold, List<String> projectRequirements, boolean responseCreated) throws NotFoundException, InternalErrorException {
-        control.showInfoMessage("SimProject: Start computing");
-        CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
-
-        if (!responseCreated) generateResponse(organization,responseId);
-
-        Model model = null;
-        try {
-            model = loadModel(organization);
-        } catch (NotFoundException e) {
-            saveNotFoundException(organization, responseId, e);
-        }
-
-        int cont = 0;
-        int pages = 0;
-        String fileName = "../testing/output/analysis_cutoff";
-
-
-        JSONArray array = new JSONArray();
-
-        for (int i = 0; i < projectRequirements.size(); ++i) {
-            String req1 = projectRequirements.get(i);
-            if (model.getDocs().containsKey(req1)) {
-                long number_dependencies = 0;
-                for (int j = 0; j < projectRequirements.size(); ++j) {
-                    String req2 = projectRequirements.get(j);
-                    if (!req2.equals(req1) && model.getDocs().containsKey(req2)) {
-                        double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
-                        if (score >= threshold) {
-                            ++number_dependencies;
-                            Dependency dependency = new Dependency(score, req1, req2, status, dependencyType, component);
-                            array.put(dependency.toJSON());
-                            ++cont;
-                            if (cont >= maxDepsForPage) {
-                                generateResponsePage(responseId, organization, pages, array);
-                                ++pages;
-                                array = new JSONArray();
-                                cont = 0;
-                            }
-                        }
-                    }
-                }
-                writeToFile(fileName, number_dependencies+"");
-            }
-        }
-        if (array.length() > 0) {
-            generateResponsePage(responseId, organization, pages, array);
-        }
-
-        finishComputation(organization, responseId);
-        control.showInfoMessage("SimProject: Finish computing");
-    }
-
-    @Override
     public String getResponsePage(String organization, String responseId) throws NotFoundException, InternalErrorException, NotFinishedException {
 
         String responsePage;
@@ -299,6 +303,19 @@ public class CompareServiceImpl implements CompareService {
     /*
     auxiliary operations
      */
+
+    private List<Requirement> deleteDuplicates(List<Requirement> requirements) throws BadRequestException {
+        HashSet<String> ids = new HashSet<>();
+        List<Requirement> result = new ArrayList<>();
+        for (Requirement requirement: requirements) {
+            if (requirement.getId() == null) throw new BadRequestException("There is a requirement without id.");
+            if (!ids.contains(requirement.getId())) {
+                result.add(requirement);
+                ids.add(requirement.getId());
+            }
+        }
+        return result;
+    }
 
     private void writeToFile(String fileName, String text) {
         try (FileWriter fw = new FileWriter(fileName, true);
@@ -392,6 +409,14 @@ public class CompareServiceImpl implements CompareService {
         return new Model(docs,corpusFrequency);
     }
 
+    private void updateModel(String compare, List<Requirement> requirements, Model model, Map<String, Integer> oldCorpusFrequency) throws BadRequestException, InternalErrorException {
+        Tfidf tfidf = Tfidf.getInstance();
+        List<String> text = new ArrayList<>();
+        List<String> ids = new ArrayList<>();
+        buildCorpus(compare,requirements,text,ids);
+        tfidf.addNewReqs(text,ids,model,oldCorpusFrequency);
+    }
+
     private void saveModel(String organization, Model model) throws InternalErrorException {
         try {
             databaseModel.saveModel(organization, model);
@@ -403,7 +428,6 @@ public class CompareServiceImpl implements CompareService {
 
     private void buildCorpus(String compare, List<Requirement> requirements, List<String> arrayText, List<String> arrayIds) throws BadRequestException {
         for (Requirement requirement: requirements) {
-            if (requirement.getId() == null) throw new BadRequestException("There is a requirement without id.");
             arrayIds.add(requirement.getId());
             String text = "";
             if (requirement.getName() != null) text = text.concat(cleanText(requirement.getName()) + ". ");

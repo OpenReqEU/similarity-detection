@@ -28,6 +28,8 @@ public abstract class ComponentAdapter {
 
     public abstract void simReqProject(String filename, String organization, List<String> req, double threshold, List<String> reqs) throws ComponentException;
 
+    public abstract void simReqOrganization(String filename, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException;
+
     public abstract void simProject(String filename, String organization, double threshold, List<String> reqs) throws ComponentException;
 
     public abstract String getResponsePage(String organization, String responseId) throws ComponentException;

@@ -68,10 +68,10 @@ public class SwaggerConfig {
                 .useDefaultResponseMessages(false)
                 .apiInfo(apiInfo())
                 .pathMapping("/")
-                .host("api.openreq.eu/similarity-detection")
-                .protocols(protocols)
+                //.host("api.openreq.eu/similarity-detection")
+                //.protocols(protocols)
                 .select()
-                .paths(PathSelectors.regex("/upc/similarity-detection/AddReqs|/upc/similarity-detection/Project|/upc/similarity-detection/ReqProject|/upc/similarity-detection/ReqReq|/upc/similarity-detection/AddReqsAndCompute|/upc/similarity-detection/GetResponse|/upc/similarity-detection/DeleteOrganizationResponses|/upc/similarity-detection/DeleteDatabase"))
+                .paths(PathSelectors.regex("^((?!Test).)*$"))
                 .apis(RequestHandlerSelectors.basePackage("upc.similarity.similaritydetectionapi")).paths(PathSelectors.regex("/upc.*"))
                 .build().tags(new Tag("Similarity detection Service", "API related to similarity detection"));
     }

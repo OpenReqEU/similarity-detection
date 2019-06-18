@@ -31,7 +31,7 @@ public class RestApiController {
     //Model generator
 
     @CrossOrigin
-    @PostMapping(value = "/AddReqs", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/AddReqs", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Builds a model with the input requirements", notes = "Builds a model with the entry requirements. " +
             "The generated model is assigned to the specified organization and stored in an internal database. Each organization" +
             " only can have one model at a time. If at the time of generating a new model the corresponding organization already has" +
@@ -52,7 +52,7 @@ public class RestApiController {
     }
 
     @CrossOrigin
-    @PostMapping(value = "/AddReqsAndCompute", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/AddReqsAndCompute", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Builds a model with the input requirements and computes them", notes = "<p>Builds a model with the entry requirements. " +
             "The generated model is assigned to the specified organization and stored in an internal database. Each organization" +
             " only can have one model at a time. If at the time of generating a new model the corresponding organization already has" +
@@ -69,6 +69,26 @@ public class RestApiController {
         try {
             urlOk(url);
             return new ResponseEntity<>(similarityService.buildModelAndCompute(url,organization,compare,threshold,input),HttpStatus.OK);
+        } catch (ComponentException e) {
+            return getComponentError(e);
+        }
+    }
+
+    @CrossOrigin
+    @PostMapping(value = "/SimReqOrganization", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Similarity comparison between a set of requirements and all the organization requirements", notes = "<p>Adds the input requirements to the organization model and returns " +
+            "an array of dependencies between them and all the organization requirements. If any input requirement is already part of the organization's model, it will be overwritten with the new information.</p>", tags = "Main methods")
+    @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
+            @ApiResponse(code=400, message = "Bad request"),
+            @ApiResponse(code=500, message = "Internal error")})
+    public ResponseEntity simReqOrganization(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+                                               @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
+                                               @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
+                                               @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/PostResult") @RequestParam("url") String url,
+                                               @ApiParam(value="OpenReqJson with requirements", required = true) @RequestBody Requirements input) {
+        try {
+            urlOk(url);
+            return new ResponseEntity<>(similarityService.simReqOrganization(url,organization,compare,threshold,input),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }

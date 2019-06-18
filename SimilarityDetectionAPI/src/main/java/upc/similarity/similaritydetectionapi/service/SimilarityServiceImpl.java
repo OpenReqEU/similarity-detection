@@ -92,6 +92,35 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
+    public ResultId simReqOrganization(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException {
+
+        if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements");
+        if (threshold < 0 || threshold > 1) throw new BadRequestException(thresholdNotOk);
+        ResultId id = getId();
+
+        //New thread
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                ResultJson result = new ResultJson(id.getId(),"SimReqOrganization");
+                try {
+                    CompareAdapter compareAdapter = new CompareAdapter();
+                    compareAdapter.simReqOrganization(id.getId(),organization,compare,threshold,input.getRequirements());
+                    result.setCode(200);
+                } catch (ComponentException e) {
+                    result.setException(e.getStatus(),e.getError(),e.getMessage());
+                }
+                finally {
+                    updateClient(result,url);
+                }
+            }
+        });
+
+        thread.start();
+        return id;
+    }
+
+    @Override
     public String simReqReq(String organization, String req1, String req2) throws ComponentException {
 
         ResultId id = getId();

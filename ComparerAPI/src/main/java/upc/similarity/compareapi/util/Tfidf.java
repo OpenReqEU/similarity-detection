@@ -5,25 +5,92 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import upc.similarity.compareapi.config.Control;
+import upc.similarity.compareapi.entity.Model;
 import upc.similarity.compareapi.exception.InternalErrorException;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Tfidf {
 
     private static Tfidf instance = new Tfidf();
+    public static boolean cutOffDummy = false;
+
+    public static void setCutOffDummy(boolean cutOffDummy) {
+        Tfidf.cutOffDummy = cutOffDummy;
+    }
 
     private Tfidf() {}
 
     private double computeCutOffParameter(long totalSize) {
-        return (totalSize > 100) ? 10 : (-6.38 + 3.51*Math.log(totalSize));
+        if (cutOffDummy) return -1;
+        else return (totalSize > 100) ? 10 : (-6.38 + 3.51*Math.log(totalSize));
+    }
+
+    public void addNewReqs(List<String> newRequirements, List<String> newIds, Model model, Map<String, Integer> oldCorpusFrequency) throws InternalErrorException {
+        Map<String, Integer> newCorpusFrequency = model.getCorpusFrequency();
+        Map<String, Map<String, Double>> docs = model.getDocs();
+        int finalSize = docs.size()+newRequirements.size();
+        double cutOffParameter = computeCutOffParameter(finalSize);
+
+        //preprocess new requirements
+        List<List<String>> newDocs = new ArrayList<>();
+        for (String s : newRequirements) {
+            try {
+                newDocs.add(englishAnalyze(s));
+            } catch (IOException e) {
+                Control.getInstance().showErrorMessage("Error while loading preprocess pipeline");
+                throw new InternalErrorException("Error loading preprocess pipeline");
+            }
+        }
+        newDocs = preProcess(newDocs);
+
+        //tf new requirements
+        List<Map<String, Integer>> wordBagArray = new ArrayList<>();
+        for (List<String> doc : newDocs) {
+            wordBagArray.add(tf(doc,newCorpusFrequency));
+        }
+
+        //idf old requirements
+        Iterator it = docs.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next();
+            Map<String, Double> words = (Map<String, Double>) pair.getValue();
+            recomputeIdfValues(words, oldCorpusFrequency, newCorpusFrequency, docs.size(), finalSize);
+        }
+
+        //idf new requirements
+        int i = 0;
+        for (List<String> doc : newDocs) {
+            HashMap<String, Double> aux = new HashMap<>();
+            for (String s : doc) {
+                Double idf = idf(finalSize, newCorpusFrequency.get(s));
+                Integer tf = wordBagArray.get(i).get(s);
+                double tfidf = idf * tf;
+                if (tfidf>=cutOffParameter) aux.put(s, tfidf);
+            }
+            docs.put(newIds.get(i),aux);
+            ++i;
+        }
+    }
+
+    private void recomputeIdfValues(Map<String, Double> words, Map<String, Integer> oldCorpusFrequency, Map<String, Integer> newCorpusFrequency, double oldSize, double newSize) {
+        Iterator it = words.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next(); //problem: if the value was 0 (because corpus + 1 == totalSize) it will be always 0
+            String word = (String) pair.getKey();
+            double score = (double) pair.getValue();
+            double newScore = recomputeIdf(score, oldSize, oldCorpusFrequency.get(word), newSize, newCorpusFrequency.get(word));
+            pair.setValue(newScore);
+        }
+    }
+
+    private double recomputeIdf(double oldValue, double oldSize, double oldCorpusFrequency, double newSize, double newCorpusFrequency) {
+        double quocient = Math.log(oldSize/(oldCorpusFrequency+1));
+        return (quocient <= 0) ? 0 : (oldValue * Math.log(newSize/(newCorpusFrequency+1)))/quocient;
     }
 
     public Map<String, Map<String, Double>> extractKeywords(List<String> corpus, List<String> ids, Map<String, Integer> corpusFrequency) throws InternalErrorException {
@@ -36,7 +103,7 @@ public class Tfidf {
                 throw new InternalErrorException("Error loading preprocess pipeline");
             }
         }
-        List<List<String>> processed=preProcess(docs);
+        List<List<String>> processed = preProcess(docs);
         return tfIdf(processed,ids,corpusFrequency);
 
     }
@@ -77,7 +144,6 @@ public class Tfidf {
                 if (corpusFrequency.containsKey(s)) corpusFrequency.put(s, corpusFrequency.get(s) + 1);
                 else corpusFrequency.put(s, 1);
             }
-
         }
         return frequency;
     }

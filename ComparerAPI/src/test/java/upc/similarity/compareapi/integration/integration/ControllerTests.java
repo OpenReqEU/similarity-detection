@@ -1,4 +1,4 @@
-package upc.similarity.compareapi.integration;
+package upc.similarity.compareapi.integration.integration;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
+import upc.similarity.compareapi.util.Tfidf;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -46,6 +47,7 @@ public class ControllerTests {
         SQLiteDatabase.setDbName("models_test.db");
         SQLiteDatabase db = new SQLiteDatabase();
         db.createDatabase();
+        Tfidf.setCutOffDummy(true);
     }
 
     @AfterClass
@@ -66,11 +68,25 @@ public class ControllerTests {
 
     @Test
     public void buildModelAndCompute() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModelAndCompute").param("organization", "UPC").param("threshold", "0.12")
+        this.mockMvc.perform(post(url + "BuildModelAndCompute").param("organization", "UPC").param("threshold", "0")
                 .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"buildModelAndCompute/input.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "buildModelAndCompute/output.json")));
+        ++id;
+    }
+
+    @Test
+    public void simReqOrganization() throws Exception {
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqOrganization/input_model.json")))
+                .andExpect(status().isOk());
+        ++id;
+        this.mockMvc.perform(post(url + "SimReqOrganization").param("organization", "UPC").param("threshold", "0")
+                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqOrganization/input_reqs.json")))
+                .andExpect(status().isOk());
+        this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simReqOrganization/output.json")));
         ++id;
     }
 

@@ -8,7 +8,6 @@ import org.json.JSONObject;
 
 import java.io.Serializable;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @ApiModel(value = "Requirement", description = "A requirement with id and text")
 public class Requirement implements Serializable {
 

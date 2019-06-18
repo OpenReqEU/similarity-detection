@@ -19,4 +19,9 @@ public class ReqProject implements Serializable {
     public List<String> getProjectReqs() {
         return projectReqs;
     }
+
+    public ReqProject(List<String> reqsToCompare, List<String> projectReqs) {
+        this.reqsToCompare = reqsToCompare;
+        this.projectReqs = projectReqs;
+    }
 }
