@@ -17,7 +17,7 @@ import java.util.*;
 public class Tfidf {
 
     private static Tfidf instance = new Tfidf();
-    public static boolean cutOffDummy = false;
+    private static boolean cutOffDummy = false;
 
     public static void setCutOffDummy(boolean cutOffDummy) {
         Tfidf.cutOffDummy = cutOffDummy;

@@ -19,7 +19,7 @@ public interface CompareService {
 
     public void simReqOrganization(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException;
 
-    public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements, boolean responseCreated) throws NotFoundException, InternalErrorException, BadRequestException;
+    public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements, boolean responseCreated, boolean includeReqs) throws NotFoundException, InternalErrorException, BadRequestException;
 
     public void simProject(String responseId, String organization, double threshold, List<String> projectRequirements, boolean responseCreated) throws NotFoundException, InternalErrorException;
 
@@ -30,5 +30,9 @@ public interface CompareService {
     public void clearOrganizationResponses(String organization) throws NotFoundException, InternalErrorException;
 
     public void clearDatabase() throws InternalErrorException;
+
+    public void computeClusters(String compare, double threshold, List<Requirement> requirements) throws InternalErrorException, BadRequestException;
+
+    public void buildModelAndComputeOrphans(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws BadRequestException, NotFoundException, InternalErrorException;
 
 }

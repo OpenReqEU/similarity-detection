@@ -37,7 +37,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     @Override
     public ResultId buildModel(String url, String organization, boolean compare, Requirements input) throws InternalErrorException, BadRequestException {
 
-        if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements");
+        checkInput(input, 0);
         ResultId id = getId();
 
         //New thread
@@ -63,10 +63,18 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
+    public void computeClusters(boolean compare, double threshold, Requirements input) throws ComponentException {
+
+        checkInput(input, threshold);
+
+        ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
+        componentAdapter.computeClusters(compare,threshold,input.getRequirements());
+    }
+
+    @Override
     public ResultId buildModelAndCompute(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException {
 
-        if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements");
-        if (threshold < 0 || threshold > 1) throw new BadRequestException(thresholdNotOk);
+        checkInput(input, threshold);
         ResultId id = getId();
 
         //New thread
@@ -92,10 +100,37 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
+    public ResultId buildModelAndComputeOrphans(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException {
+
+        checkInput(input, threshold);
+        ResultId id = getId();
+
+        //New thread
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                ResultJson result = new ResultJson(id.getId(),"AddReqsAndComputeOrphans");
+                try {
+                    CompareAdapter compareAdapter = new CompareAdapter();
+                    compareAdapter.buildModelAndComputeOrphans(id.getId(),organization,compare,threshold,input.getRequirements());
+                    result.setCode(200);
+                } catch (ComponentException e) {
+                    result.setException(e.getStatus(),e.getError(),e.getMessage());
+                }
+                finally {
+                    updateClient(result,url);
+                }
+            }
+        });
+
+        thread.start();
+        return id;
+    }
+
+    @Override
     public ResultId simReqOrganization(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException {
 
-        if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements");
-        if (threshold < 0 || threshold > 1) throw new BadRequestException(thresholdNotOk);
+        checkInput(input, threshold);
         ResultId id = getId();
 
         //New thread
@@ -132,7 +167,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     @Override
     public ResultId simReqProject(String url, String organization, double threshold, int maxNumber, List<String> req, String projectId, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
 
-        if (threshold < 0 || threshold > 1) throw new BadRequestException(thresholdNotOk);
+        checkThreshold(threshold);
         Project project = searchProject(projectId,input.getProjects());
 
         ResultId id = getId();
@@ -162,7 +197,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     @Override
     public ResultId simProject(String url, String organization, double threshold, int maxNumber, String projectId, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
 
-        if (threshold < 0 || threshold > 1) throw new BadRequestException("Threshold must be a number between 0 and 1");
+        checkThreshold(threshold);
         Project project = searchProject(projectId,input.getProjects());
         ResultId id = getId();
 
@@ -251,6 +286,15 @@ public class SimilarityServiceImpl implements SimilarityService {
         } catch (IOException e) {
             control.showErrorMessage(e.getMessage());
         }
+    }
+
+    private void checkInput(Requirements input, double threshold) throws BadRequestException {
+        if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements");
+        checkThreshold(threshold);
+    }
+
+    private void checkThreshold(double threshold) throws BadRequestException {
+        if (threshold < 0 || threshold > 1) throw new BadRequestException(thresholdNotOk);
     }
 
 

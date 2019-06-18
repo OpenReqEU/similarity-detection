@@ -87,6 +87,23 @@ public class ControllerTests {
     }
 
     @Test
+    public void addRequirementsAndComputeOrphans() throws Exception {
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("")));
+        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/AddReqsAndComputeOrphans").param("organization", "UPC").param("url", callback)
+                .param("compare", "true").param("threshold", "0.12")
+                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"addReqs/input_addReqsAndCompute.json")))
+                .andExpect(status().isOk()).andReturn();
+        TestConfig testConfig = TestConfig.getInstance();
+        while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
+        testConfig.setComputationFinished(false);
+        assertEquals(createJsonResult(200, aux_getResponseId(result), "AddReqsAndComputeOrphans"), testConfig.getResult().toString());
+    }
+
+    @Test
     public void simReqOrganization() throws Exception {
         stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
@@ -140,7 +157,8 @@ public class ControllerTests {
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
         MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/ReqProject").param("organization", "UPC").param("url", callback)
-                .param("project", "UPC-P1").param("threshold", "0.12").param("req", "UPC-1").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"reqProject/input_ReqProject.json")))
+                .param("project", "UPC-P1").param("threshold", "0.12").param("req", "UPC-1")
+                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"reqProject/input_ReqProject.json")))
                 .andExpect(status().isOk()).andReturn();
         TestConfig testConfig = TestConfig.getInstance();
         while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
@@ -151,7 +169,8 @@ public class ControllerTests {
     @Test
     public void reqProjectNotExist() throws Exception {
         this.mockMvc.perform(post("/upc/similarity-detection/ReqProject").param("organization", "UPC").param("url", callback)
-                .param("project", "UPC-P2").param("threshold", "0.12").param("req", "UPC-1").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"reqProject/input_ReqProject.json")))
+                .param("project", "UPC-P2").param("threshold", "0.12").param("req", "UPC-1")
+                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"reqProject/input_ReqProject.json")))
                 .andExpect(status().isNotFound());
     }
 
@@ -187,6 +206,18 @@ public class ControllerTests {
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
         this.mockMvc.perform(delete("/upc/similarity-detection/DeleteOrganizationResponses").param("organization", "UPC")).andDo(print())
+                .andExpect(status().isOk()).andExpect(status().isOk());
+    }
+
+    @Test
+    public void computeClusters() throws Exception {
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("")));
+        this.mockMvc.perform(post("/upc/similarity-detection/ComputeClusters").param("compare", "true").param("threshold", "0.12")
+                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"addReqs/input_addReqsAndCompute.json"))).andDo(print())
                 .andExpect(status().isOk()).andExpect(status().isOk());
     }
 

@@ -52,6 +52,23 @@ public class RestApiController {
     }
 
     @CrossOrigin
+    @PostMapping(value = "/ComputeClusters", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "", notes = "", tags = "Clusters")
+    @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
+            @ApiResponse(code=400, message = "Bad request"),
+            @ApiResponse(code=500, message = "Internal error")})
+    public ResponseEntity computeClusters(@ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
+                                          @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
+                                          @ApiParam(value="OpenReqJson with requirements", required = true) @RequestBody Requirements input) {
+        try {
+            similarityService.computeClusters(compare,threshold,input);
+            return new ResponseEntity<>(null,HttpStatus.OK);
+        } catch (ComponentException e) {
+            return getComponentError(e);
+        }
+    }
+
+    @CrossOrigin
     @PostMapping(value = "/AddReqsAndCompute", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Builds a model with the input requirements and computes them", notes = "<p>Builds a model with the entry requirements. " +
             "The generated model is assigned to the specified organization and stored in an internal database. Each organization" +
@@ -69,6 +86,29 @@ public class RestApiController {
         try {
             urlOk(url);
             return new ResponseEntity<>(similarityService.buildModelAndCompute(url,organization,compare,threshold,input),HttpStatus.OK);
+        } catch (ComponentException e) {
+            return getComponentError(e);
+        }
+    }
+
+    @CrossOrigin
+    @PostMapping(value = "/AddReqsAndComputeOrphans", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Builds a model with the input requirements and computes them", notes = "<p>Builds a model with the entry requirements. " +
+            "The generated model is assigned to the specified organization and stored in an internal database. Each organization" +
+            " only can have one model at a time. If at the time of generating a new model the corresponding organization already has" +
+            " an existing model, it is replaced by the new one.</p><br><p>Also, it returns an array of dependencies between the requirements received as input and" +
+            " the cluster's centroids of the duplicates dataset.</p>", tags = "Clusters")
+    @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
+            @ApiResponse(code=400, message = "Bad request"),
+            @ApiResponse(code=500, message = "Internal error")})
+    public ResponseEntity buildModelAndComputeOrphans(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+                                               @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
+                                               @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
+                                               @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/PostResult") @RequestParam("url") String url,
+                                               @ApiParam(value="OpenReqJson with requirements", required = true) @RequestBody Requirements input) {
+        try {
+            urlOk(url);
+            return new ResponseEntity<>(similarityService.buildModelAndComputeOrphans(url,organization,compare,threshold,input),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }

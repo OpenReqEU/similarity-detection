@@ -1,6 +1,7 @@
 package upc.similarity.compareapi.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.json.JSONObject;
 
 import java.io.Serializable;
 
@@ -13,6 +14,10 @@ public class Requirement implements Serializable {
     private String name;
     @JsonProperty(value="text")
     private String text;
+    @JsonProperty(value="created_at")
+    private long created_at;
+
+    public Requirement() {}
 
     /*
     Get
@@ -28,6 +33,10 @@ public class Requirement implements Serializable {
 
     public String getText() {
         return text;
+    }
+
+    public long getCreated_at() {
+        return created_at;
     }
 
     /*
@@ -46,6 +55,10 @@ public class Requirement implements Serializable {
         this.text = text;
     }
 
+    public void setCreated_at(long created_at) {
+        this.created_at = created_at;
+    }
+
     /*
     Auxiliary operations
      */
@@ -53,5 +66,21 @@ public class Requirement implements Serializable {
     @Override
     public String toString() {
         return "Requirement with id " + id + ".";
+    }
+
+    public JSONObject toJson() {
+        JSONObject json = new JSONObject();
+        json.put("id",id);
+        json.put("name",name);
+        json.put("text",text);
+        json.put("created_at",created_at);
+        return json;
+    }
+
+    public Requirement(JSONObject jsonObject) {
+        this.setId(jsonObject.getString("id"));
+        this.setName(jsonObject.getString("name"));
+        this.setText(jsonObject.getString("text"));
+        this.setCreated_at(jsonObject.getLong("created_at"));
     }
 }

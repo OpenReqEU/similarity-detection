@@ -18,11 +18,26 @@ public class CompareAdapter extends ComponentAdapter{
         connectionComponentPost(URL + "BuildModel?compare=" + compare + "&organization=" + organization + "&filename=" + filename, requirementsJson);
     }
 
+    @Override
+    public void computeClusters(boolean compare, double threshold, List<Requirement> requirements) throws ComponentException {
+
+        JSONArray requirementsJson = listRequirementsToJson(requirements);
+
+        connectionComponentPost(URL + "ComputeClusters?compare=" + compare + "&threshold=" + threshold, requirementsJson);
+    }
+
     public void buildModelAndCompute(String filename, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException {
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
 
         connectionComponentPost(URL + "BuildModelAndCompute?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, requirementsJson);
+    }
+
+    public void buildModelAndComputeOrphans(String filename, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException {
+
+        JSONArray requirementsJson = listRequirementsToJson(requirements);
+
+        connectionComponentPost(URL + "BuildModelAndComputeOrphans?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, requirementsJson);
     }
 
     @Override

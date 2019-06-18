@@ -1,6 +1,7 @@
 package upc.similarity.compareapi.service;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 import upc.similarity.compareapi.config.Control;
@@ -32,6 +33,7 @@ public class CompareServiceImpl implements CompareService {
     private static String badRequestMessage = "Bad request";
     private static String notFoundMessage = "Not found";
     private static String sqlErrorMessage = "Database error";
+    private static String internalErrorMessage = "Internal error";
     private DatabaseModel databaseModel = getValue();
     private Control control = Control.getInstance();
 
@@ -145,13 +147,13 @@ public class CompareServiceImpl implements CompareService {
         } catch (BadRequestException e) {
             saveBadRequestException(organization, responseId, e);
         }
-        simReqProject(responseId,organization , threshold, new ReqProject(requirementsToCompare, projectRequirements), true);
+        simReqProject(responseId,organization , threshold, new ReqProject(requirementsToCompare, projectRequirements), true, true);
 
         control.showInfoMessage("SimReqOrganization: Finish computing");
     }
 
     @Override
-    public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements, boolean responseCreated) throws NotFoundException, InternalErrorException, BadRequestException {
+    public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements, boolean responseCreated, boolean includeReqs) throws NotFoundException, InternalErrorException, BadRequestException {
         control.showInfoMessage("SimReqProject: Start computing");
         CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
 
@@ -191,7 +193,7 @@ public class CompareServiceImpl implements CompareService {
                         }
                     }
                 }
-                projectRequirements.getProjectReqs().add(req1);
+                if (includeReqs) projectRequirements.getProjectReqs().add(req1);
             }
         }
 
@@ -259,6 +261,136 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
+    public void buildModelAndComputeOrphans(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws BadRequestException, NotFoundException, InternalErrorException {
+        control.showInfoMessage("BuildModelAndComputeOrphans: Start computing");
+        generateResponse(organization,responseId);
+
+        List<String> requirementsToCompare = new ArrayList<>();
+        List<String> projectRequirements = new ArrayList<>();
+
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = new JSONObject(read_file_json("../testing/output/masters_duplicates"));
+        } catch (InternalErrorException e) {
+            saveInternalErrorException(organization, responseId, e);
+        }
+        JSONArray listedRequirements = jsonObject.getJSONArray("requirements");
+        JSONArray masters = jsonObject.getJSONArray("masters");
+        for (int i = 0; i < masters.length(); ++i) {
+            JSONObject requirement = masters.getJSONObject(i);
+            Requirement aux = new Requirement(requirement);
+            requirements.add(0,aux);
+            requirementsToCompare.add(aux.getId());
+        }
+        HashSet<String> requirementsIds = new HashSet<>();
+        for (int i = 0; i < listedRequirements.length(); ++i) {
+            requirementsIds.add(listedRequirements.getString(i));
+        }
+
+        List<Requirement> notDuplicatedRequirements = null;
+        try {
+            notDuplicatedRequirements = deleteDuplicates(requirements);
+        } catch (BadRequestException e) {
+            saveBadRequestException(organization, responseId, e);
+        }
+        Model model = null;
+        try {
+            model = generateModel(compare, notDuplicatedRequirements);
+            saveModel(organization, model);
+        } catch (BadRequestException e) {
+            saveBadRequestException(organization, responseId, e);
+        }
+
+        for (Requirement requirement: notDuplicatedRequirements) {
+            if (!requirementsIds.contains(requirement.getId())) projectRequirements.add(requirement.getId());
+        }
+
+        simReqProject(responseId,organization , threshold, new ReqProject(requirementsToCompare, projectRequirements), true, false);
+        control.showInfoMessage("BuildModelAndComputeOrphans: Finish computing");
+    }
+
+    @Override
+    public void computeClusters(String compare, double threshold, List<Requirement> requirements) throws InternalErrorException, BadRequestException {
+        CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
+        List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements);
+        Model model = generateModel(compare, notDuplicatedRequirements);
+
+        int countIds = 0;
+        HashMap<Integer,List<Requirement>> clusters = new HashMap<>();
+
+        for (Requirement requirement: notDuplicatedRequirements) {
+            String req1 = requirement.getId();
+            Iterator it = clusters.entrySet().iterator();
+            List<Integer> clusterIds = new ArrayList<>();
+            while (it.hasNext()) {
+                Map.Entry pair = (Map.Entry)it.next();
+                int clusterId = (int) pair.getKey();
+                List<Requirement> clusterRequirements = (List<Requirement>) pair.getValue();
+                boolean found = false;
+                Iterator<Requirement> it2 = clusterRequirements.iterator();
+                while(it2.hasNext() && !found){
+                    String req2 = it2.next().getId();
+                    double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
+                    if (score > threshold) {
+                        found = true;
+                        clusterIds.add(clusterId);
+                    }
+                }
+            }
+            if (clusterIds.size() > 0) {
+                if (clusterIds.size() == 1) {
+                    int clusterId = clusterIds.get(0);
+                    List<Requirement> aux = clusters.get(clusterId);
+                    aux.add(requirement);
+                } else {
+                    List<Requirement> newCluster = new ArrayList<>();
+                    newCluster.add(requirement);
+                    for (int clusterId: clusterIds) {
+                        newCluster.addAll(clusters.get(clusterId));
+                        clusters.remove(clusterId);
+                    }
+                    clusters.put(countIds,newCluster);
+                    ++countIds;
+                }
+            } else {
+                List<Requirement> newCluster = new ArrayList<>();
+                newCluster.add(requirement);
+                clusters.put(countIds, newCluster);
+                ++countIds;
+            }
+        }
+
+        JSONArray masters = new JSONArray();
+        JSONArray requirementsJson = new JSONArray();
+        Iterator it = clusters.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next();
+            int clusterId = (int) pair.getKey();
+            List<Requirement> clusterRequirements = (List<Requirement>) pair.getValue();
+            for (Requirement requirement: clusterRequirements) {
+                requirementsJson.put(requirement.getId());
+            }
+            if (clusterRequirements.size() > 1) {
+                masters.put(findMaster(clusterRequirements).toJson());
+            }
+        }
+
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("masters", masters);
+        jsonObject.put("requirements",requirementsJson);
+
+        writeToFile("../testing/output/masters_duplicates", jsonObject.toString());
+    }
+
+    private Requirement findMaster(List<Requirement> requirements) {
+        Requirement master = requirements.get(0);
+        for (Requirement requirement: requirements) {
+            if (requirement.getCreated_at() != 0 && (requirement.getCreated_at() < master.getCreated_at() || master.getCreated_at() == 0)) master = requirement;
+        }
+        return master;
+    }
+
+    @Override
     public String getResponsePage(String organization, String responseId) throws NotFoundException, InternalErrorException, NotFinishedException {
 
         String responsePage;
@@ -317,13 +449,21 @@ public class CompareServiceImpl implements CompareService {
         return result;
     }
 
-    private void writeToFile(String fileName, String text) {
-        try (FileWriter fw = new FileWriter(fileName, true);
-             BufferedWriter bw = new BufferedWriter(fw)) {
-                bw.write(text);
-                bw.newLine();
+    public void writeToFile(String fileName, String text) throws InternalErrorException {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));) {
+            writer.write(text);
         } catch (IOException e) {
-            control.showErrorMessage(e.getMessage());
+            throw new InternalErrorException(e.getMessage());
+        }
+    }
+
+    private void saveInternalErrorException(String organization, String responseId, InternalErrorException e) throws BadRequestException, InternalErrorException {
+        try {
+            databaseModel.saveResponsePage(organization, responseId, 0, createJsonException(500, internalErrorMessage, e.getMessage()));
+            databaseModel.finishComputation(organization, responseId);
+            throw e;
+        } catch (SQLException sq) {
+            treatSQLException(sq);
         }
     }
 
@@ -447,5 +587,21 @@ public class CompareServiceImpl implements CompareService {
             }
         }
         return result;
+    }
+
+    private String read_file_json(String path) throws InternalErrorException {
+        String result = "";
+        String line = "";
+        try(FileReader fileReader = new FileReader(path);
+            BufferedReader bufferedReader = new BufferedReader(fileReader)) {
+            while ((line = bufferedReader.readLine()) != null) {
+                result = result.concat(line);
+            }
+            JSONObject aux = new JSONObject(result);
+            return aux.toString();
+        } catch (IOException | JSONException e) {
+            control.showErrorMessage(e.getMessage());
+            throw new InternalErrorException("Error loading file");
+        }
     }
 }

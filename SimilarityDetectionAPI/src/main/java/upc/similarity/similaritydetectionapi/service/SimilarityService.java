@@ -11,6 +11,8 @@ public interface SimilarityService {
 
     public ResultId buildModel(String url, String organization, boolean compare, Requirements input) throws InternalErrorException, BadRequestException, NotFoundException;
 
+    public void computeClusters(boolean compare, double threshold, Requirements input) throws ComponentException;
+
     public String simReqReq(String organization, String req1, String req2) throws ComponentException;
 
     public ResultId simReqProject(String url, String organization, double threshold, int maxNumber, List<String> req, String project, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException;
@@ -18,6 +20,8 @@ public interface SimilarityService {
     public ResultId simProject(String url, String organization, double threshold, int maxNumber, String project, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException;
 
     public ResultId buildModelAndCompute(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException;
+
+    public ResultId buildModelAndComputeOrphans(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException;
 
     public ResultId simReqOrganization(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException;
 
