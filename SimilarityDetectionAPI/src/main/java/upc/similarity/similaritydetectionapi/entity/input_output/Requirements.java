@@ -12,17 +12,17 @@ import java.util.List;
 public class Requirements implements Serializable {
 
     @JsonProperty(value="requirements")
-    private List<Requirement> requirementsArray;
+    private List<Requirement> requirements;
 
     public Requirements() {
-        requirementsArray = new ArrayList<>();
+        requirements = new ArrayList<>();
     }
 
     public List<Requirement> getRequirements() {
-        return requirementsArray;
+        return requirements;
     }
 
     public boolean inputOk() {
-        return !requirementsArray.isEmpty();
+        return !requirements.isEmpty();
     }
 }
