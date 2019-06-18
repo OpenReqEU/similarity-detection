@@ -53,7 +53,8 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/ComputeClusters", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "", notes = "", tags = "Clusters")
+    @ApiOperation(value = "Saves inside the database the duplicates dataset", notes = "Computes de clusters of the input requirements and saves them in the internal database. They are" +
+            " next used in the AddReqsAndComputeOrphans method.", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -97,7 +98,7 @@ public class RestApiController {
             "The generated model is assigned to the specified organization and stored in an internal database. Each organization" +
             " only can have one model at a time. If at the time of generating a new model the corresponding organization already has" +
             " an existing model, it is replaced by the new one.</p><br><p>Also, it returns an array of dependencies between the requirements received as input and" +
-            " the cluster's centroids of the duplicates dataset.</p>", tags = "Clusters")
+            " the cluster's centroids of the duplicates dataset computed in the ComputeClusters method.</p>", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})

@@ -42,7 +42,7 @@ public class ControllerTests {
 
     @BeforeClass
     public static void createTestDB() throws Exception {
-        String absoluteFilePath = "../models_test.db";
+        String absoluteFilePath = "models_test.db";
         File file = new File(absoluteFilePath);
         boolean result = file.createNewFile();
         SQLiteDatabase.setDbName("models_test.db");
@@ -53,7 +53,7 @@ public class ControllerTests {
 
     @AfterClass
     public static void deleteTestDB() throws Exception {
-        File file = new File("../models_test.db");
+        File file = new File("models_test.db");
         boolean result = file.delete();
     }
 

@@ -14,7 +14,7 @@ import java.util.Map;
 public class SQLiteDatabase implements DatabaseModel {
 
     private static String dbName = "models.db";
-    private static String dbUrl = "jdbc:sqlite:../"+dbName;
+    private static String dbUrl = "jdbc:sqlite:"+dbName;
 
     public SQLiteDatabase() throws ClassNotFoundException {
         Class.forName("org.sqlite.JDBC");
@@ -22,7 +22,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
     public static void setDbName(String dbName) {
         SQLiteDatabase.dbName = dbName;
-        dbUrl = "jdbc:sqlite:../"+dbName;
+        dbUrl = "jdbc:sqlite:"+dbName;
     }
 
     public static String getDbName() {

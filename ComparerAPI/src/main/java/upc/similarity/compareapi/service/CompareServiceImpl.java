@@ -416,9 +416,9 @@ public class CompareServiceImpl implements CompareService {
     @Override
     public void clearDatabase() throws InternalErrorException {
         try {
-            Path path = Paths.get("../"+ SQLiteDatabase.getDbName());
+            Path path = Paths.get(SQLiteDatabase.getDbName());
             Files.delete(path);
-            File file = new File("../"+ SQLiteDatabase.getDbName());
+            File file = new File(SQLiteDatabase.getDbName());
             if (!file.createNewFile()) throw new InternalErrorException("Error while clearing the database. Error while creating new database file.");
             databaseModel.createDatabase();
         } catch (IOException e) {
