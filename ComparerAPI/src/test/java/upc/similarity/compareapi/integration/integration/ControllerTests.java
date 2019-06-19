@@ -92,20 +92,9 @@ public class ControllerTests {
     }
 
     @Test
-    public void computeClusters() throws Exception {
-        this.mockMvc.perform(post(url + "ComputeClusters").param("threshold", "0.1")
-                .param("compare", "true").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"computeClusters/input.json")))
-                .andExpect(status().isOk());
-        assertEquals(read_file_json(path+"computeClusters/output.json"), read_file_json("../testing/output/masters_duplicates"));
-    }
-
-    @Test
     public void addReqsAndComputeOrphans() throws Exception {
-        this.mockMvc.perform(post(url + "ComputeClusters").param("threshold", "0.1")
-                .param("compare", "true").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"computeOrphans/input_clusters.json")))
-                .andExpect(status().isOk());
         this.mockMvc.perform(post(url + "BuildModelAndComputeOrphans").param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"computeOrphans/input_reqs.json")))
+                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"computeOrphans/input_reqs.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "computeOrphans/output.json")));

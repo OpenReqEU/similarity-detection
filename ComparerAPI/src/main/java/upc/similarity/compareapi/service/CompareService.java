@@ -5,6 +5,7 @@ import java.util.List;
 
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Requirement;
+import upc.similarity.compareapi.entity.input.Clusters;
 import upc.similarity.compareapi.entity.input.ReqProject;
 import upc.similarity.compareapi.exception.BadRequestException;
 import upc.similarity.compareapi.exception.InternalErrorException;
@@ -19,9 +20,9 @@ public interface CompareService {
 
     public void simReqOrganization(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException;
 
-    public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements, boolean responseCreated, boolean includeReqs) throws NotFoundException, InternalErrorException, BadRequestException;
+    public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements) throws NotFoundException, InternalErrorException, BadRequestException;
 
-    public void simProject(String responseId, String organization, double threshold, List<String> projectRequirements, boolean responseCreated) throws NotFoundException, InternalErrorException;
+    public void simProject(String responseId, String organization, double threshold, List<String> projectRequirements) throws NotFoundException, InternalErrorException;
 
     public void buildModelAndCompute(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, BadRequestException, InternalErrorException;
 
@@ -31,8 +32,6 @@ public interface CompareService {
 
     public void clearDatabase() throws InternalErrorException;
 
-    public void computeClusters(String compare, double threshold, List<Requirement> requirements) throws InternalErrorException, BadRequestException;
-
-    public void buildModelAndComputeOrphans(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws BadRequestException, NotFoundException, InternalErrorException;
+    public void buildModelAndComputeOrphans(String responseId, String compare, String organization, double threshold, Clusters requirements) throws BadRequestException, NotFoundException, InternalErrorException;
 
 }

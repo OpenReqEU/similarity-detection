@@ -12,10 +12,7 @@ import upc.similarity.similaritydetectionapi.adapter.ComponentAdapter;
 import upc.similarity.similaritydetectionapi.adapter.CompareAdapter;
 import upc.similarity.similaritydetectionapi.config.Control;
 import upc.similarity.similaritydetectionapi.entity.Project;
-import upc.similarity.similaritydetectionapi.entity.input_output.JsonProject;
-import upc.similarity.similaritydetectionapi.entity.input_output.Requirements;
-import upc.similarity.similaritydetectionapi.entity.input_output.ResultId;
-import upc.similarity.similaritydetectionapi.entity.input_output.ResultJson;
+import upc.similarity.similaritydetectionapi.entity.input_output.*;
 import upc.similarity.similaritydetectionapi.exception.*;
 import upc.similarity.similaritydetectionapi.values.Component;
 
@@ -63,15 +60,6 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public void computeClusters(boolean compare, double threshold, Requirements input) throws ComponentException {
-
-        checkInput(input, threshold);
-
-        ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-        componentAdapter.computeClusters(compare,threshold,input.getRequirements());
-    }
-
-    @Override
     public ResultId buildModelAndCompute(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException {
 
         checkInput(input, threshold);
@@ -100,9 +88,10 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId buildModelAndComputeOrphans(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException {
+    public ResultId buildModelAndComputeOrphans(String url, String organization, boolean compare, double threshold, ProjectWithDependencies input) throws InternalErrorException, BadRequestException {
 
-        checkInput(input, threshold);
+        checkThreshold(threshold);
+        if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements or dependencies");
         ResultId id = getId();
 
         //New thread
@@ -112,7 +101,7 @@ public class SimilarityServiceImpl implements SimilarityService {
                 ResultJson result = new ResultJson(id.getId(),"AddReqsAndComputeOrphans");
                 try {
                     CompareAdapter compareAdapter = new CompareAdapter();
-                    compareAdapter.buildModelAndComputeOrphans(id.getId(),organization,compare,threshold,input.getRequirements());
+                    compareAdapter.buildModelAndComputeOrphans(id.getId(),organization,compare,threshold,input.getRequirements(),input.getDependencies());
                     result.setCode(200);
                 } catch (ComponentException e) {
                     result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -165,7 +154,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simReqProject(String url, String organization, double threshold, int maxNumber, List<String> req, String projectId, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
+    public ResultId simReqProject(String url, String organization, double threshold, int maxNumber, List<String> req, String projectId, Projects input) throws BadRequestException, InternalErrorException, NotFoundException {
 
         checkThreshold(threshold);
         Project project = searchProject(projectId,input.getProjects());
@@ -195,7 +184,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simProject(String url, String organization, double threshold, int maxNumber, String projectId, JsonProject input) throws BadRequestException, InternalErrorException, NotFoundException {
+    public ResultId simProject(String url, String organization, double threshold, int maxNumber, String projectId, Projects input) throws BadRequestException, InternalErrorException, NotFoundException {
 
         checkThreshold(threshold);
         Project project = searchProject(projectId,input.getProjects());

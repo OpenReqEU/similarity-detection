@@ -8,6 +8,7 @@ import upc.similarity.compareapi.config.Control;
 import upc.similarity.compareapi.dao.DatabaseModel;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.entity.*;
+import upc.similarity.compareapi.entity.input.Clusters;
 import upc.similarity.compareapi.entity.input.ReqProject;
 import upc.similarity.compareapi.exception.BadRequestException;
 import upc.similarity.compareapi.exception.InternalErrorException;
@@ -69,9 +70,9 @@ public class CompareServiceImpl implements CompareService {
     public void buildModelAndCompute(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws BadRequestException, NotFoundException, InternalErrorException {
         control.showInfoMessage("BuildModelAndCompute: Start computing");
         generateResponse(organization,responseId);
+        Model model = null;
         try {
-            Model model = generateModel(compare, deleteDuplicates(requirements));
-            saveModel(organization, model);
+            model = generateModel(compare, deleteDuplicates(requirements));
         } catch (BadRequestException e) {
             saveBadRequestException(organization, responseId, e);
         }
@@ -79,7 +80,12 @@ public class CompareServiceImpl implements CompareService {
         for (Requirement requirement: requirements) {
             requirementsIds.add(requirement.getId());
         }
-        simProject(responseId,organization,threshold,requirementsIds,true);
+
+        project(requirementsIds, model, threshold, responseId, organization);
+
+        saveModel(organization, model);
+
+        finishComputation(organization, responseId);
         control.showInfoMessage("BuildModelAndCompute: Finish computing");
     }
 
@@ -143,21 +149,23 @@ public class CompareServiceImpl implements CompareService {
 
         try {
             updateModel(compare, requirementsNotDuplicated,model,oldCorpusFrequency);
-            saveModel(organization, model);
         } catch (BadRequestException e) {
             saveBadRequestException(organization, responseId, e);
         }
-        simReqProject(responseId,organization , threshold, new ReqProject(requirementsToCompare, projectRequirements), true, true);
+
+        reqProject(requirementsToCompare, projectRequirements, model, threshold, organization, responseId, false);
+        saveModel(organization, model);
+
+        finishComputation(organization, responseId);
 
         control.showInfoMessage("SimReqOrganization: Finish computing");
     }
 
     @Override
-    public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements, boolean responseCreated, boolean includeReqs) throws NotFoundException, InternalErrorException, BadRequestException {
+    public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements) throws NotFoundException, InternalErrorException, BadRequestException {
         control.showInfoMessage("SimReqProject: Start computing");
-        CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
 
-        if (!responseCreated) generateResponse(organization,responseId);
+        generateResponse(organization,responseId);
 
         Model model = null;
         try {
@@ -171,13 +179,22 @@ public class CompareServiceImpl implements CompareService {
             saveBadRequestException(organization, responseId, e);
         }
 
+        reqProject(projectRequirements.getReqsToCompare(), projectRequirements.getProjectReqs(), model, threshold, organization, responseId, true);
+
+        finishComputation(organization, responseId);
+        control.showInfoMessage("SimReqProject: Finish computing");
+    }
+
+    private void reqProject(List<String> reqsToCompare, List<String> projectRequirements, Model model, double threshold, String organization, String responseId, boolean includeReqs) throws InternalErrorException {
+        CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
+
         int cont = 0;
         int pages = 0;
 
         JSONArray array = new JSONArray();
-        for (String req1: projectRequirements.getReqsToCompare()) {
+        for (String req1: reqsToCompare) {
             if (model.getDocs().containsKey(req1)) {
-                for (String req2 : projectRequirements.getProjectReqs()) {
+                for (String req2 : projectRequirements) {
                     if (!req1.equals(req2) && model.getDocs().containsKey(req2)) {
                         double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
                         if (score >= threshold) {
@@ -193,24 +210,20 @@ public class CompareServiceImpl implements CompareService {
                         }
                     }
                 }
-                if (includeReqs) projectRequirements.getProjectReqs().add(req1);
+                if (includeReqs) projectRequirements.add(req1);
             }
         }
 
         if (array.length() > 0) {
             generateResponsePage(responseId, organization, pages, array);
         }
-
-        finishComputation(organization, responseId);
-        control.showInfoMessage("SimReqProject: Finish computing");
     }
 
     @Override
-    public void simProject(String responseId, String organization, double threshold, List<String> projectRequirements, boolean responseCreated) throws NotFoundException, InternalErrorException {
+    public void simProject(String responseId, String organization, double threshold, List<String> projectRequirements) throws NotFoundException, InternalErrorException {
         control.showInfoMessage("SimProject: Start computing");
-        CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
 
-        if (!responseCreated) generateResponse(organization,responseId);
+        generateResponse(organization,responseId);
 
         Model model = null;
         try {
@@ -219,6 +232,14 @@ public class CompareServiceImpl implements CompareService {
             saveNotFoundException(organization, responseId, e);
         }
 
+        project(projectRequirements, model, threshold, responseId, organization);
+
+        finishComputation(organization, responseId);
+        control.showInfoMessage("SimProject: Finish computing");
+    }
+
+    private void project(List<String> projectRequirements, Model model, double threshold, String responseId, String organization) throws InternalErrorException {
+        CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
         int cont = 0;
         int pages = 0;
         long number_dependencies = 0;
@@ -255,131 +276,89 @@ public class CompareServiceImpl implements CompareService {
         }
 
         control.showInfoMessage("Number dependencies: " + number_dependencies);
-
-        finishComputation(organization, responseId);
-        control.showInfoMessage("SimProject: Finish computing");
     }
 
     @Override
-    public void buildModelAndComputeOrphans(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws BadRequestException, NotFoundException, InternalErrorException {
+    public void buildModelAndComputeOrphans(String responseId, String compare, String organization, double threshold, Clusters input) throws BadRequestException, NotFoundException, InternalErrorException {
         control.showInfoMessage("BuildModelAndComputeOrphans: Start computing");
         generateResponse(organization,responseId);
 
-        List<String> requirementsToCompare = new ArrayList<>();
+        List<Requirement> requirements = null;
+        try {
+            requirements = deleteDuplicates(input.getRequirements());
+        } catch (BadRequestException e) {
+            saveBadRequestException(organization, responseId, e);
+        }
+
+        HashMap<String,Integer> reqCluster = new HashMap<>();
+        HashMap<Integer,List<Requirement>> clusters = new HashMap<>();
+        int countIds = 0;
+
+        for (Requirement requirement: requirements) {
+            List<Requirement> aux = new ArrayList<>();
+            aux.add(requirement);
+            clusters.put(countIds,aux);
+            reqCluster.put(requirement.getId(),countIds);
+            ++countIds;
+        }
+
+        for (Dependency dependency: input.getDependencies()) {
+            if (validDependency(dependency)) {
+                String fromid = dependency.getFromid();
+                String toid = dependency.getToid();
+                if (reqCluster.containsKey(fromid) && reqCluster.containsKey(toid)) {
+                    mergeClusters(clusters, reqCluster, fromid, toid);
+                }
+            }
+        }
+
+        List<Requirement> centroids = new ArrayList<>();
         List<String> projectRequirements = new ArrayList<>();
 
-        JSONObject jsonObject = null;
-        try {
-            jsonObject = new JSONObject(read_file_json("../testing/output/masters_duplicates"));
-        } catch (InternalErrorException e) {
-            saveInternalErrorException(organization, responseId, e);
-        }
-        JSONArray listedRequirements = jsonObject.getJSONArray("requirements");
-        JSONArray masters = jsonObject.getJSONArray("masters");
-        for (int i = 0; i < masters.length(); ++i) {
-            JSONObject requirement = masters.getJSONObject(i);
-            Requirement aux = new Requirement(requirement);
-            requirements.add(0,aux);
-            requirementsToCompare.add(aux.getId());
-        }
-        HashSet<String> requirementsIds = new HashSet<>();
-        for (int i = 0; i < listedRequirements.length(); ++i) {
-            requirementsIds.add(listedRequirements.getString(i));
-        }
-
-        List<Requirement> notDuplicatedRequirements = null;
-        try {
-            notDuplicatedRequirements = deleteDuplicates(requirements);
-        } catch (BadRequestException e) {
-            saveBadRequestException(organization, responseId, e);
-        }
-        Model model = null;
-        try {
-            model = generateModel(compare, notDuplicatedRequirements);
-            saveModel(organization, model);
-        } catch (BadRequestException e) {
-            saveBadRequestException(organization, responseId, e);
-        }
-
-        for (Requirement requirement: notDuplicatedRequirements) {
-            if (!requirementsIds.contains(requirement.getId())) projectRequirements.add(requirement.getId());
-        }
-
-        simReqProject(responseId,organization , threshold, new ReqProject(requirementsToCompare, projectRequirements), true, false);
-        control.showInfoMessage("BuildModelAndComputeOrphans: Finish computing");
-    }
-
-    @Override
-    public void computeClusters(String compare, double threshold, List<Requirement> requirements) throws InternalErrorException, BadRequestException {
-        CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
-        List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements);
-        Model model = generateModel(compare, notDuplicatedRequirements);
-
-        int countIds = 0;
-        HashMap<Integer,List<Requirement>> clusters = new HashMap<>();
-
-        for (Requirement requirement: notDuplicatedRequirements) {
-            String req1 = requirement.getId();
-            Iterator it = clusters.entrySet().iterator();
-            List<Integer> clusterIds = new ArrayList<>();
-            while (it.hasNext()) {
-                Map.Entry pair = (Map.Entry)it.next();
-                int clusterId = (int) pair.getKey();
-                List<Requirement> clusterRequirements = (List<Requirement>) pair.getValue();
-                boolean found = false;
-                Iterator<Requirement> it2 = clusterRequirements.iterator();
-                while(it2.hasNext() && !found){
-                    String req2 = it2.next().getId();
-                    double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
-                    if (score > threshold) {
-                        found = true;
-                        clusterIds.add(clusterId);
-                    }
-                }
-            }
-            if (clusterIds.size() > 0) {
-                if (clusterIds.size() == 1) {
-                    int clusterId = clusterIds.get(0);
-                    List<Requirement> aux = clusters.get(clusterId);
-                    aux.add(requirement);
-                } else {
-                    List<Requirement> newCluster = new ArrayList<>();
-                    newCluster.add(requirement);
-                    for (int clusterId: clusterIds) {
-                        newCluster.addAll(clusters.get(clusterId));
-                        clusters.remove(clusterId);
-                    }
-                    clusters.put(countIds,newCluster);
-                    ++countIds;
-                }
-            } else {
-                List<Requirement> newCluster = new ArrayList<>();
-                newCluster.add(requirement);
-                clusters.put(countIds, newCluster);
-                ++countIds;
-            }
-        }
-
-        JSONArray masters = new JSONArray();
-        JSONArray requirementsJson = new JSONArray();
         Iterator it = clusters.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry pair = (Map.Entry)it.next();
-            int clusterId = (int) pair.getKey();
             List<Requirement> clusterRequirements = (List<Requirement>) pair.getValue();
-            for (Requirement requirement: clusterRequirements) {
-                requirementsJson.put(requirement.getId());
-            }
-            if (clusterRequirements.size() > 1) {
-                masters.put(findMaster(clusterRequirements).toJson());
-            }
+            Requirement master = findMaster(clusterRequirements);
+            centroids.add(master);
+            projectRequirements.add(master.getId());
+            it.remove();
         }
 
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("masters", masters);
-        jsonObject.put("requirements",requirementsJson);
+        Model model = null;
+        try {
+            model = generateModel(compare, centroids);
+        } catch (BadRequestException e) {
+            saveBadRequestException(organization, responseId, e);
+        }
 
-        writeToFile("../testing/output/masters_duplicates", jsonObject.toString());
+        project(projectRequirements,model,threshold, responseId, organization);
+
+        saveModel(organization, model);
+
+        finishComputation(organization, responseId);
+
+        control.showInfoMessage("BuildModelAndComputeOrphans: Finish computing");
+    }
+
+    private boolean validDependency(Dependency dependency) {
+        String type = dependency.getDependencyType();
+        return (type != null && (type.equals("similar") || type.equals("duplicates")));
+    }
+
+    private void mergeClusters(HashMap<Integer,List<Requirement>> clusters, HashMap<String,Integer> reqCluster, String req1, String req2) {
+        if (!reqCluster.get(req1).equals(reqCluster.get(req2))) {
+            Integer id1 = reqCluster.get(req1);
+            Integer id2 = reqCluster.get(req2);
+            List<Requirement> aux1 = clusters.get(id1);
+            List<Requirement> aux2 = clusters.get(id2);
+            aux1.addAll(aux2);
+            clusters.put(id1, aux1);
+            for (Requirement req: aux2) {
+                reqCluster.put(req.getId(),id1);
+            }
+            clusters.remove(id2);
+        }
     }
 
     private Requirement findMaster(List<Requirement> requirements) {

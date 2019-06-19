@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import upc.similarity.compareapi.entity.Requirement;
+import upc.similarity.compareapi.entity.input.Clusters;
 import upc.similarity.compareapi.entity.input.ReqProject;
 import upc.similarity.compareapi.exception.BadRequestException;
 import upc.similarity.compareapi.exception.InternalErrorException;
@@ -73,7 +74,7 @@ public class RestApiController {
                                            @RequestParam("threshold") double threshold,
                                            @RequestBody ReqProject projectRequirements) {
         try {
-            compareService.simReqProject(responseId,organization,threshold,projectRequirements,false, true);
+            compareService.simReqProject(responseId,organization,threshold,projectRequirements);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (NotFoundException e) {
             return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
@@ -90,7 +91,7 @@ public class RestApiController {
                                         @RequestParam("threshold") double threshold,
                                         @RequestBody List<String> projectRequirements) {
         try {
-            compareService.simProject(responseId,organization,threshold,projectRequirements,false);
+            compareService.simProject(responseId,organization,threshold,projectRequirements);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (NotFoundException e) {
             return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
@@ -119,10 +120,10 @@ public class RestApiController {
 
     @PostMapping(value = "/BuildModelAndComputeOrphans")
     public ResponseEntity buildModelAndComputeOrphans(@RequestParam("organization") String organization,
-                                               @RequestParam("compare") String compare,
-                                               @RequestParam("filename") String responseId,
-                                               @RequestParam("threshold") double threshold,
-                                               @RequestBody List<Requirement> input) {
+                                                      @RequestParam("compare") String compare,
+                                                      @RequestParam("filename") String responseId,
+                                                      @RequestParam("threshold") double threshold,
+                                                      @RequestBody Clusters input) {
         try {
             compareService.buildModelAndComputeOrphans(responseId,compare,organization,threshold,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
@@ -132,20 +133,6 @@ public class RestApiController {
             return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
         } catch (NotFoundException e) {
             return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
-        }
-    }
-
-    @PostMapping(value = "/ComputeClusters")
-    public ResponseEntity computeClusters(@RequestParam("compare") String compare,
-                                          @RequestParam("threshold") double threshold,
-                                          @RequestBody List<Requirement> input) {
-        try {
-            compareService.computeClusters(compare,threshold,input);
-            return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (BadRequestException e) {
-            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

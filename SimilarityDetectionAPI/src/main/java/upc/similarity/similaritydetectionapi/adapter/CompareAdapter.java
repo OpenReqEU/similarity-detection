@@ -2,6 +2,7 @@ package upc.similarity.similaritydetectionapi.adapter;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import upc.similarity.similaritydetectionapi.entity.Dependency;
 import upc.similarity.similaritydetectionapi.entity.Requirement;
 import upc.similarity.similaritydetectionapi.exception.*;
 
@@ -33,11 +34,16 @@ public class CompareAdapter extends ComponentAdapter{
         connectionComponentPost(URL + "BuildModelAndCompute?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, requirementsJson);
     }
 
-    public void buildModelAndComputeOrphans(String filename, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException {
+    public void buildModelAndComputeOrphans(String filename, String organization, boolean compare, double threshold, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException {
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
+        JSONArray dependenciesJson = listDependenciesToJson(dependencies);
 
-        connectionComponentPost(URL + "BuildModelAndComputeOrphans?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, requirementsJson);
+        JSONObject jsonToSend = new JSONObject();
+        jsonToSend.put("requirements", requirements);
+        jsonToSend.put("dependencies", dependencies);
+
+        connectionComponentPost(URL + "BuildModelAndComputeOrphans?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, jsonToSend);
     }
 
     @Override
