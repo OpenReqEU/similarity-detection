@@ -190,14 +190,20 @@ public class CompareServiceImpl implements CompareService {
 
         int cont = 0;
         int pages = 0;
+        long numberDependencies = 0;
+
+        String filename = "../testing/output/results";
 
         JSONArray array = new JSONArray();
         for (String req1: reqsToCompare) {
             if (model.getDocs().containsKey(req1)) {
+                long deps = 0;
                 for (String req2 : projectRequirements) {
                     if (!req1.equals(req2) && model.getDocs().containsKey(req2)) {
                         double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
                         if (score >= threshold) {
+                            ++numberDependencies;
+                            ++deps;
                             Dependency dependency = new Dependency(score, req1, req2, status, dependencyType, component);
                             array.put(dependency.toJSON());
                             ++cont;
@@ -211,12 +217,15 @@ public class CompareServiceImpl implements CompareService {
                     }
                 }
                 if (includeReqs) projectRequirements.add(req1);
+                writeToFile(filename, deps+"");
             }
         }
 
         if (array.length() > 0) {
             generateResponsePage(responseId, organization, pages, array);
         }
+
+        control.showInfoMessage("Number dependencies: " + numberDependencies);
     }
 
     @Override
@@ -242,7 +251,7 @@ public class CompareServiceImpl implements CompareService {
         CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
         int cont = 0;
         int pages = 0;
-        long number_dependencies = 0;
+        long numberDependencies = 0;
 
         control.showInfoMessage("Number requirements: " + projectRequirements.size());
 
@@ -256,7 +265,7 @@ public class CompareServiceImpl implements CompareService {
                     if (!req2.equals(req1) && model.getDocs().containsKey(req2)) {
                         double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
                         if (score >= threshold) {
-                            ++number_dependencies;
+                            ++numberDependencies;
                             Dependency dependency = new Dependency(score, req1, req2, status, dependencyType, component);
                             array.put(dependency.toJSON());
                             ++cont;
@@ -275,7 +284,7 @@ public class CompareServiceImpl implements CompareService {
             generateResponsePage(responseId, organization, pages, array);
         }
 
-        control.showInfoMessage("Number dependencies: " + number_dependencies);
+        control.showInfoMessage("Number dependencies: " + numberDependencies);
     }
 
     @Override
@@ -428,21 +437,13 @@ public class CompareServiceImpl implements CompareService {
         return result;
     }
 
-    public void writeToFile(String fileName, String text) throws InternalErrorException {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));) {
-            writer.write(text);
+    private void writeToFile(String fileName, String text) {
+        try (FileWriter fw = new FileWriter(fileName, true);
+             BufferedWriter bw = new BufferedWriter(fw)) {
+            bw.write(text);
+            bw.newLine();
         } catch (IOException e) {
-            throw new InternalErrorException(e.getMessage());
-        }
-    }
-
-    private void saveInternalErrorException(String organization, String responseId, InternalErrorException e) throws BadRequestException, InternalErrorException {
-        try {
-            databaseModel.saveResponsePage(organization, responseId, 0, createJsonException(500, internalErrorMessage, e.getMessage()));
-            databaseModel.finishComputation(organization, responseId);
-            throw e;
-        } catch (SQLException sq) {
-            treatSQLException(sq);
+            control.showErrorMessage(e.getMessage());
         }
     }
 
@@ -566,21 +567,5 @@ public class CompareServiceImpl implements CompareService {
             }
         }
         return result;
-    }
-
-    private String read_file_json(String path) throws InternalErrorException {
-        String result = "";
-        String line = "";
-        try(FileReader fileReader = new FileReader(path);
-            BufferedReader bufferedReader = new BufferedReader(fileReader)) {
-            while ((line = bufferedReader.readLine()) != null) {
-                result = result.concat(line);
-            }
-            JSONObject aux = new JSONObject(result);
-            return aux.toString();
-        } catch (IOException | JSONException e) {
-            control.showErrorMessage(e.getMessage());
-            throw new InternalErrorException("Error loading file");
-        }
     }
 }
