@@ -110,7 +110,7 @@ public class ControllerTests {
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
-        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/SimReqOrganization").param("organization", "UPC").param("url", callback)
+        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/ReqOrganization").param("organization", "UPC").param("url", callback)
                 .param("compare", "true").param("threshold", "0.12").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"simReqOrganization/input_reqs.json")))
                 .andExpect(status().isOk()).andReturn();
         TestConfig testConfig = TestConfig.getInstance();
