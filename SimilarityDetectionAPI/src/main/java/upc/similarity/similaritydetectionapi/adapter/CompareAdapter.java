@@ -19,14 +19,6 @@ public class CompareAdapter extends ComponentAdapter{
         connectionComponentPost(URL + "BuildModel?compare=" + compare + "&organization=" + organization + "&filename=" + filename, requirementsJson);
     }
 
-    @Override
-    public void computeClusters(boolean compare, double threshold, List<Requirement> requirements) throws ComponentException {
-
-        JSONArray requirementsJson = listRequirementsToJson(requirements);
-
-        connectionComponentPost(URL + "ComputeClusters?compare=" + compare + "&threshold=" + threshold, requirementsJson);
-    }
-
     public void buildModelAndCompute(String filename, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException {
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
@@ -34,7 +26,7 @@ public class CompareAdapter extends ComponentAdapter{
         connectionComponentPost(URL + "BuildModelAndCompute?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, requirementsJson);
     }
 
-    public void buildModelAndComputeOrphans(String filename, String organization, boolean compare, double threshold, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException {
+    public void buildClustersAndComputeOrphans(String filename, String organization, boolean compare, double threshold, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException {
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
         JSONArray dependenciesJson = listDependenciesToJson(dependencies);
@@ -43,7 +35,19 @@ public class CompareAdapter extends ComponentAdapter{
         jsonToSend.put("requirements", requirementsJson);
         jsonToSend.put("dependencies", dependenciesJson);
 
-        connectionComponentPost(URL + "BuildModelAndComputeOrphans?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, jsonToSend);
+        connectionComponentPost(URL + "BuildClustersAndComputeOrphans?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, jsonToSend);
+    }
+
+    public void buildClusters(String filename, String organization, boolean compare, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException {
+
+        JSONArray requirementsJson = listRequirementsToJson(requirements);
+        JSONArray dependenciesJson = listDependenciesToJson(dependencies);
+
+        JSONObject jsonToSend = new JSONObject();
+        jsonToSend.put("requirements", requirementsJson);
+        jsonToSend.put("dependencies", dependenciesJson);
+
+        connectionComponentPost(URL + "BuildClusters?filename=" + filename + "&compare=" + compare + "&organization=" + organization, jsonToSend);
     }
 
     @Override

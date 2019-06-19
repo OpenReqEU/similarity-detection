@@ -118,21 +118,34 @@ public class RestApiController {
         }
     }
 
-    @PostMapping(value = "/BuildModelAndComputeOrphans")
-    public ResponseEntity buildModelAndComputeOrphans(@RequestParam("organization") String organization,
+    @PostMapping(value = "/BuildClustersAndComputeOrphans")
+    public ResponseEntity buildClustersAndComputeOrphans(@RequestParam("organization") String organization,
                                                       @RequestParam("compare") String compare,
                                                       @RequestParam("filename") String responseId,
                                                       @RequestParam("threshold") double threshold,
                                                       @RequestBody Clusters input) {
         try {
-            compareService.buildModelAndComputeOrphans(responseId,compare,organization,threshold,input);
+            compareService.buildClustersAndComputeOrphans(responseId,compare,organization,threshold,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (BadRequestException e) {
             return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
         } catch (InternalErrorException e) {
             return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @PostMapping(value = "/BuildClusters")
+    public ResponseEntity buildClusters(@RequestParam("organization") String organization,
+                                                      @RequestParam("compare") String compare,
+                                                      @RequestParam("filename") String responseId,
+                                                      @RequestBody Clusters input) {
+        try {
+            compareService.buildClusters(responseId,compare,organization,input);
+            return new ResponseEntity<>(null,HttpStatus.OK);
+        } catch (BadRequestException e) {
+            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
+        } catch (InternalErrorException e) {
+            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

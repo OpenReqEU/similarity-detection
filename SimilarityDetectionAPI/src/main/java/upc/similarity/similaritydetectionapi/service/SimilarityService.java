@@ -20,7 +20,9 @@ public interface SimilarityService {
 
     public ResultId buildModelAndCompute(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException;
 
-    public ResultId buildModelAndComputeOrphans(String url, String organization, boolean compare, double threshold, ProjectWithDependencies input) throws InternalErrorException, BadRequestException;
+    public ResultId buildClustersAndComputeOrphans(String url, String organization, boolean compare, double threshold, ProjectWithDependencies input) throws InternalErrorException, BadRequestException;
+
+    public ResultId buildClusters(String url, String organization, boolean compare, ProjectWithDependencies input) throws InternalErrorException, BadRequestException;
 
     public ResultId simReqOrganization(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException;
 

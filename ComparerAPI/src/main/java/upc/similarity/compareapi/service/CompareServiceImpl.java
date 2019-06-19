@@ -192,18 +192,14 @@ public class CompareServiceImpl implements CompareService {
         int pages = 0;
         long numberDependencies = 0;
 
-        String filename = "../testing/output/results";
-
         JSONArray array = new JSONArray();
         for (String req1: reqsToCompare) {
             if (model.getDocs().containsKey(req1)) {
-                long deps = 0;
                 for (String req2 : projectRequirements) {
                     if (!req1.equals(req2) && model.getDocs().containsKey(req2)) {
                         double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
                         if (score >= threshold) {
                             ++numberDependencies;
-                            ++deps;
                             Dependency dependency = new Dependency(score, req1, req2, status, dependencyType, component);
                             array.put(dependency.toJSON());
                             ++cont;
@@ -217,7 +213,6 @@ public class CompareServiceImpl implements CompareService {
                     }
                 }
                 if (includeReqs) projectRequirements.add(req1);
-                writeToFile(filename, deps+"");
             }
         }
 
@@ -252,6 +247,7 @@ public class CompareServiceImpl implements CompareService {
         int cont = 0;
         int pages = 0;
         long numberDependencies = 0;
+        String filename = "../testing/output/results";
 
         control.showInfoMessage("Number requirements: " + projectRequirements.size());
 
@@ -260,11 +256,13 @@ public class CompareServiceImpl implements CompareService {
         for (int i = 0; i < projectRequirements.size(); ++i) {
             String req1 = projectRequirements.get(i);
             if (model.getDocs().containsKey(req1)) {
-                for (int j = i + 1; j < projectRequirements.size(); ++j) {
+                long deps = 0;
+                for (int j = 0; j < projectRequirements.size(); ++j) {
                     String req2 = projectRequirements.get(j);
                     if (!req2.equals(req1) && model.getDocs().containsKey(req2)) {
                         double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
                         if (score >= threshold) {
+                            ++deps;
                             ++numberDependencies;
                             Dependency dependency = new Dependency(score, req1, req2, status, dependencyType, component);
                             array.put(dependency.toJSON());
@@ -278,6 +276,7 @@ public class CompareServiceImpl implements CompareService {
                         }
                     }
                 }
+                writeToFile(filename, deps+"");
             }
         }
         if (array.length() > 0) {
@@ -288,8 +287,8 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void buildModelAndComputeOrphans(String responseId, String compare, String organization, double threshold, Clusters input) throws BadRequestException, NotFoundException, InternalErrorException {
-        control.showInfoMessage("BuildModelAndComputeOrphans: Start computing");
+    public void buildClustersAndComputeOrphans(String responseId, String compare, String organization, double threshold, Clusters input) throws BadRequestException, InternalErrorException {
+        control.showInfoMessage("BuildClustersAndComputeOrphans: Start computing");
         generateResponse(organization,responseId);
 
         List<Requirement> requirements = null;
@@ -347,7 +346,70 @@ public class CompareServiceImpl implements CompareService {
 
         finishComputation(organization, responseId);
 
-        control.showInfoMessage("BuildModelAndComputeOrphans: Finish computing");
+        control.showInfoMessage("BuildClustersAndComputeOrphans: Finish computing");
+    }
+
+    @Override
+    public void buildClusters(String responseId, String compare, String organization, Clusters input) throws BadRequestException, InternalErrorException {
+        control.showInfoMessage("BuildClusters: Start computing");
+        generateResponse(organization,responseId);
+
+        List<Requirement> requirements = null;
+        try {
+            requirements = deleteDuplicates(input.getRequirements());
+        } catch (BadRequestException e) {
+            saveBadRequestException(organization, responseId, e);
+        }
+
+        HashMap<String,Integer> reqCluster = new HashMap<>();
+        HashMap<Integer,List<Requirement>> clusters = new HashMap<>();
+        int countIds = 0;
+
+        for (Requirement requirement: requirements) {
+            List<Requirement> aux = new ArrayList<>();
+            aux.add(requirement);
+            clusters.put(countIds,aux);
+            reqCluster.put(requirement.getId(),countIds);
+            ++countIds;
+        }
+
+        for (Dependency dependency: input.getDependencies()) {
+            if (validDependency(dependency)) {
+                String fromid = dependency.getFromid();
+                String toid = dependency.getToid();
+                if (reqCluster.containsKey(fromid) && reqCluster.containsKey(toid)) {
+                    mergeClusters(clusters, reqCluster, fromid, toid);
+                }
+            }
+        }
+
+        List<Requirement> centroids = new ArrayList<>();
+
+        Iterator it = clusters.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next();
+            List<Requirement> clusterRequirements = (List<Requirement>) pair.getValue();
+            Requirement master = findMaster(clusterRequirements);
+            centroids.add(master);
+            it.remove();
+        }
+
+        Model model = null;
+        try {
+            model = generateModel(compare, centroids);
+        } catch (BadRequestException e) {
+            saveBadRequestException(organization, responseId, e);
+        }
+
+        saveModel(organization, model);
+        try {
+            databaseModel.saveResponsePage(organization, responseId, 0, new JSONObject().put("status",200).toString());
+            databaseModel.finishComputation(organization,responseId);
+        } catch (SQLException sq) {
+            treatSQLException(sq);
+        }
+
+        control.showInfoMessage("BuildClusters: Finish computing");
     }
 
     private boolean validDependency(Dependency dependency) {
@@ -424,6 +486,16 @@ public class CompareServiceImpl implements CompareService {
     auxiliary operations
      */
 
+    private void writeToFile(String fileName, String text) {
+        try (FileWriter fw = new FileWriter(fileName, true);
+             BufferedWriter bw = new BufferedWriter(fw)) {
+            bw.write(text);
+            bw.newLine();
+        } catch (IOException e) {
+            control.showErrorMessage(e.getMessage());
+        }
+    }
+
     private List<Requirement> deleteDuplicates(List<Requirement> requirements) throws BadRequestException {
         HashSet<String> ids = new HashSet<>();
         List<Requirement> result = new ArrayList<>();
@@ -435,16 +507,6 @@ public class CompareServiceImpl implements CompareService {
             }
         }
         return result;
-    }
-
-    private void writeToFile(String fileName, String text) {
-        try (FileWriter fw = new FileWriter(fileName, true);
-             BufferedWriter bw = new BufferedWriter(fw)) {
-            bw.write(text);
-            bw.newLine();
-        } catch (IOException e) {
-            control.showErrorMessage(e.getMessage());
-        }
     }
 
     private void saveBadRequestException(String organization, String responseId, BadRequestException e) throws BadRequestException, InternalErrorException {

@@ -25,8 +25,6 @@ public abstract class ComponentAdapter {
     Main operations
      */
 
-    public abstract void computeClusters(boolean compare, double threshold, List<Requirement> requirements) throws ComponentException;
-
     public abstract String simReqReq(String filename, String organization, String req1, String req2) throws ComponentException;
 
     public abstract void simReqProject(String filename, String organization, List<String> req, double threshold, List<String> reqs) throws ComponentException;

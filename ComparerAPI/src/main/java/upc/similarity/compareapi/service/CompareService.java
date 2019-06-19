@@ -32,6 +32,8 @@ public interface CompareService {
 
     public void clearDatabase() throws InternalErrorException;
 
-    public void buildModelAndComputeOrphans(String responseId, String compare, String organization, double threshold, Clusters requirements) throws BadRequestException, NotFoundException, InternalErrorException;
+    public void buildClustersAndComputeOrphans(String responseId, String compare, String organization, double threshold, Clusters requirements) throws BadRequestException, InternalErrorException;
+
+    public void buildClusters(String responseId, String compare, String organization, Clusters requirements) throws BadRequestException, InternalErrorException;
 
 }

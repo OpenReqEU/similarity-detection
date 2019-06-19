@@ -76,20 +76,39 @@ public class RestApiController {
     }
 
     @CrossOrigin
-    @PostMapping(value = "/AddReqsAndComputeOrphans", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/AddClusters", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Generates clusters from the input requirements and dependencies", notes = "<p>Generates the clusters with the input dependencies and computes their " +
+            " centroids. The centroids are the oldest requirements. It saves the clusters' centroids in an internal database making possible the used of these centroids in the rest of operations.</p>", tags = "Clusters")
+    @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
+            @ApiResponse(code=400, message = "Bad request"),
+            @ApiResponse(code=500, message = "Internal error")})
+    public ResponseEntity buildClusters(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+                                                      @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
+                                                      @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/PostResult") @RequestParam("url") String url,
+                                                      @ApiParam(value="OpenReqJson with requirements and dependencies", required = true) @RequestBody ProjectWithDependencies input) {
+        try {
+            urlOk(url);
+            return new ResponseEntity<>(similarityService.buildClusters(url,organization,compare,input),HttpStatus.OK);
+        } catch (ComponentException e) {
+            return getComponentError(e);
+        }
+    }
+
+    @CrossOrigin
+    @PostMapping(value = "/AddClustersAndCompute", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Computes the similarity between the clusters centroids", notes = "<p>Generates the clusters with the input dependencies and returns the similarity dependencies between " +
             " their centroids. The centroids are the oldest requirements. Also, it saves the clusters' centroids in an internal database making possible the used of these centroids in the rest of operations.</p>", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
-    public ResponseEntity buildModelAndComputeOrphans(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+    public ResponseEntity buildClustersAndComputeOrphans(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                                @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
                                                @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                                @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/PostResult") @RequestParam("url") String url,
                                                @ApiParam(value="OpenReqJson with requirements and dependencies", required = true) @RequestBody ProjectWithDependencies input) {
         try {
             urlOk(url);
-            return new ResponseEntity<>(similarityService.buildModelAndComputeOrphans(url,organization,compare,threshold,input),HttpStatus.OK);
+            return new ResponseEntity<>(similarityService.buildClustersAndComputeOrphans(url,organization,compare,threshold,input),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }

@@ -88,7 +88,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId buildModelAndComputeOrphans(String url, String organization, boolean compare, double threshold, ProjectWithDependencies input) throws InternalErrorException, BadRequestException {
+    public ResultId buildClustersAndComputeOrphans(String url, String organization, boolean compare, double threshold, ProjectWithDependencies input) throws InternalErrorException, BadRequestException {
 
         checkThreshold(threshold);
         if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements or dependencies");
@@ -98,10 +98,38 @@ public class SimilarityServiceImpl implements SimilarityService {
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
-                ResultJson result = new ResultJson(id.getId(),"AddReqsAndComputeOrphans");
+                ResultJson result = new ResultJson(id.getId(),"AddClustersAndComputeOrphans");
                 try {
                     CompareAdapter compareAdapter = new CompareAdapter();
-                    compareAdapter.buildModelAndComputeOrphans(id.getId(),organization,compare,threshold,input.getRequirements(),input.getDependencies());
+                    compareAdapter.buildClustersAndComputeOrphans(id.getId(),organization,compare,threshold,input.getRequirements(),input.getDependencies());
+                    result.setCode(200);
+                } catch (ComponentException e) {
+                    result.setException(e.getStatus(),e.getError(),e.getMessage());
+                }
+                finally {
+                    updateClient(result,url);
+                }
+            }
+        });
+
+        thread.start();
+        return id;
+    }
+
+    @Override
+    public ResultId buildClusters(String url, String organization, boolean compare, ProjectWithDependencies input) throws InternalErrorException, BadRequestException {
+
+        if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements or dependencies");
+        ResultId id = getId();
+
+        //New thread
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                ResultJson result = new ResultJson(id.getId(),"AddClusters");
+                try {
+                    CompareAdapter compareAdapter = new CompareAdapter();
+                    compareAdapter.buildClusters(id.getId(),organization,compare,input.getRequirements(),input.getDependencies());
                     result.setCode(200);
                 } catch (ComponentException e) {
                     result.setException(e.getStatus(),e.getError(),e.getMessage());

@@ -28,15 +28,16 @@ public class SwaggerConfig {
     private static final String	DESCRIPTION    = "" +
             "<p>The component is based in td-idf numerical statistic. The aim of the API is to calculate the similarity score between multiple pairs of requirements."+
             "</p>" +
-            "<p>There are seven main methods: </p>" +
+            "<p>There are eight main methods: </p>" +
             "<ul>" +
-            "<li><strong>AddReqs</strong>: Generates a model with the input requirements</li>" +
-            "<li><strong>ReqReq</strong>: Compares two requirements</li>" +
-            "<li><strong>ReqProject</strong>: Compares between a list of requirements and a set of requirements</li>" +
+            "<li><strong>AddReqs</strong>: Generates a model with the input requirements and assigns it to an organization</li>" +
+            "<li><strong>AddClusters</strong>: Generates a model with the input clusters and assigns it to an organization</li>" +
+            "<li><strong>ReqReq</strong>: Compares two requirements of an organization</li>" +
+            "<li><strong>ReqProject</strong>: Compares between a list of requirements and a set of requirements of an organization</li>" +
             "<li><strong>ReqOrganization</strong>: Compares between a list of requirements and all the requirements of a specific organization</li>" +
-            "<li><strong>Project</strong>: Compares all possible pairs of requirements from a set of requirements</li>" +
-            "<li><strong>AddReqsAndCompute</strong>: Is a mixture between AddReqs and Project methods</li>" +
-            "<li><strong>AddReqsAndComputeOrphans</strong>: Generates a model with the input clusters and computes the similarity between them</li>" +
+            "<li><strong>Project</strong>: Compares all possible pairs of requirements from a set of requirements of an organization</li>" +
+            "<li><strong>AddReqsAndCompute</strong>: Generates a model with the input requirements and computes the similarity between all the possible pairs</li>" +
+            "<li><strong>AddClustersAndCompute</strong>: Generates a model with the input clusters and computes the similarity between their centroids</li>" +
             "</ul>" +
             "<p>And three auxiliary operations: </p>" +
             "<ul>" +
@@ -70,8 +71,8 @@ public class SwaggerConfig {
                 .useDefaultResponseMessages(false)
                 .apiInfo(apiInfo())
                 .pathMapping("/")
-                //.host("api.openreq.eu/similarity-detection")
-                //.protocols(protocols)
+                .host("api.openreq.eu/similarity-detection")
+                .protocols(protocols)
                 .select()
                 .paths(PathSelectors.regex("^((?!Test).)*$"))
                 .apis(RequestHandlerSelectors.basePackage("upc.similarity.similaritydetectionapi")).paths(PathSelectors.regex("/upc.*"))

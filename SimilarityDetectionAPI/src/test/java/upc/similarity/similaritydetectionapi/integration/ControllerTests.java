@@ -87,20 +87,37 @@ public class ControllerTests {
     }
 
     @Test
-    public void addRequirementsAndComputeOrphans() throws Exception {
+    public void addClustersAndComputeOrphans() throws Exception {
         stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
-        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/AddReqsAndComputeOrphans").param("organization", "UPC").param("url", callback)
+        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/AddClustersAndCompute").param("organization", "UPC").param("url", callback)
                 .param("compare", "true").param("threshold", "0.12")
                 .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"orphans/input.json")))
                 .andExpect(status().isOk()).andReturn();
         TestConfig testConfig = TestConfig.getInstance();
         while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
         testConfig.setComputationFinished(false);
-        assertEquals(createJsonResult(200, aux_getResponseId(result), "AddReqsAndComputeOrphans"), testConfig.getResult().toString());
+        assertEquals(createJsonResult(200, aux_getResponseId(result), "AddClustersAndComputeOrphans"), testConfig.getResult().toString());
+    }
+
+    @Test
+    public void addClusters() throws Exception {
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("")));
+        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/AddClusters").param("organization", "UPC").param("url", callback)
+                .param("compare", "true")
+                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"orphans/input.json")))
+                .andExpect(status().isOk()).andReturn();
+        TestConfig testConfig = TestConfig.getInstance();
+        while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
+        testConfig.setComputationFinished(false);
+        assertEquals(createJsonResult(200, aux_getResponseId(result), "AddClusters"), testConfig.getResult().toString());
     }
 
     @Test
