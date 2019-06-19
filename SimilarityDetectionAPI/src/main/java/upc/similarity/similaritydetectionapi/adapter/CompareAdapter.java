@@ -40,8 +40,8 @@ public class CompareAdapter extends ComponentAdapter{
         JSONArray dependenciesJson = listDependenciesToJson(dependencies);
 
         JSONObject jsonToSend = new JSONObject();
-        jsonToSend.put("requirements", requirements);
-        jsonToSend.put("dependencies", dependencies);
+        jsonToSend.put("requirements", requirementsJson);
+        jsonToSend.put("dependencies", dependenciesJson);
 
         connectionComponentPost(URL + "BuildModelAndComputeOrphans?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, jsonToSend);
     }
