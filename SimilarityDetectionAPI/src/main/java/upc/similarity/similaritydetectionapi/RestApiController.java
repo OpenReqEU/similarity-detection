@@ -77,8 +77,8 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/AddReqsAndComputeOrphans", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Computes the similarity between the clusters centroids", notes = "<p>Builds the clusters with the input dependencies and returns the similarity dependencies between " +
-            " their centroids.</p><br><p>Also, it saves the clusters centroids in an internal database.</p>", tags = "Clusters")
+    @ApiOperation(value = "Computes the similarity between the clusters centroids", notes = "<p>Generates the clusters with the input dependencies and returns the similarity dependencies between " +
+            " their centroids. The centroids are the oldest requirements. Also, it saves the clusters' centroids in an internal database making possible the used of these centroids in the rest of operations.</p>", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -96,7 +96,7 @@ public class RestApiController {
     }
 
     @CrossOrigin
-    @PostMapping(value = "/SimReqOrganization", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/ReqOrganization", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Similarity comparison between a set of requirements and all the organization requirements", notes = "<p>Adds the input requirements to the organization model and returns " +
             "an array of dependencies between them and all the organization requirements. If any input requirement is already part of the organization's model, it will be overwritten with the new information.</p>", tags = "Main methods")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),

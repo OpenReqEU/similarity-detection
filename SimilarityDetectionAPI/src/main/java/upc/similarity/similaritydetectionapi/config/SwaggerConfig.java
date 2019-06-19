@@ -33,7 +33,7 @@ public class SwaggerConfig {
             "<li><strong>AddReqs</strong>: Generates a model with the input requirements</li>" +
             "<li><strong>ReqReq</strong>: Compares two requirements</li>" +
             "<li><strong>ReqProject</strong>: Compares between a list of requirements and a set of requirements</li>" +
-            "<li><strong>ReqOrganization</strong>: Compares between a list of requirements and all the requirements of an specific organization</li>" +
+            "<li><strong>ReqOrganization</strong>: Compares between a list of requirements and all the requirements of a specific organization</li>" +
             "<li><strong>Project</strong>: Compares all possible pairs of requirements from a set of requirements</li>" +
             "<li><strong>AddReqsAndCompute</strong>: Is a mixture between AddReqs and Project methods</li>" +
             "<li><strong>AddReqsAndComputeOrphans</strong>: Generates a model with the input clusters and computes the similarity between them</li>" +

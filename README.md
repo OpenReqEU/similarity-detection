@@ -12,13 +12,15 @@ Next sections provide a general overview of the technical details of the similar
 
 ### Main functionalities
 
-There are five main methods:
+There are seven main methods:
 
     - AddReqs: Generates a model with the input requirements
     - ReqReq: Compares two requirements
     - ReqProject: Compares between a list of requirements and a set of requirements
+    - ReqOrganization: Compares between a list of requirements and all the requirements of a specific organization
     - Project: Compares all possible pairs of requirements from a set of requirements
     - AddReqsAndCompute: Is a mixture between AddReqs and Project methods
+    - AddReqsAndComputeOrphans: Generates a model with the input clusters and computes the similarity between them
 
 And three auxiliary operations:
 
