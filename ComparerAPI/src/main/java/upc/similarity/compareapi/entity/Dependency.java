@@ -27,7 +27,7 @@ public class Dependency implements Serializable {
     private List<String> description;
 
     public Dependency() {
-        description = new ArrayList<>();
+        this.description = new ArrayList<>();
     }
 
     public Dependency(double dependencyScore, String fromid, String toid, String status, String dependencyType, String component) {
@@ -38,6 +38,12 @@ public class Dependency implements Serializable {
         this.dependencyType = dependencyType;
         this.description = new ArrayList<>();
         description.add(component);
+    }
+
+    public Dependency(String fromid, String toid) {
+        this.fromid = fromid;
+        this.toid = toid;
+        this.description = new ArrayList<>();
     }
 
     /*

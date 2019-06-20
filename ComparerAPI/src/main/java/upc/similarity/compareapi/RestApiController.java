@@ -37,6 +37,39 @@ public class RestApiController {
         }
     }
 
+    @PostMapping(value = "/AddRequirements")
+    public ResponseEntity addRequirements(@RequestParam("organization") String organization,
+                                     @RequestParam("compare") String compare,
+                                     @RequestParam("filename") String responseId,
+                                     @RequestBody List<Requirement> input) {
+        try {
+            compareService.addRequirements(responseId,compare,organization,input);
+            return new ResponseEntity<>(null,HttpStatus.OK);
+        } catch (BadRequestException e) {
+            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
+        } catch (InternalErrorException e) {
+            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (NotFoundException e) {
+            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @PostMapping(value = "/DeleteRequirements")
+    public ResponseEntity deleteRequirements(@RequestParam("organization") String organization,
+                                     @RequestParam("filename") String responseId,
+                                     @RequestBody List<Requirement> input) {
+        try {
+            compareService.deleteRequirements(responseId,organization,input);
+            return new ResponseEntity<>(null,HttpStatus.OK);
+        } catch (BadRequestException e) {
+            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
+        } catch (InternalErrorException e) {
+            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (NotFoundException e) {
+            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
+        }
+    }
+
     @PostMapping(value = "/SimReqReq")
     public ResponseEntity simReqReq(@RequestParam("organization") String organization,
                                        @RequestParam("req1") String req1,
@@ -58,6 +91,24 @@ public class RestApiController {
                                         @RequestBody List<Requirement> requirements) {
         try {
             compareService.simReqOrganization(responseId,compare,organization,threshold,requirements);
+            return new ResponseEntity<>(null,HttpStatus.OK);
+        } catch (NotFoundException e) {
+            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
+        } catch (BadRequestException e) {
+            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
+        } catch (InternalErrorException e) {
+            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping(value = "/SimReqClusters")
+    public ResponseEntity simReqClusters(@RequestParam("organization") String organization,
+                                        @RequestParam("filename") String responseId,
+                                        @RequestParam("compare") String compare,
+                                        @RequestParam("threshold") double threshold,
+                                        @RequestBody List<Requirement> requirements) {
+        try {
+            compareService.simReqClusters(responseId,compare,organization,threshold,requirements);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (NotFoundException e) {
             return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
@@ -118,14 +169,14 @@ public class RestApiController {
         }
     }
 
-    @PostMapping(value = "/BuildClustersAndComputeOrphans")
+    @PostMapping(value = "/BuildClustersAndCompute")
     public ResponseEntity buildClustersAndComputeOrphans(@RequestParam("organization") String organization,
                                                       @RequestParam("compare") String compare,
                                                       @RequestParam("filename") String responseId,
                                                       @RequestParam("threshold") double threshold,
                                                       @RequestBody Clusters input) {
         try {
-            compareService.buildClustersAndComputeOrphans(responseId,compare,organization,threshold,input);
+            compareService.buildClustersAndCompute(responseId,compare,organization,threshold,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (BadRequestException e) {
             return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);

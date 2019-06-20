@@ -16,6 +16,10 @@ public interface CompareService {
 
     public void buildModel(String responseId, String compare, String organization, List<Requirement> requirements) throws BadRequestException, InternalErrorException;
 
+    public void addRequirements(String responseId, String compare, String organization, List<Requirement> requirements) throws InternalErrorException, BadRequestException, NotFoundException;
+
+    public void deleteRequirements(String responseId, String organization, List<Requirement> requirements) throws InternalErrorException, BadRequestException, NotFoundException;
+
     public Dependency simReqReq(String organization, String req1, String req2) throws NotFoundException, InternalErrorException;
 
     public void simReqOrganization(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException;
@@ -32,8 +36,10 @@ public interface CompareService {
 
     public void clearDatabase() throws InternalErrorException;
 
-    public void buildClustersAndComputeOrphans(String responseId, String compare, String organization, double threshold, Clusters requirements) throws BadRequestException, InternalErrorException;
+    public void buildClustersAndCompute(String responseId, String compare, String organization, double threshold, Clusters requirements) throws BadRequestException, InternalErrorException;
 
     public void buildClusters(String responseId, String compare, String organization, Clusters requirements) throws BadRequestException, InternalErrorException;
+
+    public void simReqClusters(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException;
 
 }

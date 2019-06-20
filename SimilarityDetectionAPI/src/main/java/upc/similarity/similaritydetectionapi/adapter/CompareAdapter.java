@@ -35,7 +35,7 @@ public class CompareAdapter extends ComponentAdapter{
         jsonToSend.put("requirements", requirementsJson);
         jsonToSend.put("dependencies", dependenciesJson);
 
-        connectionComponentPost(URL + "BuildClustersAndComputeOrphans?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, jsonToSend);
+        connectionComponentPost(URL + "BuildClustersAndCompute?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, jsonToSend);
     }
 
     public void buildClusters(String filename, String organization, boolean compare, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException {
