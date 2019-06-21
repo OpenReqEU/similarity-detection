@@ -1,183 +1,491 @@
+---
 swagger: '2.0'
 info:
-  version: '1.0'
-  description: '<p>The component is based in td-idf numerical statistic. The aim of the API is to calculate the similarity score between multiple pairs of requirements.</p><p>There are five main methods: </p><ul><li><strong>AddReqs</strong>: Generates a model with the input requirements</li><li><strong>ReqReq</strong>: Compares two requirements</li><li><strong>ReqProject</strong>: Compares between a list of requirements and a set of requirements</li><li><strong>Project</strong>: Compares all possible pairs of requirements from a set of requirements</li><li><strong>AddReqsAndCompute</strong>: Is a mixture between AddReqs and Project methods</li></ul><p>And two auxiliary operations: </p><ul><li><strong>GetResponse</strong>: Returns in patches the resulting dependencies of the other methods</li><li><strong>DeleteOrganizationResponses</strong>: Deletes the organization responses from the database</li></ul><p>The component needs to preprocess the requirements before doing any comparison. The operation AddReqs is responsible for that work.</p><p>The operations AddReqs, ReqProject, Project and AddReqsAndCompute are asynchronous. It is necessary to write a server URL as parameter in all of them. The outcome of the operation will be returned to that url. All these operations follow the same pattern:</p><ol><li>The client calls the operation with all necessary parameters</li><li>The service receives the request and checks the main conditions</li><li>The service returns if the client request has been accepted or not and closes the connection<ul><li>(httpStatus!=200) The request has not been accepted. The message body contains the exception cause.</li><li>(httpStatus==200) The request has been accepted. The similarity calculation runs in the background. The message body contains the request identifier i.e. <em>{"id": "1548924677975_523"}</em></li></ul><li>When the calculation finishes (only if the request has been accepted) the service opens a connection with the server url specified as parameter. It sends a Json object that contains the outcome of the computation:<br><ul><li>(success) Example: {"code": 200,"id": "1557395889689_587","operation": "AddReqs"}.</li><li>(!success) Example: {"code": 400,"id": "1557396039530_583","error": "Bad request","message": "The requirement with id QM-3 is already inside the project","operation": "ReqProject"}.</li><li>The resulting dependencies can be obtained via the GetResponse method.</li></ul></li></ol><p>The API uses UTF-8 charset. Also, it uses the OpenReq format for input JSONs (it is specified in the Models section).</p>'
+  version: "2.0"
+  description: '<p>The component is based in td-idf numerical statistic. The aim of
+    the API is to calculate the similarity score between multiple pairs of requirements.</p><p>There
+    are four types of operations (each method has a more extensive description in
+    its own operation box): </p><ul><li><strong>Model</strong>: These methods are
+    responsible for pre-processing the input requirements, generating a model that
+    saves the requirements information and assigning it to an organization. Generating
+    these models is mandatory before making any comparison.</li><ul><li>BuildModel:
+    Pre-processes the input requirements, generates a model and assings it to an specified
+    organization.</li><li>AddRequirements: Pre-processes the input requirements and
+    adds them to an existing model. Also it updates the clusters if the model has
+    them.</li><li>DeleteRequirements: Deletes the input requirements from an existing
+    model. Also it updates the clusters if the model has them.</li></ul><li><strong>Compare</strong>:
+    These methods are in charge of comparing and returning the corresponding similarity
+    dependencies between the specified requirements of an organization’s model.</li><ul><li>ReqReq:
+    Compares two requirements.</li><li>ReqProject: Compares between a list of requirements
+    and a set of requirements.</li><li>ReqOrganization: Pre-processes the input requirements
+    and adds them to an organization''s model. Also it compares the input requirements
+    with all the requirements of the organization''s model.</li><li>Project: Compares
+    all possible pairs of requirements from a set of requirements.</li><li>AddReqsAndCompute:
+    Generates a model with the input requirements and computes the similarity score
+    between all the possible pairs of requirements.</li></ul><li><strong>Clusters</strong>:
+    These methods are responsible for pre-processing the input requirements and dependencies,
+    generating a model that saves the requirements information and the clusters architecture
+    and assigning it to an organization.</li><ul><li>AddClusters: Pre-processes the
+    input requirements, generates a model with the requirements information and the
+    clusters architecture and assings it to an specified organization.</li><li>AddClustersAndCompute:
+    Pre-processes the input requirements, generates a model with the requirements
+    information and the clusters architecture and assings it to an specified organization.
+    Also it compares all the one-requirement cluster centroids with the rest of centroids.</li><li>ReqClusters:
+    Pre-processes the input requirements and adds them to an organization''s model.
+    Also it compares the input requirements with all the cluster centroids of the
+    organization''s model.</li></ul><li><strong>Auxiliary methods</strong>:</li><ul><li>GetResponse:
+    Returns in patches the resulting dependencies of the other methods</li><li>DeleteOrganizationResponses:
+    Deletes the organization responses from the database</li><li>DeleteDatabase: Deletes
+    all data from the database</li></ul></ul><p>All operations except ReqClusters,
+    GetResponse, DeleteOrganizationResponses and DeleteDatabase are asynchronous.
+    It is necessary to write a server URL as parameter in all of them. The outcome
+    of the operation will be returned to that url. All these operations follow the
+    same pattern:</p><ol><li>The client calls the operation with all necessary parameters</li><li>The
+    service receives the request and checks the main conditions</li><li>The service
+    returns if the client request has been accepted or not and closes the connection<ul><li>(httpStatus!=200)
+    The request has not been accepted. The message body contains the exception cause.</li><li>(httpStatus==200)
+    The request has been accepted. The similarity calculation runs in the background.
+    The message body contains the request identifier i.e. <em>{"id": "1548924677975_523"}</em></li></ul><li>When
+    the calculation finishes (only if the request has been accepted) the service opens
+    a connection with the server url specified as parameter. It sends a Json object
+    that contains the outcome of the computation:<br><ul><li>(success) Example: {"code":
+    200,"id": "1557395889689_587","operation": "AddReqs"}.</li><li>(!success) Example:
+    {"code": 400,"id": "1557396039530_583","error": "Bad request","message": "The
+    requirement with id QM-3 is already inside the project","operation": "ReqProject"}.</li><li>The
+    resulting dependencies can be obtained via the GetResponse method.</li></ul></li></ol><p>The
+    API uses UTF-8 charset. Also, it uses the OpenReq format for input JSONs (it is
+    specified in the Models section).</p>'
   title: SIMILARITY DETECTION COMPONENT
   contact:
     name: UPC-GESSI (OPENReq)
-    url: 'http://openreq.eu/'
+    url: http://openreq.eu/
   license:
     name: License
-host: 'localhost:9404'
-basePath: /
+host: "api.openreq.eu/similarity-detection"
+basePath: "/"
 tags:
-  - name: Similarity detection Service
-    description: API related to similarity detection
-  - name: rest-api-controller
-    description: Rest Api Controller
+- name: Similarity detection Service
+  description: API related to similarity detection
+- name: rest-api-controller
+  description: Rest Api Controller
+schemes:
+- https
 paths:
-  /upc/similarity-detection/AddReqs:
+  "/upc/similarity-detection/AddClusters":
     post:
       tags:
-        - Main methods
-      summary: Builds a model with the input requirements
-      description: 'Builds a model with the entry requirements. The generated model is assigned to the specified organization and stored in an internal database. Each organization only can have one model at a time. If at the time of generating a new model the corresponding organization already has an existing model, it is replaced by the new one.'
-      operationId: buildModelUsingPOST
+      - Clusters
+      summary: Generates clusters from the input requirements and dependencies
+      description: "<p>This method computes the clusters using the existing duplicates.
+        All the requirements that do not have duplicates relationships with other
+        requirements are considered to be in a cluster of just one requirement. All
+        the requirements are pre-processed and stored in the database. The entry duplicates
+        relations are defined by the dependencies with type equal to similar or duplicate.</p>"
+      operationId: buildClustersUsingPOST
       consumes:
-        - application/json
+      - application/json
       produces:
-        - '*/*'
+      - application/json
       parameters:
-        - name: compare
-          in: query
-          description: Use text attribute?
-          required: false
-          type: boolean
-          allowEmptyValue: false
-          x-example: true
-        - in: body
-          name: input
-          description: OpenReqJson with requirements
-          required: true
-          schema:
-            $ref: '#/definitions/Requirements'
-        - name: organization
-          in: query
-          description: Organization
-          required: true
-          type: string
-          allowEmptyValue: false
-          x-example: UPC
-        - name: url
-          in: query
-          description: The url where the result of the operation will be returned
-          required: true
-          type: string
-          allowEmptyValue: false
-          x-example: 'http://localhost:9406/upload/PostResult'
+      - name: compare
+        in: query
+        description: Use text attribute?
+        required: false
+        type: boolean
+        allowEmptyValue: false
+        x-example: true
+      - in: body
+        name: input
+        description: OpenReqJson with requirements and dependencies
+        required: true
+        schema:
+          "$ref": "#/definitions/ProjectWithDependencies"
+      - name: organization
+        in: query
+        description: Organization
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: UPC
+      - name: url
+        in: query
+        description: The url where the result of the operation will be returned
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: http://localhost:9406/upload/PostResult
       responses:
         '200':
           description: OK
           schema:
-            type: object
+            "$ref": "#/definitions/ResponseEntity"
         '400':
           description: Bad request
         '500':
           description: Internal error
       deprecated: false
-  /upc/similarity-detection/AddReqsAndCompute:
+  "/upc/similarity-detection/AddClustersAndCompute":
     post:
       tags:
-        - Main methods
+      - Clusters
+      summary: Computes the similarity between the clusters centroids
+      description: "<p>This method computes the clusters using the existing duplicates.
+        All the requirements that do not have duplicates relationships with other
+        requirements are considered to be in a cluster of just one requirement. All
+        the requirements are pre-processed and stored in the database. Then, we compare
+        each orphan (cluster with only one requirement) with all the other centroids
+        and return the similarity score for all the comparisons that are bigger than
+        the established threshold.</p>"
+      operationId: buildClustersAndComputeOrphansUsingPOST
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: compare
+        in: query
+        description: Use text attribute?
+        required: false
+        type: boolean
+        allowEmptyValue: false
+        x-example: true
+      - in: body
+        name: input
+        description: OpenReqJson with requirements and dependencies
+        required: true
+        schema:
+          "$ref": "#/definitions/ProjectWithDependencies"
+      - name: organization
+        in: query
+        description: Organization
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: UPC
+      - name: threshold
+        in: query
+        description: Double between 0 and 1 that establishes the minimum similarity
+          score that the added dependencies should have
+        required: true
+        type: number
+        format: double
+        allowEmptyValue: false
+        x-example: 0.1
+      - name: url
+        in: query
+        description: The url where the result of the operation will be returned
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: http://localhost:9406/upload/PostResult
+      responses:
+        '200':
+          description: OK
+          schema:
+            "$ref": "#/definitions/ResponseEntity"
+        '400':
+          description: Bad request
+        '500':
+          description: Internal error
+      deprecated: false
+  "/upc/similarity-detection/AddReqsAndCompute":
+    post:
+      tags:
+      - Compare
       summary: Builds a model with the input requirements and computes them
-      description: '<p>Builds a model with the entry requirements. The generated model is assigned to the specified organization and stored in an internal database. Each organization only can have one model at a time. If at the time of generating a new model the corresponding organization already has an existing model, it is replaced by the new one.</p><br><p>Also, it returns an array of dependencies between all possible pairs of  requirements from the requirements received as input.</p>'
+      description: "<p>Builds a model with the entry requirements. The generated model
+        is assigned to the specified organization and stored in an internal database.
+        Each organization only can have one model at a time. If at the time of generating
+        a new model the corresponding organization already has an existing model,
+        it is replaced by the new one.</p><br><p>Also, it returns an array of dependencies
+        between all possible pairs of  requirements from the requirements received
+        as input.</p>"
       operationId: buildModelAndComputeUsingPOST
       consumes:
-        - application/json
+      - application/json
       produces:
-        - '*/*'
+      - application/json
       parameters:
-        - name: compare
-          in: query
-          description: Use text attribute?
-          required: false
-          type: boolean
-          allowEmptyValue: false
-          x-example: true
-        - in: body
-          name: input
-          description: OpenReqJson with requirements
-          required: true
-          schema:
-            $ref: '#/definitions/Requirements'
-        - name: organization
-          in: query
-          description: Organization
-          required: true
-          type: string
-          allowEmptyValue: false
-          x-example: UPC
-        - name: threshold
-          in: query
-          description: Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have
-          required: true
-          type: number
-          format: double
-          allowEmptyValue: false
-          x-example: 0.1
-        - name: url
-          in: query
-          description: The url where the result of the operation will be returned
-          required: true
-          type: string
-          allowEmptyValue: false
-          x-example: 'http://localhost:9406/upload/PostResult'
+      - name: compare
+        in: query
+        description: Use text attribute?
+        required: false
+        type: boolean
+        allowEmptyValue: false
+        x-example: true
+      - in: body
+        name: input
+        description: OpenReqJson with requirements
+        required: true
+        schema:
+          "$ref": "#/definitions/Requirements"
+      - name: organization
+        in: query
+        description: Organization
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: UPC
+      - name: threshold
+        in: query
+        description: Double between 0 and 1 that establishes the minimum similarity
+          score that the added dependencies should have
+        required: true
+        type: number
+        format: double
+        allowEmptyValue: false
+        x-example: 0.1
+      - name: url
+        in: query
+        description: The url where the result of the operation will be returned
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: http://localhost:9406/upload/PostResult
       responses:
         '200':
           description: OK
           schema:
-            type: object
+            "$ref": "#/definitions/ResponseEntity"
         '400':
           description: Bad request
         '500':
           description: Internal error
       deprecated: false
-  /upc/similarity-detection/DeleteOrganizationResponses:
-    delete:
+  "/upc/similarity-detection/AddRequirements":
+    post:
       tags:
-        - Auxiliary methods
-      summary: Deletes the organization responses
-      description: <p>Deletes the organization responses that are finished from the database.</p>
-      operationId: deleteOrganizationResponsesUsingDELETE
+      - Model
+      summary: Add requirements to the model
+      description: |-
+        <p>Given a list of requirements, the endpoint pre-processes them and adds them to a specified organization’s model. If the model has clusters, the endpoint adds each input requirement as a cluster of one requirement. If some of the entry requirements were already part of the model, the endpoint will update its information and compare them again as the other entry requirements.
+        </p>
+      operationId: addRequirementsUsingPOST
+      consumes:
+      - application/json
       produces:
-        - application/json
+      - application/json
       parameters:
-        - name: organization
-          in: query
-          description: Organization
-          required: true
-          type: string
-          allowEmptyValue: false
-          x-example: UPC
+      - name: compare
+        in: query
+        description: Use text attribute?
+        required: false
+        type: boolean
+        allowEmptyValue: false
+        x-example: true
+      - in: body
+        name: input
+        description: OpenReqJson with requirements
+        required: true
+        schema:
+          "$ref": "#/definitions/Requirements"
+      - name: organization
+        in: query
+        description: Organization
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: UPC
+      - name: url
+        in: query
+        description: The url where the result of the operation will be returned
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: http://localhost:9406/upload/PostResult
       responses:
         '200':
           description: OK
           schema:
-            type: object
+            "$ref": "#/definitions/ResponseEntity"
+        '400':
+          description: Bad request
         '404':
           description: Not found
         '500':
           description: Internal error
       deprecated: false
-  /upc/similarity-detection/GetResponse:
-    get:
+  "/upc/similarity-detection/BuildModel":
+    post:
       tags:
-        - Auxiliary methods
-      summary: Returns result dependencies of the other operations
-      description: '<p>Returns the result json of the Project, ReqProject and AddReqsAndCompute methods. The result is a json object formed by a status attribute. If the status is 200 the json also contains an array of dependencies which are returned in patches of 20,000 . Each time this operation is called, the following 20,000 dependencies of the indicated response will be returned. An empty json will be returned when no more dependencies are left. Nevertheless, if the status attribute is not equal to 200, the json contains the exception message. </p>'
-      operationId: getResponsePageUsingGET
+      - Model
+      summary: Builds a model with the input requirements
+      description: Builds a model with the entry requirements. The generated model
+        is assigned to the specified organization and stored in an internal database.
+        Each organization only can have one model at a time. If at the time of generating
+        a new model the corresponding organization already has an existing model,
+        it is replaced by the new one.
+      operationId: buildModelUsingPOST
+      consumes:
+      - application/json
       produces:
-        - application/json
+      - application/json
       parameters:
-        - name: organization
-          in: query
-          description: Organization
-          required: true
-          type: string
-          allowEmptyValue: false
-          x-example: UPC
-        - name: response
-          in: query
-          description: Response identifier
-          required: true
-          type: string
-          allowEmptyValue: false
-          x-example: UPC
+      - name: compare
+        in: query
+        description: Use text attribute?
+        required: false
+        type: boolean
+        allowEmptyValue: false
+        x-example: true
+      - in: body
+        name: input
+        description: OpenReqJson with requirements
+        required: true
+        schema:
+          "$ref": "#/definitions/Requirements"
+      - name: organization
+        in: query
+        description: Organization
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: UPC
+      - name: url
+        in: query
+        description: The url where the result of the operation will be returned
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: http://localhost:9406/upload/PostResult
       responses:
         '200':
           description: OK
           schema:
-            type: object
+            "$ref": "#/definitions/ResponseEntity"
+        '400':
+          description: Bad request
+        '500':
+          description: Internal error
+      deprecated: false
+  "/upc/similarity-detection/DeleteDatabase":
+    delete:
+      tags:
+      - Auxiliary methods
+      summary: Deletes all data
+      description: "<p>Deletes all data from the database.</p>"
+      operationId: deleteDatabaseUsingDELETE
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: OK
+          schema:
+            "$ref": "#/definitions/ResponseEntity"
+        '500':
+          description: Internal error
+      deprecated: false
+  "/upc/similarity-detection/DeleteOrganizationResponses":
+    delete:
+      tags:
+      - Auxiliary methods
+      summary: Deletes the organization responses
+      description: "<p>Deletes the organization responses that are finished from the
+        database.</p>"
+      operationId: deleteOrganizationResponsesUsingDELETE
+      produces:
+      - application/json
+      parameters:
+      - name: organization
+        in: query
+        description: Organization
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: UPC
+      responses:
+        '200':
+          description: OK
+          schema:
+            "$ref": "#/definitions/ResponseEntity"
+        '404':
+          description: Not found
+        '500':
+          description: Internal error
+      deprecated: false
+  "/upc/similarity-detection/DeleteRequirements":
+    post:
+      tags:
+      - Model
+      summary: Delete requirements from the model
+      description: "Given a list of requirements, the endpoint deletes them from a
+        specified organization’s model. If the model has clusters, the endpoint deletes
+        each input requirement from his cluster and updates the cluster centroid if
+        the deleted requirement was the oldest one. \n"
+      operationId: deleteRequirementsUsingPOST
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - in: body
+        name: input
+        description: OpenReqJson with requirements
+        required: true
+        schema:
+          "$ref": "#/definitions/Requirements"
+      - name: organization
+        in: query
+        description: Organization
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: UPC
+      - name: url
+        in: query
+        description: The url where the result of the operation will be returned
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: http://localhost:9406/upload/PostResult
+      responses:
+        '200':
+          description: OK
+          schema:
+            "$ref": "#/definitions/ResponseEntity"
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+        '500':
+          description: Internal error
+      deprecated: false
+  "/upc/similarity-detection/GetResponse":
+    get:
+      tags:
+      - Auxiliary methods
+      summary: Returns result dependencies of the other operations
+      description: "<p>Returns the result json of the AddReqs, Project, ReqProject
+        and AddReqsAndCompute methods. The result is a json object formed by a status
+        attribute. If the status is 200 the json also contains an array of dependencies
+        which are returned in patches of 20,000 . Each time this operation is called,
+        the following 20,000 dependencies of the indicated response will be returned.
+        An empty json will be returned when no more dependencies are left. Nevertheless,
+        if the status attribute is not equal to 200, the json contains the exception
+        message. </p>"
+      operationId: getResponsePageUsingGET
+      produces:
+      - application/json
+      parameters:
+      - name: organization
+        in: query
+        description: Organization
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: UPC
+      - name: response
+        in: query
+        description: Response identifier
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: '12345678_89'
+      responses:
+        '200':
+          description: OK
+          schema:
+            "$ref": "#/definitions/ResponseEntity"
         '404':
           description: Not found
         '423':
@@ -185,205 +493,386 @@ paths:
         '500':
           description: Internal error
       deprecated: false
-  /upc/similarity-detection/Project:
+  "/upc/similarity-detection/Project":
     post:
       tags:
-        - Main methods
+      - Compare
       summary: Similarity comparison between the requirements of one project
-      description: <p>Returns an array of dependencies between all possible pairs of requirements from the project received as input. The similarity score is computed with the model assigned to the specified organization. All the requirements must be inside this model.</p>
+      description: "<p>Returns an array of dependencies between all possible pairs
+        of requirements from the project received as input. The similarity score is
+        computed with the model assigned to the specified organization. All the requirements
+        must be inside this model.</p>"
       operationId: simProjectUsingPOST
       consumes:
-        - application/json
+      - application/json
       produces:
-        - application/json
+      - application/json
       parameters:
-        - in: body
-          name: input
-          description: OpenReqJson with the project
-          required: true
-          schema:
-            $ref: '#/definitions/JsonProject'
-        - name: organization
-          in: query
-          description: Organization
-          required: true
-          type: string
-          allowEmptyValue: false
-          x-example: UPC
-        - name: project
-          in: query
-          description: Id of the project to compare
-          required: true
-          type: string
-          allowEmptyValue: false
-          x-example: SQ
-        - name: threshold
-          in: query
-          description: Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have
-          required: true
-          type: number
-          format: double
-          allowEmptyValue: false
-          x-example: 0.1
-        - name: url
-          in: query
-          description: The url where the result of the operation will be returned
-          required: true
-          type: string
-          allowEmptyValue: false
-          x-example: 'http://localhost:9406/upload/PostResult'
+      - in: body
+        name: input
+        description: OpenReqJson with the project
+        required: true
+        schema:
+          "$ref": "#/definitions/Projects"
+      - name: organization
+        in: query
+        description: Organization
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: UPC
+      - name: project
+        in: query
+        description: Id of the project to compare
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: SQ
+      - name: threshold
+        in: query
+        description: Double between 0 and 1 that establishes the minimum similarity
+          score that the added dependencies should have
+        required: true
+        type: number
+        format: double
+        allowEmptyValue: false
+        x-example: 0.1
+      - name: url
+        in: query
+        description: The url where the result of the operation will be returned
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: http://localhost:9406/upload/PostResult
       responses:
         '200':
           description: OK
           schema:
-            type: object
+            "$ref": "#/definitions/ResponseEntity"
         '404':
           description: Not found
         '500':
           description: Internal error
       deprecated: false
-  /upc/similarity-detection/ReqProject:
+  "/upc/similarity-detection/ReqClusters":
     post:
       tags:
-        - Main methods
-      summary: Similarity comparison between a list of requirements and all the requirements of a specific project
-      description: <p>Returns an array of dependencies between the list of requirements and the project's requirements received as input. The similarity score is computed with the model assigned to the specified organization. All the requirements must be inside this model.</p>
+      - Clusters
+      summary: Similarity comparison between a set of requirements and all the organization
+        cluster centroids
+      description: |-
+        <p>Given a list of requirements, the endpoint pre-processes them. Then, it considers each requirement as a centroid of a one-requirement-cluster. Then, it computes the similarity score of the requirements in the list with all the centroids except with itself (even with the centroids of the one-requirement-clusters, and taking into account that the set of one-requirement-clusters also includes the requirements in the list).
+        </p>
+      operationId: simReqClustersUsingPOST
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: compare
+        in: query
+        description: Use text attribute?
+        required: false
+        type: boolean
+        allowEmptyValue: false
+        x-example: true
+      - in: body
+        name: input
+        description: OpenReqJson with requirements
+        required: true
+        schema:
+          "$ref": "#/definitions/Requirements"
+      - name: organization
+        in: query
+        description: Organization
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: UPC
+      - name: threshold
+        in: query
+        description: Double between 0 and 1 that establishes the minimum similarity
+          score that the added dependencies should have
+        required: true
+        type: number
+        format: double
+        allowEmptyValue: false
+        x-example: 0.1
+      - name: url
+        in: query
+        description: The url where the result of the operation will be returned
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: http://localhost:9406/upload/PostResult
+      responses:
+        '200':
+          description: OK
+          schema:
+            "$ref": "#/definitions/ResponseEntity"
+        '400':
+          description: Bad request
+        '500':
+          description: Internal error
+      deprecated: false
+  "/upc/similarity-detection/ReqOrganization":
+    post:
+      tags:
+      - Compare
+      summary: Similarity comparison between a set of requirements and all the organization
+        requirements
+      description: "<p>Adds the input requirements to the organization model and returns
+        an array of dependencies between them and all the organization requirements.
+        If any input requirement is already part of the organization's model, it will
+        be overwritten with the new information.</p>"
+      operationId: simReqOrganizationUsingPOST
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: compare
+        in: query
+        description: Use text attribute?
+        required: false
+        type: boolean
+        allowEmptyValue: false
+        x-example: true
+      - in: body
+        name: input
+        description: OpenReqJson with requirements
+        required: true
+        schema:
+          "$ref": "#/definitions/Requirements"
+      - name: organization
+        in: query
+        description: Organization
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: UPC
+      - name: threshold
+        in: query
+        description: Double between 0 and 1 that establishes the minimum similarity
+          score that the added dependencies should have
+        required: true
+        type: number
+        format: double
+        allowEmptyValue: false
+        x-example: 0.1
+      - name: url
+        in: query
+        description: The url where the result of the operation will be returned
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: http://localhost:9406/upload/PostResult
+      responses:
+        '200':
+          description: OK
+          schema:
+            "$ref": "#/definitions/ResponseEntity"
+        '400':
+          description: Bad request
+        '500':
+          description: Internal error
+      deprecated: false
+  "/upc/similarity-detection/ReqProject":
+    post:
+      tags:
+      - Compare
+      summary: Similarity comparison between a list of requirements and all the requirements
+        of a specific project
+      description: "<p>Returns an array of dependencies between the list of requirements
+        and the project's requirements received as input. The similarity score is
+        computed with the model assigned to the specified organization. All the requirements
+        must be inside this model.</p>"
       operationId: simReqProjectUsingPOST
       consumes:
-        - application/json
+      - application/json
       produces:
-        - application/json
+      - application/json
       parameters:
-        - in: body
-          name: input
-          description: OpenReqJson with the project
-          required: true
-          schema:
-            $ref: '#/definitions/JsonProject'
-        - name: organization
-          in: query
-          description: Organization
-          required: true
+      - in: body
+        name: input
+        description: OpenReqJson with the project
+        required: true
+        schema:
+          "$ref": "#/definitions/Projects"
+      - name: organization
+        in: query
+        description: Organization
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: UPC
+      - name: project
+        in: query
+        description: Id of the project to compare
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: SM
+      - name: req
+        in: query
+        description: Id of the requirements to compare
+        required: true
+        type: array
+        items:
           type: string
-          allowEmptyValue: false
-          x-example: UPC
-        - name: project
-          in: query
-          description: Id of the project to compare
-          required: true
-          type: string
-          allowEmptyValue: false
-          x-example: SM
-        - name: req
-          in: query
-          description: Id of the requirements to compare
-          required: true
-          type: array
-          items:
-            type: string
-          collectionFormat: multi
-          allowEmptyValue: false
-        - name: threshold
-          in: query
-          description: Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have
-          required: true
-          type: number
-          format: double
-          allowEmptyValue: false
-          x-example: 0.1
-        - name: url
-          in: query
-          description: The url where the result of the operation will be returned
-          required: true
-          type: string
-          allowEmptyValue: false
-          x-example: 'http://localhost:9406/upload/PostResult'
+        collectionFormat: multi
+        allowEmptyValue: false
+      - name: threshold
+        in: query
+        description: Double between 0 and 1 that establishes the minimum similarity
+          score that the added dependencies should have
+        required: true
+        type: number
+        format: double
+        allowEmptyValue: false
+        x-example: 0.1
+      - name: url
+        in: query
+        description: The url where the result of the operation will be returned
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: http://localhost:9406/upload/PostResult
       responses:
         '200':
           description: OK
           schema:
-            type: object
+            "$ref": "#/definitions/ResponseEntity"
         '404':
           description: Not found
         '500':
           description: Internal error
       deprecated: false
-  /upc/similarity-detection/ReqReq:
+  "/upc/similarity-detection/ReqReq":
     post:
       tags:
-        - Main methods
+      - Compare
       summary: Similarity comparison between two requirements
-      description: Returns a dependency between the two input requirements. The similarity score is computed with the model assigned to the specified organization. The two requirements must be in this model.
+      description: Returns a dependency between the two input requirements. The similarity
+        score is computed with the model assigned to the specified organization. The
+        two requirements must be in this model.
       operationId: simReqReqUsingPOST
       consumes:
-        - application/json
+      - application/json
       produces:
-        - application/json
+      - application/json
       parameters:
-        - name: organization
-          in: query
-          description: Organization
-          required: true
-          type: string
-          allowEmptyValue: false
-          x-example: UPC
-        - name: req1
-          in: query
-          description: Id of the first requirement to compare
-          required: true
-          type: string
-          allowEmptyValue: false
-          x-example: SQ-132
-        - name: req2
-          in: query
-          description: Id of the second requirement to compare
-          required: true
-          type: string
-          allowEmptyValue: false
-          x-example: SQ-98
+      - name: organization
+        in: query
+        description: Organization
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: UPC
+      - name: req1
+        in: query
+        description: Id of the first requirement to compare
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: UPC-98
+      - name: req2
+        in: query
+        description: Id of the second requirement to compare
+        required: true
+        type: string
+        allowEmptyValue: false
+        x-example: UPC-97
       responses:
         '200':
           description: OK
           schema:
-            type: object
+            "$ref": "#/definitions/ResponseEntity"
         '404':
           description: Not found
         '500':
           description: Internal error
       deprecated: false
 definitions:
-  JsonProject:
+  Dependency:
     type: object
     properties:
-      projects:
+      dependency_score:
+        type: number
+        format: double
+        example: 0.48
+      dependency_type:
+        type: string
+        example: similar
+      description:
         type: array
+        example:
+        - Similarity-UPC
         items:
-          $ref: '#/definitions/Project'
-    title: JsonProject
-    description: OpenReqJson with projects
+          type: string
+      fromid:
+        type: string
+        example: UPC-2
+      status:
+        type: string
+        example: accepted
+      toid:
+        type: string
+        example: UPC-1
+    title: Dependency
   Project:
     type: object
     properties:
       id:
         type: string
+        example: UPC-P1
       specifiedRequirements:
         type: array
+        example:
+        - UPC-98
+        - UPC-97
         items:
           type: string
     title: Project
-    description: 'A project with id, name and requirements'
+    description: A project with id, name and requirements
+  ProjectWithDependencies:
+    type: object
+    properties:
+      dependencies:
+        type: array
+        items:
+          "$ref": "#/definitions/Dependency"
+      requirements:
+        type: array
+        items:
+          "$ref": "#/definitions/Requirement"
+    title: ProjectWithDependencies
+    description: OpenReqJson with requirements and dependencies
+  Projects:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          "$ref": "#/definitions/Project"
+    title: Projects
+    description: OpenReqJson with projects
   Requirement:
     type: object
     properties:
       created_at:
         type: integer
         format: int64
+        example: 1354019441000
       id:
         type: string
+        example: UPC-98
       name:
         type: string
+        example: Check swagger version.
       text:
         type: string
+        example: The swagger version is deprecated. Please update the service asap.
     title: Requirement
     description: A requirement with id and text
   Requirements:
@@ -392,7 +881,85 @@ definitions:
       requirements:
         type: array
         items:
-          $ref: '#/definitions/Requirement'
+          "$ref": "#/definitions/Requirement"
     title: Requirements
     description: OpenReqJson with requirements
-
+  ResponseEntity:
+    type: object
+    properties:
+      body:
+        type: object
+      statusCode:
+        type: string
+        enum:
+        - 100 CONTINUE
+        - 101 SWITCHING_PROTOCOLS
+        - 102 PROCESSING
+        - 103 CHECKPOINT
+        - 200 OK
+        - 201 CREATED
+        - 202 ACCEPTED
+        - 203 NON_AUTHORITATIVE_INFORMATION
+        - 204 NO_CONTENT
+        - 205 RESET_CONTENT
+        - 206 PARTIAL_CONTENT
+        - 207 MULTI_STATUS
+        - 208 ALREADY_REPORTED
+        - 226 IM_USED
+        - 300 MULTIPLE_CHOICES
+        - 301 MOVED_PERMANENTLY
+        - 302 FOUND
+        - 302 MOVED_TEMPORARILY
+        - 303 SEE_OTHER
+        - 304 NOT_MODIFIED
+        - 305 USE_PROXY
+        - 307 TEMPORARY_REDIRECT
+        - 308 PERMANENT_REDIRECT
+        - 400 BAD_REQUEST
+        - 401 UNAUTHORIZED
+        - 402 PAYMENT_REQUIRED
+        - 403 FORBIDDEN
+        - 404 NOT_FOUND
+        - 405 METHOD_NOT_ALLOWED
+        - 406 NOT_ACCEPTABLE
+        - 407 PROXY_AUTHENTICATION_REQUIRED
+        - 408 REQUEST_TIMEOUT
+        - 409 CONFLICT
+        - 410 GONE
+        - 411 LENGTH_REQUIRED
+        - 412 PRECONDITION_FAILED
+        - 413 PAYLOAD_TOO_LARGE
+        - 413 REQUEST_ENTITY_TOO_LARGE
+        - 414 URI_TOO_LONG
+        - 414 REQUEST_URI_TOO_LONG
+        - 415 UNSUPPORTED_MEDIA_TYPE
+        - 416 REQUESTED_RANGE_NOT_SATISFIABLE
+        - 417 EXPECTATION_FAILED
+        - 418 I_AM_A_TEAPOT
+        - 419 INSUFFICIENT_SPACE_ON_RESOURCE
+        - 420 METHOD_FAILURE
+        - 421 DESTINATION_LOCKED
+        - 422 UNPROCESSABLE_ENTITY
+        - 423 LOCKED
+        - 424 FAILED_DEPENDENCY
+        - 426 UPGRADE_REQUIRED
+        - 428 PRECONDITION_REQUIRED
+        - 429 TOO_MANY_REQUESTS
+        - 431 REQUEST_HEADER_FIELDS_TOO_LARGE
+        - 451 UNAVAILABLE_FOR_LEGAL_REASONS
+        - 500 INTERNAL_SERVER_ERROR
+        - 501 NOT_IMPLEMENTED
+        - 502 BAD_GATEWAY
+        - 503 SERVICE_UNAVAILABLE
+        - 504 GATEWAY_TIMEOUT
+        - 505 HTTP_VERSION_NOT_SUPPORTED
+        - 506 VARIANT_ALSO_NEGOTIATES
+        - 507 INSUFFICIENT_STORAGE
+        - 508 LOOP_DETECTED
+        - 509 BANDWIDTH_LIMIT_EXCEEDED
+        - 510 NOT_EXTENDED
+        - 511 NETWORK_AUTHENTICATION_REQUIRED
+      statusCodeValue:
+        type: integer
+        format: int32
+    title: ResponseEntity

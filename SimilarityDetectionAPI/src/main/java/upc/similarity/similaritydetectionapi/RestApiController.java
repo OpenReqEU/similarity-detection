@@ -54,7 +54,9 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/AddRequirements", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "", notes = "", tags = "Model")
+    @ApiOperation(value = "Add requirements to the model", notes = "<p>Given a list of requirements, the endpoint pre-processes them and adds them to a specified " +
+            "organization’s model. If the model has clusters, the endpoint adds each input requirement as a cluster of one requirement. If some of the entry requirements " +
+            "were already part of the model, the endpoint will update its information and compare them again as the other entry requirements.\n</p>", tags = "Model")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=404, message = "Not found"),
@@ -73,7 +75,9 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/DeleteRequirements", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "", notes = "", tags = "Model")
+    @ApiOperation(value = "Delete requirements from the model", notes = "Given a list of requirements, the endpoint deletes them from a specified organization’s model. " +
+            "If the model has clusters, the endpoint deletes each input requirement from his cluster and updates the cluster centroid if the deleted requirement was the " +
+            "oldest one. \n", tags = "Model")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=404, message = "Not found"),
@@ -202,8 +206,9 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/AddClusters", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Generates clusters from the input requirements and dependencies", notes = "<p>Generates the clusters with the input dependencies and computes their " +
-            " centroids. The centroids are the oldest requirements. It saves the clusters' centroids in an internal database making possible the used of these centroids in the rest of operations.</p>", tags = "Clusters")
+    @ApiOperation(value = "Generates clusters from the input requirements and dependencies", notes = "<p>This method computes the clusters using the existing duplicates. " +
+            "All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements " +
+            "are pre-processed and stored in the database. The entry duplicates relations are defined by the dependencies with type equal to similar or duplicate.</p>", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -221,8 +226,10 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/AddClustersAndCompute", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Computes the similarity between the clusters centroids", notes = "<p>Generates the clusters with the input dependencies and returns the similarity dependencies between " +
-            " their centroids. The centroids are the oldest requirements. Also, it saves the clusters' centroids in an internal database making possible the used of these centroids in the rest of operations.</p>", tags = "Clusters")
+    @ApiOperation(value = "Computes the similarity between the clusters centroids", notes = "<p>This method computes the clusters using the existing duplicates. All the requirements that " +
+            "do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the" +
+            " database. Then, we compare each orphan (cluster with only one requirement) with all the other centroids and return the similarity score for all the comparisons that are bigger " +
+            "than the established threshold.</p>", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -241,7 +248,9 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/ReqClusters", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "", notes = "<p></p>", tags = "Clusters")
+    @ApiOperation(value = "Similarity comparison between a set of requirements and all the organization cluster centroids", notes = "<p>Given a list of requirements, the endpoint pre-processes them. Then, it considers each requirement as " +
+            "a centroid of a one-requirement-cluster. Then, it computes the similarity score of the requirements in the list with all the centroids except with itself (even with the centroids of the one-requirement-clusters, and taking into " +
+            "account that the set of one-requirement-clusters also includes the requirements in the list).\n</p>", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})

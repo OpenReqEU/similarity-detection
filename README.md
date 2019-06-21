@@ -12,23 +12,26 @@ Next sections provide a general overview of the technical details of the similar
 
 ### Main functionalities
 
-There are seven main methods:
+There are four types of operations (each method has a more extensive description in its own operation box):
 
-    - AddReqs: Generates a model with the input requirements
-    - ReqReq: Compares two requirements
-    - ReqProject: Compares between a list of requirements and a set of requirements
-    - ReqOrganization: Compares between a list of requirements and all the requirements of a specific organization
-    - Project: Compares all possible pairs of requirements from a set of requirements
-    - AddReqsAndCompute: Is a mixture between AddReqs and Project methods
-    - AddReqsAndComputeOrphans: Generates a model with the input clusters and computes the similarity between them
-
-And three auxiliary operations:
-
-    - GetResponse: Returns in patches the resulting dependencies of the other methods
-    - DeleteOrganizationResponses: Deletes the organization responses from the database
-    - DeleteDatabase: Deletes all data from the database
-
-The component needs to preprocess the requirements before doing any comparison. The operation AddReqs is responsible for that work.
+    - Model: These methods are responsible for pre-processing the input requirements, generating a model that saves the requirements information and assigning it to an organization. Generating these models is mandatory before making any comparison.
+        - BuildModel: Pre-processes the input requirements, generates a model and assings it to an specified organization.
+        - AddRequirements: Pre-processes the input requirements and adds them to an existing model. Also it updates the clusters if the model has them.
+        - DeleteRequirements: Deletes the input requirements from an existing model. Also it updates the clusters if the model has them.
+    - Compare: These methods are in charge of comparing and returning the corresponding similarity dependencies between the specified requirements of an organization’s model.
+        - ReqReq: Compares two requirements.
+        - ReqProject: Compares between a list of requirements and a set of requirements.
+        - ReqOrganization: Pre-processes the input requirements and adds them to an organization's model. Also it compares the input requirements with all the requirements of the organization's model.
+        - Project: Compares all possible pairs of requirements from a set of requirements.
+        - AddReqsAndCompute: Generates a model with the input requirements and computes the similarity score between all the possible pairs of requirements.
+    - Clusters: These methods are responsible for pre-processing the input requirements and dependencies, generating a model that saves the requirements information and the clusters architecture and assigning it to an organization.
+        - AddClusters: Pre-processes the input requirements, generates a model with the requirements information and the clusters architecture and assings it to an specified organization.
+        - AddClustersAndCompute: Pre-processes the input requirements, generates a model with the requirements information and the clusters architecture and assings it to an specified organization. Also it compares all the one-requirement cluster centroids with the rest of centroids.
+        - ReqClusters: Pre-processes the input requirements and adds them to an organization's model. Also it compares the input requirements with all the cluster centroids of the organization's model.
+    - Auxiliary methods:
+        - GetResponse: Returns in patches the resulting dependencies of the other methods
+        - DeleteOrganizationResponses: Deletes the organization responses from the database
+        - DeleteDatabase: Deletes all data from the database
 
 The API uses UTF-8 charset. Also, it uses the OpenReq format for input JSONs.
 
@@ -46,7 +49,7 @@ The service is divided into two independent components: SimilarityDetectionAPI a
 
 ### Asynchronous service
 
-The operations AddReqs, ReqProject, Project and AddReqsAndCompute are asynchronous. It is necessary to write a server URL as parameter in all of them. The outcome of the operation will be returned to that url. All these operations follow the same pattern:
+All operations except ReqClusters, GetResponse, DeleteOrganizationResponses and DeleteDatabase are asynchronous. It is necessary to write a server URL as parameter in all of them. The outcome of the operation will be returned to that url. All these operations follow the same pattern:
 
     1.The client calls the operation with all necessary parameters
     2.The service receives the request and checks the main conditions

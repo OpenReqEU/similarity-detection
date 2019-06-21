@@ -28,27 +28,27 @@ public class SwaggerConfig {
     private static final String	DESCRIPTION    = "" +
             "<p>The component is based in td-idf numerical statistic. The aim of the API is to calculate the similarity score between multiple pairs of requirements."+
             "</p>" +
-            "<p>There are four types of operations:: </p>" +
+            "<p>There are four types of operations (each method has a more extensive description in its own operation box): </p>" +
             "<ul>" +
             "<li><strong>Model</strong>: These methods are responsible for pre-processing the input requirements, generating a model that saves the requirements information and assigning it to an organization. Generating these models is mandatory before making any comparison.</li>" +
             "<ul>" +
-            "<li>BuildModel: Pre-process the input requirements, generates a model and assings it to an specified organization.</li>" +
-            "<li>AddRequirements: Pre-process the input requirements and adds them to an existing model. Also it updates the clusters if the model has them.</li>" +
+            "<li>BuildModel: Pre-processes the input requirements, generates a model and assings it to an specified organization.</li>" +
+            "<li>AddRequirements: Pre-processes the input requirements and adds them to an existing model. Also it updates the clusters if the model has them.</li>" +
             "<li>DeleteRequirements: Deletes the input requirements from an existing model. Also it updates the clusters if the model has them.</li>" +
             "</ul>"+
             "<li><strong>Compare</strong>: These methods are in charge of comparing and returning the corresponding similarity dependencies between the specified requirements of an organization’s model.</li>" +
             "<ul>" +
             "<li>ReqReq: Compares two requirements.</li>" +
             "<li>ReqProject: Compares between a list of requirements and a set of requirements.</li>" +
-            "<li>ReqOrganization: Compares between a list of requirements and all the requirements of a specific organization.</li>" +
+            "<li>ReqOrganization: Pre-processes the input requirements and adds them to an organization's model. Also it compares the input requirements with all the requirements of the organization's model.</li>" +
             "<li>Project: Compares all possible pairs of requirements from a set of requirements.</li>" +
             "<li>AddReqsAndCompute: Generates a model with the input requirements and computes the similarity score between all the possible pairs of requirements.</li>" +
             "</ul>"+
             "<li><strong>Clusters</strong>: These methods are responsible for pre-processing the input requirements and dependencies, generating a model that saves the requirements information and the clusters architecture and assigning it to an organization.</li>" +
             "<ul>" +
-            "<li>AddClusters:</li>" +
-            "<li>AddClustersAndCompute:</li>" +
-            "<li>ReqClusters:</li>" +
+            "<li>AddClusters: Pre-processes the input requirements, generates a model with the requirements information and the clusters architecture and assings it to an specified organization.</li>" +
+            "<li>AddClustersAndCompute: Pre-processes the input requirements, generates a model with the requirements information and the clusters architecture and assings it to an specified organization. Also it compares all the one-requirement cluster centroids with the rest of centroids.</li>" +
+            "<li>ReqClusters: Pre-processes the input requirements and adds them to an organization's model. Also it compares the input requirements with all the cluster centroids of the organization's model.</li>" +
             "</ul>"+
             "<li><strong>Auxiliary methods</strong>:</li>" +
             "<ul>" +
@@ -57,7 +57,7 @@ public class SwaggerConfig {
             "<li>DeleteDatabase: Deletes all data from the database</li>" +
             "</ul>"+
             "</ul>" +
-            "<p>The operations BuildModel, ReqProject, Project and AddReqsAndCompute are asynchronous. It is necessary to write a server URL as parameter in all of them. The outcome of the operation will be returned to that url. All these operations follow the same pattern:</p>" +
+            "<p>All operations except ReqClusters, GetResponse, DeleteOrganizationResponses and DeleteDatabase are asynchronous. It is necessary to write a server URL as parameter in all of them. The outcome of the operation will be returned to that url. All these operations follow the same pattern:</p>" +
             "<ol><li>The client calls the operation with all necessary parameters</li>" +
             "<li>The service receives the request and checks the main conditions</li>" +
             "<li>The service returns if the client request has been accepted or not and closes the connection" +
