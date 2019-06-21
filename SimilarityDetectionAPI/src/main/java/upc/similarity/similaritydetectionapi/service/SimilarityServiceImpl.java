@@ -41,10 +41,66 @@ public class SimilarityServiceImpl implements SimilarityService {
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
-                ResultJson result = new ResultJson(id.getId(),"AddReqs");
+                ResultJson result = new ResultJson(id.getId(),"BuildModel");
                 try {
                     CompareAdapter compareAdapter = new CompareAdapter();
                     compareAdapter.buildModel(id.getId(),organization,compare,input.getRequirements());
+                    result.setCode(200);
+                } catch (ComponentException e) {
+                    result.setException(e.getStatus(),e.getError(),e.getMessage());
+                }
+                finally {
+                    updateClient(result,url);
+                }
+            }
+        });
+
+        thread.start();
+        return id;
+    }
+
+    @Override
+    public ResultId addRequirements(String url, String organization, boolean compare, Requirements input) throws InternalErrorException, BadRequestException {
+
+        checkInput(input, 0);
+        ResultId id = getId();
+
+        //New thread
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                ResultJson result = new ResultJson(id.getId(),"AddRequirements");
+                try {
+                    CompareAdapter compareAdapter = new CompareAdapter();
+                    compareAdapter.addRequirements(id.getId(),organization,compare,input.getRequirements());
+                    result.setCode(200);
+                } catch (ComponentException e) {
+                    result.setException(e.getStatus(),e.getError(),e.getMessage());
+                }
+                finally {
+                    updateClient(result,url);
+                }
+            }
+        });
+
+        thread.start();
+        return id;
+    }
+
+    @Override
+    public ResultId deleteRequirements(String url, String organization, Requirements input) throws InternalErrorException, BadRequestException {
+
+        checkInput(input, 0);
+        ResultId id = getId();
+
+        //New thread
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                ResultJson result = new ResultJson(id.getId(),"DeleteRequirements");
+                try {
+                    CompareAdapter compareAdapter = new CompareAdapter();
+                    compareAdapter.deleteRequirements(id.getId(),organization,input.getRequirements());
                     result.setCode(200);
                 } catch (ComponentException e) {
                     result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -130,6 +186,34 @@ public class SimilarityServiceImpl implements SimilarityService {
                 try {
                     CompareAdapter compareAdapter = new CompareAdapter();
                     compareAdapter.buildClusters(id.getId(),organization,compare,input.getRequirements(),input.getDependencies());
+                    result.setCode(200);
+                } catch (ComponentException e) {
+                    result.setException(e.getStatus(),e.getError(),e.getMessage());
+                }
+                finally {
+                    updateClient(result,url);
+                }
+            }
+        });
+
+        thread.start();
+        return id;
+    }
+
+    @Override
+    public ResultId simReqClusters(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException {
+
+        checkInput(input, threshold);
+        ResultId id = getId();
+
+        //New thread
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                ResultJson result = new ResultJson(id.getId(),"SimReqClusters");
+                try {
+                    CompareAdapter compareAdapter = new CompareAdapter();
+                    compareAdapter.simReqClusters(id.getId(),organization,compare,threshold,input.getRequirements());
                     result.setCode(200);
                 } catch (ComponentException e) {
                     result.setException(e.getStatus(),e.getError(),e.getMessage());

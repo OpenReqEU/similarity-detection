@@ -40,10 +40,11 @@ public class Dependency implements Serializable {
         description.add(component);
     }
 
-    public Dependency(String fromid, String toid) {
+    public Dependency(String fromid, String toid, String dependencyType) {
         this.fromid = fromid;
         this.toid = toid;
         this.description = new ArrayList<>();
+        this.dependencyType = dependencyType;
     }
 
     /*

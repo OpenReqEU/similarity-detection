@@ -85,6 +85,8 @@ public class SQLiteDatabase implements DatabaseModel {
         } else {
             insertOrganization(organization,model.hasClusters());
         }
+        if (model.hasClusters()) setClusters(organization,1);
+        else setClusters(organization,0);
         try (Connection conn = DriverManager.getConnection(dbUrl)) {
             conn.setAutoCommit(false);
             createOrganizationTables(organization, conn, model.hasClusters());
@@ -222,7 +224,8 @@ public class SQLiteDatabase implements DatabaseModel {
                 JSONObject aux = jsonArray.getJSONObject(i);
                 String fromid = aux.getString("fromid");
                 String toid = aux.getString("toid");
-                dependencies.add(new Dependency(fromid,toid));
+                String type = aux.getString("dependency_type");
+                dependencies.add(new Dependency(fromid,toid,type));
             }
         } catch (JSONException e) {
             //empty
@@ -301,7 +304,7 @@ public class SQLiteDatabase implements DatabaseModel {
     private boolean getOrganization(String organizationId, Connection conn) throws NotFoundException, SQLException {
 
         boolean hasClusters;
-        try (PreparedStatement ps = conn.prepareStatement("SELECT hasClusters as found FROM organizations WHERE id = ?")) {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT hasClusters FROM organizations WHERE id = ?")) {
             ps.setString(1, organizationId);
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -446,6 +449,19 @@ public class SQLiteDatabase implements DatabaseModel {
             stmt.execute(sql2);
             stmt.execute(sql3);
             stmt.execute(sql4);
+        }
+
+    }
+
+    private void setClusters(String organization, int value) throws SQLException {
+
+        String sql = "UPDATE organizations SET hasClusters = ? WHERE id = ?";
+
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1,value);
+            ps.setString(2, organization);
+            ps.execute();
         }
 
     }

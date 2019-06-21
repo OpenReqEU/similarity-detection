@@ -269,10 +269,16 @@ public class CompareServiceImpl implements CompareService {
                     List<String> clusterRequirements = clusters.get(master);
                     clusterRequirements.remove(id);
                     clusters.remove(master);
-                    if (master.equals(id)) {
+                    if (master.equals(id) && clusterRequirements.size() > 0) {
                         master = findMaster(clusterRequirements, reqCluster);
                     }
-                    clusters.put(master,clusterRequirements);
+                    if (clusterRequirements.size() > 0) {
+                        clusters.put(master,clusterRequirements);
+                        for (String req: clusterRequirements) {
+                            ReqClusterInfo aux = reqCluster.get(req);
+                            reqCluster.put(req, new ReqClusterInfo(master, aux.getDate()));
+                        }
+                    }
                     reqCluster.remove(id);
                 }
                 List<String> aux = new ArrayList<>();
