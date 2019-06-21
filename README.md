@@ -4,7 +4,7 @@ _This service was created as a result of the OpenReq project funded by the Europ
 
 ## Introduction
 
-The component is based in td-idf numerical statistic. The aim of the API is to calculate the similarity score between multiple pairs of requirements.
+The component is based in tf-idf numerical statistic. The aim of the API is to calculate the similarity score between multiple pairs of requirements.
 
 ## Technical description
 

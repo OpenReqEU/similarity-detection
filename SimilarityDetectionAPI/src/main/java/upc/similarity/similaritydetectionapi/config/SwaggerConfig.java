@@ -26,7 +26,7 @@ public class SwaggerConfig {
     private static final String	LICENSE_TEXT	    = "License";
     private static final String	TITLE		    = "SIMILARITY DETECTION COMPONENT";
     private static final String	DESCRIPTION    = "" +
-            "<p>The component is based in td-idf numerical statistic. The aim of the API is to calculate the similarity score between multiple pairs of requirements."+
+            "<p>The component is based in tf-idf numerical statistic. The aim of the API is to calculate the similarity score between multiple pairs of requirements."+
             "</p>" +
             "<p>There are four types of operations (each method has a more extensive description in its own operation box): </p>" +
             "<ul>" +
@@ -82,8 +82,8 @@ public class SwaggerConfig {
                 .useDefaultResponseMessages(false)
                 .apiInfo(apiInfo())
                 .pathMapping("/")
-                .host("api.openreq.eu/similarity-detection")
-                .protocols(protocols)
+                //.host("api.openreq.eu/similarity-detection")
+                //.protocols(protocols)
                 .select()
                 .paths(PathSelectors.regex("^((?!Test).)*$"))
                 .apis(RequestHandlerSelectors.basePackage("upc.similarity.similaritydetectionapi")).paths(PathSelectors.regex("/upc.*"))
