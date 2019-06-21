@@ -74,11 +74,11 @@ public class CompareAdapter extends ComponentAdapter{
     }
 
 
-    public void simReqClusters(String filename, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException {
+    public String simReqClusters(String filename, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException {
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
 
-        connectionComponentPost(URL + "SimReqClusters?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, requirementsJson);
+        return connectionComponentPost(URL + "SimReqClusters?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, requirementsJson);
     }
 
     @Override

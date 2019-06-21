@@ -201,31 +201,13 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simReqClusters(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException {
+    public String simReqClusters(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException, ComponentException {
 
         checkInput(input, threshold);
         ResultId id = getId();
 
-        //New thread
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ResultJson result = new ResultJson(id.getId(),"SimReqClusters");
-                try {
-                    CompareAdapter compareAdapter = new CompareAdapter();
-                    compareAdapter.simReqClusters(id.getId(),organization,compare,threshold,input.getRequirements());
-                    result.setCode(200);
-                } catch (ComponentException e) {
-                    result.setException(e.getStatus(),e.getError(),e.getMessage());
-                }
-                finally {
-                    updateClient(result,url);
-                }
-            }
-        });
-
-        thread.start();
-        return id;
+        CompareAdapter compareAdapter = new CompareAdapter();
+        return compareAdapter.simReqClusters(id.getId(),organization,compare,threshold,input.getRequirements());
     }
 
     @Override

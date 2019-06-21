@@ -176,14 +176,10 @@ public class ControllerTests {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
-                        .withBody("")));
-        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/ReqClusters").param("organization", "UPC").param("url", callback)
-                .param("compare", "true").param("threshold", "0.12").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"simReqOrganization/input_reqs.json")))
-                .andExpect(status().isOk()).andReturn();
-        TestConfig testConfig = TestConfig.getInstance();
-        while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
-        testConfig.setComputationFinished(false);
-        assertEquals(createJsonResult(200, aux_getResponseId(result), "SimReqClusters"), testConfig.getResult().toString());
+                        .withBody(read_file(path + "simReqClusters/output.json"))));
+        this.mockMvc.perform(post("/upc/similarity-detection/ReqClusters").param("organization", "UPC").param("url", callback)
+                .param("compare", "true").param("threshold", "0.12").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"simReqClusters/input_reqs.json")))
+                .andExpect(status().isOk()).andExpect(status().isOk()).andExpect(content().string(read_file(path + "simReqClusters/output.json")));
     }
 
     @Test

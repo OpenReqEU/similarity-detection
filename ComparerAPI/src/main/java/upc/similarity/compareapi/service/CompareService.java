@@ -40,6 +40,6 @@ public interface CompareService {
 
     public void buildClusters(String responseId, String compare, String organization, Clusters requirements) throws BadRequestException, InternalErrorException;
 
-    public void simReqClusters(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException;
+    public String simReqClusters(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException;
 
 }

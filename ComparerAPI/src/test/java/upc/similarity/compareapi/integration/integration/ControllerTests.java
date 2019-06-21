@@ -100,9 +100,10 @@ public class ControllerTests {
         ++id;
         this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("threshold", "0")
                 .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"addRequirements/input_req_clusters.json")))
-                .andExpect(status().isOk());
-        this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "addRequirements/output_req_clusters.json")));
+        /*this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "addRequirements/output_req_clusters.json")));
+        ++id;*/
         ++id;
     }
 
@@ -123,6 +124,24 @@ public class ControllerTests {
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "deleteRequirements/outputProj.json")));
+        ++id;
+    }
+
+    @Test
+    public void deleteRequirementsClusters() throws Exception {
+        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC")
+                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"deleteRequirements/input_model_clusters.json")))
+                .andExpect(status().isOk());
+        ++id;
+        this.mockMvc.perform(post(url + "DeleteRequirements").param("organization", "UPC")
+                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"deleteRequirements/input_delete_reqs_clusters.json")))
+                .andExpect(status().isOk());
+        this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "deleteRequirements/outputAdd.json")));
+        ++id;
+        this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("threshold", "0")
+                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"deleteRequirements/input_req_clusters.json")))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "deleteRequirements/output_req_clusters.json")));;
         ++id;
     }
 
@@ -150,7 +169,49 @@ public class ControllerTests {
         ++id;
     }
 
+    /*
+    Start - Temporary code
+     */
+
     @Test
+    public void simReqClusters() throws Exception {
+        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC")
+                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"simReqClusters/input_model.json")))
+                .andExpect(status().isOk());
+        ++id;
+        this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("threshold", "0")
+                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqClusters/input_reqs.json")))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simReqClusters/aux1.json")));
+
+        this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
+                .andExpect(status().isNotFound());/*.andExpect(content().string(read_file_json(path + "simReqClusters/aux2.json")));*/
+        ++id;
+        this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("threshold", "0")
+                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqClusters/input_operation.json")))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simReqClusters/aux3.json")));;
+        ++id;
+    }
+
+    @Test
+    public void addClustersAndCompute() throws Exception {
+        this.mockMvc.perform(post(url + "BuildClustersAndCompute").param("organization", "UPC").param("threshold", "0")
+                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"computeOrphans/input_reqs.json")))
+                .andExpect(status().isOk());
+        this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "computeOrphans/output.json")));
+        ++id;
+        this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("threshold", "0")
+                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"computeOrphans/input_req_clusters.json")))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "computeOrphans/aux1.json")));
+        ++id;
+    }
+
+
+    /*
+    Finish - Temporary code
+     */
+
+    /*@Test
     public void simReqClusters() throws Exception {
         this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC")
                 .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"simReqClusters/input_model.json")))
@@ -184,7 +245,7 @@ public class ControllerTests {
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "computeOrphans/output_req_clusters.json")));
         ++id;
-    }
+    }*/
 
     @Test
     public void addClusters() throws Exception {

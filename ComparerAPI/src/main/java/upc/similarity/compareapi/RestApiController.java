@@ -108,8 +108,7 @@ public class RestApiController {
                                         @RequestParam("threshold") double threshold,
                                         @RequestBody List<Requirement> requirements) {
         try {
-            compareService.simReqClusters(responseId,compare,organization,threshold,requirements);
-            return new ResponseEntity<>(null,HttpStatus.OK);
+            return new ResponseEntity<>(compareService.simReqClusters(responseId,compare,organization,threshold,requirements),HttpStatus.OK);
         } catch (NotFoundException e) {
             return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
         } catch (BadRequestException e) {

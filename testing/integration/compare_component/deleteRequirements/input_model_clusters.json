@@ -1,0 +1,16 @@
+{
+    "requirements":[
+        {"id":"UPC-1","text":"meh","name":"","created_at":"12"},
+        {"id":"UPC-2","text":"UB","name":""},
+        {"id":"UPC-3","text":"alone","name":"","created_at":"1"},
+        {"id":"UPC-4","text":"UAB","name":"","created_at":"123"},
+        {"id":"UPC-5","text":"UAB","name":"","created_at":"1234"},
+        {"id":"UPC-6","text":"jota","name":"","created_at":""},
+        {"id":"UPC-7","text":"jota","name":"","created_at":""}
+    ],
+    "dependencies":[
+        {"dependency_type":"similar","status":"accepted","fromid":"UPC-1","toid":"UPC-2"},
+        {"dependency_type":"similar","status":"accepted","fromid":"UPC-1","toid":"UPC-3"},
+        {"dependency_type":"similar","status":"accepted","fromid":"UPC-5","toid":"UPC-4"}
+    ]
+}

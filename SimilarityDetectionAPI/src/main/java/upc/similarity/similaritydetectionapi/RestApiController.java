@@ -208,7 +208,8 @@ public class RestApiController {
     @PostMapping(value = "/AddClusters", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Generates clusters from the input requirements and dependencies", notes = "<p>This method computes the clusters using the existing duplicates. " +
             "All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements " +
-            "are pre-processed and stored in the database. The entry duplicates relations are defined by the dependencies with type equal to similar or duplicate.</p>", tags = "Clusters")
+            "are pre-processed and stored in the database. The entry duplicates relations are defined by the dependencies with type equal to similar or duplicate. It returns a requirements " +
+            "array with all the cluster centroids.\n</p>", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -250,7 +251,8 @@ public class RestApiController {
     @PostMapping(value = "/ReqClusters", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Similarity comparison between a set of requirements and all the organization cluster centroids", notes = "<p>Given a list of requirements, the endpoint pre-processes them. Then, it considers each requirement as " +
             "a centroid of a one-requirement-cluster. Then, it computes the similarity score of the requirements in the list with all the centroids except with itself (even with the centroids of the one-requirement-clusters, and taking into " +
-            "account that the set of one-requirement-clusters also includes the requirements in the list).\n</p>", tags = "Clusters")
+            "account that the set of one-requirement-clusters also includes the requirements in the list). It returns a dependencies array with all the similarity comparisons that are above the " +
+            "threshold specified. This operation is synchronous. </p>", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})

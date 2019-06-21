@@ -30,7 +30,7 @@ public interface SimilarityService {
 
     public ResultId simReqOrganization(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException;
 
-    public ResultId simReqClusters(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException;
+    public String simReqClusters(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException, ComponentException;
 
     public String getResponsePage(String organization, String responseId) throws ComponentException;
 
