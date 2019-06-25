@@ -18,7 +18,7 @@ public class AdaptersController {
     }
 
     public ComponentAdapter getAdapter(Component component) throws InternalErrorException {
-        if (component.equals(Component.TfidfCompare)) return new CompareAdapter();
+        if (component.equals(Component.TfIdfCompare)) return new CompareAdapter();
         else throw new InternalErrorException("The component " + component + " does not exist.");
 
     }

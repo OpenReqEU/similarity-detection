@@ -33,7 +33,6 @@ public class CompareServiceImpl implements CompareService {
     private static String badRequestMessage = "Bad request";
     private static String notFoundMessage = "Not found";
     private static String sqlErrorMessage = "Database error";
-    private static String internalErrorMessage = "Internal error";
     private static String dependenciesArrayName = "dependencies";
     private DatabaseModel databaseModel = getValue();
     private Control control = Control.getInstance();
@@ -52,11 +51,7 @@ public class CompareServiceImpl implements CompareService {
     public void buildModel(String responseId, String compare, String organization, List<Requirement> requirements) throws BadRequestException, InternalErrorException {
         control.showInfoMessage("BuildModel: Start computing");
         generateResponse(organization,responseId);
-        try {
-            saveModel(organization, generateModel(compare, deleteDuplicates(requirements)));
-        } catch (BadRequestException e) {
-            saveBadRequestException(organization, responseId, e);
-        }
+        saveModel(organization, generateModel(compare, deleteDuplicates(requirements,organization,responseId)));
         try {
             databaseModel.saveResponsePage(organization, responseId, 0, new JSONObject().put("status",200).toString());
             databaseModel.finishComputation(organization,responseId);
@@ -70,12 +65,7 @@ public class CompareServiceImpl implements CompareService {
     public void buildModelAndCompute(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws BadRequestException, NotFoundException, InternalErrorException {
         control.showInfoMessage("BuildModelAndCompute: Start computing");
         generateResponse(organization,responseId);
-        Model model = null;
-        try {
-            model = generateModel(compare, deleteDuplicates(requirements));
-        } catch (BadRequestException e) {
-            saveBadRequestException(organization, responseId, e);
-        }
+        Model model = generateModel(compare, deleteDuplicates(requirements,organization,responseId));
         List<String> requirementsIds = new ArrayList<>();
         for (Requirement requirement: requirements) {
             requirementsIds.add(requirement.getId());
@@ -101,14 +91,9 @@ public class CompareServiceImpl implements CompareService {
             saveNotFoundException(organization, responseId, e);
         }
 
-        List<Requirement> notDuplicatedRequirements = null;
-        try {
-            notDuplicatedRequirements = deleteDuplicates(requirements);
-        } catch (BadRequestException e) {
-            saveBadRequestException(organization, responseId, e);
-        }
+        List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements,organization,responseId);
 
-        addRequirementsToModel(notDuplicatedRequirements, organization, responseId, compare, model);
+        addRequirementsToModel(notDuplicatedRequirements, compare, model);
 
         saveModel(organization, model);
 
@@ -134,12 +119,7 @@ public class CompareServiceImpl implements CompareService {
             saveNotFoundException(organization, responseId, e);
         }
 
-        List<Requirement> notDuplicatedRequirements = null;
-        try {
-            notDuplicatedRequirements = deleteDuplicates(requirements);
-        } catch (BadRequestException e) {
-            saveBadRequestException(organization, responseId, e);
-        }
+        List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements,organization,responseId);
 
         if (model.hasClusters()) {
             Map<String, List<String>> clusters = model.getClusters();
@@ -147,23 +127,7 @@ public class CompareServiceImpl implements CompareService {
 
             for (Requirement requirement: notDuplicatedRequirements) {
                 String id = requirement.getId();
-                if (reqCluster.containsKey(id)) {
-                    String master = reqCluster.get(id).getCluster();
-                    List<String> clusterRequirements = clusters.get(master);
-                    clusterRequirements.remove(id);
-                    clusters.remove(master);
-                    if (master.equals(id) && clusterRequirements.size() > 0) {
-                        master = findMaster(clusterRequirements, reqCluster);
-                    }
-                    if (clusterRequirements.size() > 0) {
-                        clusters.put(master,clusterRequirements);
-                        for (String req: clusterRequirements) {
-                            ReqClusterInfo aux = reqCluster.get(req);
-                            reqCluster.put(req, new ReqClusterInfo(master, aux.getDate()));
-                        }
-                    }
-                    reqCluster.remove(id);
-                }
+                deleteReqFromClusters(id, clusters, reqCluster);
             }
         }
 
@@ -204,14 +168,9 @@ public class CompareServiceImpl implements CompareService {
             saveNotFoundException(organization, responseId, e);
         }
 
-        List<Requirement> notDuplicatedRequirements = null;
-        try {
-            notDuplicatedRequirements = deleteDuplicates(requirements);
-        } catch (BadRequestException e) {
-            saveBadRequestException(organization, responseId, e);
-        }
+        List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements,organization,responseId);
 
-        addRequirementsToModel(notDuplicatedRequirements, organization, responseId, compare, model);
+        addRequirementsToModel(notDuplicatedRequirements, compare, model);
         HashSet<String> repeatedHash = new HashSet<>();
         for (Requirement requirement: notDuplicatedRequirements) repeatedHash.add(requirement.getId());
 
@@ -242,7 +201,7 @@ public class CompareServiceImpl implements CompareService {
 
         if (!model.hasClusters()) throw new BadRequestException("The model does not have clusters");
 
-        List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements);
+        List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements,null,null);
 
         HashSet<String> repeatedHash = new HashSet<>();
         for (Requirement requirement: notDuplicatedRequirements) repeatedHash.add(requirement.getId());
@@ -258,7 +217,7 @@ public class CompareServiceImpl implements CompareService {
             if (!repeatedHash.contains(master)) projectRequirements.add(master);
         }
 
-        addRequirementsToModel(notDuplicatedRequirements, organization, responseId, compare, model);
+        addRequirementsToModel(notDuplicatedRequirements, compare, model);
 
         /*
         Start - Temporary code
@@ -298,52 +257,6 @@ public class CompareServiceImpl implements CompareService {
         control.showInfoMessage("SimReqClusters: Finish computing");
 
         return result.toString();
-    }
-
-    private void addRequirementsToModel(List<Requirement> requirements, String organization, String responseId, String compare, Model model) throws InternalErrorException {
-
-        if (model.hasClusters()) {
-            Map<String, List<String>> clusters = model.getClusters();
-            Map<String, ReqClusterInfo> reqCluster = model.getReqCluster();
-
-            for (Requirement requirement: requirements) {
-                String id = requirement.getId();
-                if (reqCluster.containsKey(id)) {
-                    String master = reqCluster.get(id).getCluster();
-                    List<String> clusterRequirements = clusters.get(master);
-                    clusterRequirements.remove(id);
-                    clusters.remove(master);
-                    if (master.equals(id) && clusterRequirements.size() > 0) {
-                        master = findMaster(clusterRequirements, reqCluster);
-                    }
-                    if (clusterRequirements.size() > 0) {
-                        clusters.put(master,clusterRequirements);
-                        for (String req: clusterRequirements) {
-                            ReqClusterInfo aux = reqCluster.get(req);
-                            reqCluster.put(req, new ReqClusterInfo(master, aux.getDate()));
-                        }
-                    }
-                    reqCluster.remove(id);
-                }
-                List<String> aux = new ArrayList<>();
-                aux.add(id);
-                clusters.put(id,aux);
-                reqCluster.put(id, new ReqClusterInfo(id, requirement.getCreated_at()));
-            }
-        }
-
-        int oldSize = model.getDocs().size();
-        Tfidf.getInstance().deleteReqs(requirements,model);
-
-        updateModel(compare, requirements,model,oldSize);
-    }
-
-    private String findMaster(List<String> requirements, Map<String, ReqClusterInfo> reqCluster) {
-        String master = requirements.get(0);
-        for (String requirement: requirements) {
-            master = chooseMaster(reqCluster, master, requirement);
-        }
-        return master;
     }
 
     @Override
@@ -473,19 +386,9 @@ public class CompareServiceImpl implements CompareService {
         control.showInfoMessage("BuildClustersAndCompute: Start computing");
         generateResponse(organization,responseId);
 
-        List<Requirement> requirements = null;
-        try {
-            requirements = deleteDuplicates(input.getRequirements());
-        } catch (BadRequestException e) {
-            saveBadRequestException(organization, responseId, e);
-        }
+        List<Requirement> requirements = deleteDuplicates(input.getRequirements(),organization,responseId);
 
-        Model model = null;
-        try {
-            model = generateModel(compare, requirements);
-        } catch (BadRequestException e) {
-            saveBadRequestException(organization, responseId, e);
-        }
+        Model model = generateModel(compare, requirements);
 
         Model iniClusters = computeIniClusters(input.getDependencies(), requirements);
         Map<String, List<String>> clusters = iniClusters.getClusters();
@@ -544,19 +447,9 @@ public class CompareServiceImpl implements CompareService {
         control.showInfoMessage("BuildClusters: Start computing");
         generateResponse(organization,responseId);
 
-        List<Requirement> requirements = null;
-        try {
-            requirements = deleteDuplicates(input.getRequirements());
-        } catch (BadRequestException e) {
-            saveBadRequestException(organization, responseId, e);
-        }
+        List<Requirement> requirements = deleteDuplicates(input.getRequirements(),organization,responseId);
 
-        Model model = null;
-        try {
-            model = generateModel(compare, requirements);
-        } catch (BadRequestException e) {
-            saveBadRequestException(organization, responseId, e);
-        }
+        Model model = generateModel(compare, requirements);
 
         Model iniClusters = computeIniClusters(input.getDependencies(), requirements);
 
@@ -601,7 +494,7 @@ public class CompareServiceImpl implements CompareService {
             List<String> aux = new ArrayList<>();
             aux.add(id);
             clusters.put(id,aux);
-            reqCluster.put(id,new ReqClusterInfo(id, requirement.getCreated_at()));
+            reqCluster.put(id,new ReqClusterInfo(id, requirement.getCreatedAt()));
         }
 
         computeDependencies(dependencies, reqCluster, clusters);
@@ -705,15 +598,71 @@ public class CompareServiceImpl implements CompareService {
     auxiliary operations
      */
 
-    private List<Requirement> deleteDuplicates(List<Requirement> requirements) throws BadRequestException {
+    private void addRequirementsToModel(List<Requirement> requirements, String compare, Model model) throws InternalErrorException {
+
+        if (model.hasClusters()) {
+            Map<String, List<String>> clusters = model.getClusters();
+            Map<String, ReqClusterInfo> reqCluster = model.getReqCluster();
+
+            for (Requirement requirement: requirements) {
+                String id = requirement.getId();
+                deleteReqFromClusters(id, clusters, reqCluster);
+                List<String> aux = new ArrayList<>();
+                aux.add(id);
+                clusters.put(id,aux);
+                reqCluster.put(id, new ReqClusterInfo(id, requirement.getCreatedAt()));
+            }
+        }
+
+        int oldSize = model.getDocs().size();
+        Tfidf.getInstance().deleteReqs(requirements,model);
+
+        updateModel(compare, requirements,model,oldSize);
+    }
+
+    private void deleteReqFromClusters(String requirementId, Map<String, List<String>> clusters, Map<String, ReqClusterInfo> reqCluster) {
+
+        if (reqCluster.containsKey(requirementId)) {
+            String master = reqCluster.get(requirementId).getCluster();
+            List<String> clusterRequirements = clusters.get(master);
+            clusterRequirements.remove(requirementId);
+            clusters.remove(master);
+            if (master.equals(requirementId) && !clusterRequirements.isEmpty()) {
+                master = findMaster(clusterRequirements, reqCluster);
+            }
+            if (!clusterRequirements.isEmpty()) {
+                clusters.put(master,clusterRequirements);
+                for (String req: clusterRequirements) {
+                    ReqClusterInfo aux = reqCluster.get(req);
+                    reqCluster.put(req, new ReqClusterInfo(master, aux.getDate()));
+                }
+            }
+            reqCluster.remove(requirementId);
+        }
+    }
+
+    private String findMaster(List<String> requirements, Map<String, ReqClusterInfo> reqCluster) {
+        String master = requirements.get(0);
+        for (String requirement: requirements) {
+            master = chooseMaster(reqCluster, master, requirement);
+        }
+        return master;
+    }
+
+    private List<Requirement> deleteDuplicates(List<Requirement> requirements, String organization, String responseId) throws BadRequestException, InternalErrorException {
         HashSet<String> ids = new HashSet<>();
         List<Requirement> result = new ArrayList<>();
-        for (Requirement requirement: requirements) {
-            if (requirement.getId() == null) throw new BadRequestException("There is a requirement without id.");
-            if (!ids.contains(requirement.getId())) {
-                result.add(requirement);
-                ids.add(requirement.getId());
+        try {
+            for (Requirement requirement : requirements) {
+                if (requirement.getId() == null) throw new BadRequestException("There is a requirement without id.");
+                if (!ids.contains(requirement.getId())) {
+                    result.add(requirement);
+                    ids.add(requirement.getId());
+                }
             }
+        } catch (BadRequestException e) {
+            if (organization != null && responseId != null) saveBadRequestException(organization, responseId, e);
+            else throw e;
         }
         return result;
     }
@@ -790,7 +739,7 @@ public class CompareServiceImpl implements CompareService {
         }
     }
 
-    private Model generateModel(String compare, List<Requirement> requirements) throws BadRequestException, InternalErrorException {
+    private Model generateModel(String compare, List<Requirement> requirements) throws InternalErrorException {
         Tfidf tfidf = Tfidf.getInstance();
         Map<String, Integer> corpusFrequency = new HashMap<>();
         List<String> text = new ArrayList<>();

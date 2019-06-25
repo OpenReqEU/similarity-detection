@@ -16,7 +16,7 @@ public class ProjectWithDependencies implements Serializable {
     private List<Requirement> requirements;
 
     @JsonProperty(value="dependencies")
-    List<Dependency> dependencies;
+    private List<Dependency> dependencies;
 
     public ProjectWithDependencies() {
         this.requirements = new ArrayList<>();
@@ -32,6 +32,6 @@ public class ProjectWithDependencies implements Serializable {
     }
 
     public boolean inputOk() {
-        return (this.requirements.size() > 0 && this.dependencies.size() > 0);
+        return (!this.requirements.isEmpty() && !this.dependencies.isEmpty());
     }
 }

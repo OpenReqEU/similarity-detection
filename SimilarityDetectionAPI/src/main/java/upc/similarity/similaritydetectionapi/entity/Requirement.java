@@ -1,6 +1,5 @@
 package upc.similarity.similaritydetectionapi.entity;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -22,7 +21,7 @@ public class Requirement implements Serializable {
     private String text;
     @ApiModelProperty(example = "1354019441000")
     @JsonProperty(value="created_at")
-    private Long created_at;
+    private Long createdAt;
 
     public String getId() {
         return id;
@@ -36,8 +35,8 @@ public class Requirement implements Serializable {
         return text;
     }
 
-    public Long getCreated_at() {
-        return created_at;
+    public Long getCreatedAt() {
+        return createdAt;
     }
 
     public JSONObject toJSON() {
@@ -45,7 +44,7 @@ public class Requirement implements Serializable {
         json.put("id",id);
         json.put("name",name);
         json.put("text",text);
-        json.put("created_at",created_at);
+        json.put("created_at",createdAt);
         return json;
     }
 }

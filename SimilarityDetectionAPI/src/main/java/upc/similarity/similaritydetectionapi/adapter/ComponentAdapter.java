@@ -93,13 +93,13 @@ public abstract class ComponentAdapter {
 
     protected JSONArray listDependenciesToJson(List<Dependency> dependencies) {
 
-        JSONArray json_deps = new JSONArray();
+        JSONArray jsonDeps = new JSONArray();
 
         for (Dependency dep: dependencies) {
-            json_deps.put(dep.toJSON());
+            jsonDeps.put(dep.toJSON());
         }
 
-        return json_deps;
+        return jsonDeps;
     }
 
 }

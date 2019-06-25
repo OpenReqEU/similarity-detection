@@ -9,8 +9,6 @@ import upc.similarity.compareapi.entity.Model;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.exception.InternalErrorException;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;

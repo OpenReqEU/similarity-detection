@@ -22,7 +22,7 @@ import java.util.*;
 @Service("similarityService")
 public class SimilarityServiceImpl implements SimilarityService {
 
-    private static Component component = Component.TfidfCompare;
+    private static Component component = Component.TfIdfCompare;
     private static String thresholdNotOk = "The threshold must be a number between 0 and 1 both included";
     private Random rand = new Random();
 
@@ -32,26 +32,23 @@ public class SimilarityServiceImpl implements SimilarityService {
      */
 
     @Override
-    public ResultId buildModel(String url, String organization, boolean compare, Requirements input) throws InternalErrorException, BadRequestException {
+    public ResultId buildModel(String url, String organization, boolean compare, Requirements input) throws BadRequestException {
 
         checkInput(input, 0);
         ResultId id = getId();
 
         //New thread
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ResultJson result = new ResultJson(id.getId(),"BuildModel");
-                try {
-                    CompareAdapter compareAdapter = new CompareAdapter();
-                    compareAdapter.buildModel(id.getId(),organization,compare,input.getRequirements());
-                    result.setCode(200);
-                } catch (ComponentException e) {
-                    result.setException(e.getStatus(),e.getError(),e.getMessage());
-                }
-                finally {
-                    updateClient(result,url);
-                }
+        Thread thread = new Thread(() -> {
+            ResultJson result = new ResultJson(id.getId(),"BuildModel");
+            try {
+                CompareAdapter compareAdapter = new CompareAdapter();
+                compareAdapter.buildModel(id.getId(),organization,compare,input.getRequirements());
+                result.setCode(200);
+            } catch (ComponentException e) {
+                result.setException(e.getStatus(),e.getError(),e.getMessage());
+            }
+            finally {
+                updateClient(result,url);
             }
         });
 
@@ -60,26 +57,23 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId addRequirements(String url, String organization, boolean compare, Requirements input) throws InternalErrorException, BadRequestException {
+    public ResultId addRequirements(String url, String organization, boolean compare, Requirements input) throws BadRequestException {
 
         checkInput(input, 0);
         ResultId id = getId();
 
         //New thread
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ResultJson result = new ResultJson(id.getId(),"AddRequirements");
-                try {
-                    CompareAdapter compareAdapter = new CompareAdapter();
-                    compareAdapter.addRequirements(id.getId(),organization,compare,input.getRequirements());
-                    result.setCode(200);
-                } catch (ComponentException e) {
-                    result.setException(e.getStatus(),e.getError(),e.getMessage());
-                }
-                finally {
-                    updateClient(result,url);
-                }
+        Thread thread = new Thread(() -> {
+            ResultJson result = new ResultJson(id.getId(),"AddRequirements");
+            try {
+                CompareAdapter compareAdapter = new CompareAdapter();
+                compareAdapter.addRequirements(id.getId(),organization,compare,input.getRequirements());
+                result.setCode(200);
+            } catch (ComponentException e) {
+                result.setException(e.getStatus(),e.getError(),e.getMessage());
+            }
+            finally {
+                updateClient(result,url);
             }
         });
 
@@ -88,26 +82,23 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId deleteRequirements(String url, String organization, Requirements input) throws InternalErrorException, BadRequestException {
+    public ResultId deleteRequirements(String url, String organization, Requirements input) throws BadRequestException {
 
         checkInput(input, 0);
         ResultId id = getId();
 
         //New thread
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ResultJson result = new ResultJson(id.getId(),"DeleteRequirements");
-                try {
-                    CompareAdapter compareAdapter = new CompareAdapter();
-                    compareAdapter.deleteRequirements(id.getId(),organization,input.getRequirements());
-                    result.setCode(200);
-                } catch (ComponentException e) {
-                    result.setException(e.getStatus(),e.getError(),e.getMessage());
-                }
-                finally {
-                    updateClient(result,url);
-                }
+        Thread thread = new Thread(() -> {
+            ResultJson result = new ResultJson(id.getId(),"DeleteRequirements");
+            try {
+                CompareAdapter compareAdapter = new CompareAdapter();
+                compareAdapter.deleteRequirements(id.getId(),organization,input.getRequirements());
+                result.setCode(200);
+            } catch (ComponentException e) {
+                result.setException(e.getStatus(),e.getError(),e.getMessage());
+            }
+            finally {
+                updateClient(result,url);
             }
         });
 
@@ -116,26 +107,23 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId buildModelAndCompute(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException {
+    public ResultId buildModelAndCompute(String url, String organization, boolean compare, double threshold, Requirements input) throws BadRequestException {
 
         checkInput(input, threshold);
         ResultId id = getId();
 
         //New thread
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ResultJson result = new ResultJson(id.getId(),"AddReqsAndCompute");
-                try {
-                    CompareAdapter compareAdapter = new CompareAdapter();
-                    compareAdapter.buildModelAndCompute(id.getId(),organization,compare,threshold,input.getRequirements());
-                    result.setCode(200);
-                } catch (ComponentException e) {
-                    result.setException(e.getStatus(),e.getError(),e.getMessage());
-                }
-                finally {
-                    updateClient(result,url);
-                }
+        Thread thread = new Thread(() -> {
+            ResultJson result = new ResultJson(id.getId(),"AddReqsAndCompute");
+            try {
+                CompareAdapter compareAdapter = new CompareAdapter();
+                compareAdapter.buildModelAndCompute(id.getId(),organization,compare,threshold,input.getRequirements());
+                result.setCode(200);
+            } catch (ComponentException e) {
+                result.setException(e.getStatus(),e.getError(),e.getMessage());
+            }
+            finally {
+                updateClient(result,url);
             }
         });
 
@@ -144,27 +132,24 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId buildClustersAndComputeOrphans(String url, String organization, boolean compare, double threshold, ProjectWithDependencies input) throws InternalErrorException, BadRequestException {
+    public ResultId buildClustersAndComputeOrphans(String url, String organization, boolean compare, double threshold, ProjectWithDependencies input) throws BadRequestException {
 
         checkThreshold(threshold);
         if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements or dependencies");
         ResultId id = getId();
 
         //New thread
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ResultJson result = new ResultJson(id.getId(),"AddClustersAndComputeOrphans");
-                try {
-                    CompareAdapter compareAdapter = new CompareAdapter();
-                    compareAdapter.buildClustersAndComputeOrphans(id.getId(),organization,compare,threshold,input.getRequirements(),input.getDependencies());
-                    result.setCode(200);
-                } catch (ComponentException e) {
-                    result.setException(e.getStatus(),e.getError(),e.getMessage());
-                }
-                finally {
-                    updateClient(result,url);
-                }
+        Thread thread = new Thread(() -> {
+            ResultJson result = new ResultJson(id.getId(),"AddClustersAndComputeOrphans");
+            try {
+                CompareAdapter compareAdapter = new CompareAdapter();
+                compareAdapter.buildClustersAndComputeOrphans(id.getId(),organization,compare,threshold,input.getRequirements(),input.getDependencies());
+                result.setCode(200);
+            } catch (ComponentException e) {
+                result.setException(e.getStatus(),e.getError(),e.getMessage());
+            }
+            finally {
+                updateClient(result,url);
             }
         });
 
@@ -173,26 +158,23 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId buildClusters(String url, String organization, boolean compare, ProjectWithDependencies input) throws InternalErrorException, BadRequestException {
+    public ResultId buildClusters(String url, String organization, boolean compare, ProjectWithDependencies input) throws BadRequestException {
 
         if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements or dependencies");
         ResultId id = getId();
 
         //New thread
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ResultJson result = new ResultJson(id.getId(),"AddClusters");
-                try {
-                    CompareAdapter compareAdapter = new CompareAdapter();
-                    compareAdapter.buildClusters(id.getId(),organization,compare,input.getRequirements(),input.getDependencies());
-                    result.setCode(200);
-                } catch (ComponentException e) {
-                    result.setException(e.getStatus(),e.getError(),e.getMessage());
-                }
-                finally {
-                    updateClient(result,url);
-                }
+        Thread thread = new Thread(() -> {
+            ResultJson result = new ResultJson(id.getId(),"AddClusters");
+            try {
+                CompareAdapter compareAdapter = new CompareAdapter();
+                compareAdapter.buildClusters(id.getId(),organization,compare,input.getRequirements(),input.getDependencies());
+                result.setCode(200);
+            } catch (ComponentException e) {
+                result.setException(e.getStatus(),e.getError(),e.getMessage());
+            }
+            finally {
+                updateClient(result,url);
             }
         });
 
@@ -201,7 +183,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public String simReqClusters(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException, ComponentException {
+    public String simReqClusters(String url, String organization, boolean compare, double threshold, Requirements input) throws ComponentException {
 
         checkInput(input, threshold);
         ResultId id = getId();
@@ -211,26 +193,23 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simReqOrganization(String url, String organization, boolean compare, double threshold, Requirements input) throws InternalErrorException, BadRequestException {
+    public ResultId simReqOrganization(String url, String organization, boolean compare, double threshold, Requirements input) throws BadRequestException {
 
         checkInput(input, threshold);
         ResultId id = getId();
 
         //New thread
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ResultJson result = new ResultJson(id.getId(),"SimReqOrganization");
-                try {
-                    CompareAdapter compareAdapter = new CompareAdapter();
-                    compareAdapter.simReqOrganization(id.getId(),organization,compare,threshold,input.getRequirements());
-                    result.setCode(200);
-                } catch (ComponentException e) {
-                    result.setException(e.getStatus(),e.getError(),e.getMessage());
-                }
-                finally {
-                    updateClient(result,url);
-                }
+        Thread thread = new Thread(() -> {
+            ResultJson result = new ResultJson(id.getId(),"SimReqOrganization");
+            try {
+                CompareAdapter compareAdapter = new CompareAdapter();
+                compareAdapter.simReqOrganization(id.getId(),organization,compare,threshold,input.getRequirements());
+                result.setCode(200);
+            } catch (ComponentException e) {
+                result.setException(e.getStatus(),e.getError(),e.getMessage());
+            }
+            finally {
+                updateClient(result,url);
             }
         });
 
@@ -248,7 +227,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simReqProject(String url, String organization, double threshold, int maxNumber, List<String> req, String projectId, Projects input) throws BadRequestException, InternalErrorException, NotFoundException {
+    public ResultId simReqProject(String url, String organization, double threshold, int maxNumber, List<String> req, String projectId, Projects input) throws BadRequestException, NotFoundException {
 
         checkThreshold(threshold);
         Project project = searchProject(projectId,input.getProjects());
@@ -256,20 +235,17 @@ public class SimilarityServiceImpl implements SimilarityService {
         ResultId id = getId();
 
         //New thread
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ResultJson result = new ResultJson(id.getId(),"ReqProject");
-                try {
-                    ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                    componentAdapter.simReqProject(id.getId(),organization,req,threshold,project.getSpecifiedRequirements());
-                    result.setCode(200);
-                } catch (ComponentException e) {
-                    result.setException(e.getStatus(),e.getError(),e.getMessage());
-                }
-                finally {
-                    updateClient(result,url);
-                }
+        Thread thread = new Thread(() -> {
+            ResultJson result = new ResultJson(id.getId(),"ReqProject");
+            try {
+                ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
+                componentAdapter.simReqProject(id.getId(),organization,req,threshold,project.getSpecifiedRequirements());
+                result.setCode(200);
+            } catch (ComponentException e) {
+                result.setException(e.getStatus(),e.getError(),e.getMessage());
+            }
+            finally {
+                updateClient(result,url);
             }
         });
 
@@ -278,27 +254,24 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simProject(String url, String organization, double threshold, int maxNumber, String projectId, Projects input) throws BadRequestException, InternalErrorException, NotFoundException {
+    public ResultId simProject(String url, String organization, double threshold, int maxNumber, String projectId, Projects input) throws BadRequestException, NotFoundException {
 
         checkThreshold(threshold);
         Project project = searchProject(projectId,input.getProjects());
         ResultId id = getId();
 
         //New thread
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ResultJson result = new ResultJson(id.getId(),"Project");
-                try {
-                    ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                    componentAdapter.simProject(id.getId(),organization,threshold,project.getSpecifiedRequirements());
-                    result.setCode(200);
-                } catch (ComponentException e) {
-                    result.setException(e.getStatus(),e.getError(),e.getMessage());
-                }
-                finally {
-                    updateClient(result,url);
-                }
+        Thread thread = new Thread(() -> {
+            ResultJson result = new ResultJson(id.getId(),"Project");
+            try {
+                ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
+                componentAdapter.simProject(id.getId(),organization,threshold,project.getSpecifiedRequirements());
+                result.setCode(200);
+            } catch (ComponentException e) {
+                result.setException(e.getStatus(),e.getError(),e.getMessage());
+            }
+            finally {
+                updateClient(result,url);
             }
         });
 
