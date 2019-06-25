@@ -42,4 +42,6 @@ public interface CompareService {
 
     public String simReqClusters(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException;
 
+    //public String TestAccuracy(String compare, Clusters input) throws BadRequestException, InternalErrorException;
+
 }

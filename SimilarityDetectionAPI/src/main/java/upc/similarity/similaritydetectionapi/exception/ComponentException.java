@@ -2,11 +2,13 @@ package upc.similarity.similaritydetectionapi.exception;
 
 public class ComponentException extends Exception {
 
-    protected int status;
-    protected String error;
+    private int status;
+    private String error;
 
-    public ComponentException(String message) {
+    public ComponentException(String message, int status, String error) {
         super(message);
+        this.status = status;
+        this.error = error;
     }
 
     public int getStatus() {

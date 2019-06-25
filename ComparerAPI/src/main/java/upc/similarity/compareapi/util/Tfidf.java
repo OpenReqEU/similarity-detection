@@ -197,6 +197,13 @@ public class Tfidf {
     }
 
     private List<List<String>> preProcess(List<List<String>> corpus) {
+        for (List<String> requirement: corpus) {
+            HashSet<String> wordsToDelete = new HashSet<>();
+            for (String word: requirement) {
+                if (word.length() == 1) wordsToDelete.add(word);
+            }
+            requirement.removeAll(wordsToDelete);
+        }
         return corpus;
     }
 
@@ -204,9 +211,9 @@ public class Tfidf {
         Analyzer analyzer = CustomAnalyzer.builder()
                 .withTokenizer("standard")
                 .addTokenFilter("lowercase")
-                .addTokenFilter("commongrams")
-                .addTokenFilter("porterstem")
                 .addTokenFilter("stop")
+                .addTokenFilter("porterstem")
+                .addTokenFilter("commongrams")
                 .build();
         return analyze(text, analyzer);
     }

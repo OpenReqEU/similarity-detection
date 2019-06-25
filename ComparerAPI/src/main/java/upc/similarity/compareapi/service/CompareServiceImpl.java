@@ -289,15 +289,18 @@ public class CompareServiceImpl implements CompareService {
         int cont = 0;
         int pages = 0;
         long numberDependencies = 0;
+        String filename = "../testing/output/neighbours";
 
         JSONArray array = new JSONArray();
         for (String req1: reqsToCompare) {
             if (model.getDocs().containsKey(req1)) {
+                long deps = 0;
                 for (String req2 : projectRequirements) {
                     if (!req1.equals(req2) && model.getDocs().containsKey(req2)) {
                         double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
                         if (score >= threshold) {
                             ++numberDependencies;
+                            ++deps;
                             Dependency dependency = new Dependency(score, req1, req2, status, dependencyType, component);
                             array.put(dependency.toJSON());
                             ++cont;
@@ -311,6 +314,7 @@ public class CompareServiceImpl implements CompareService {
                     }
                 }
                 if (includeReqs) projectRequirements.add(req1);
+                writeToFile(filename,deps+"");
             }
         }
 
@@ -409,7 +413,20 @@ public class CompareServiceImpl implements CompareService {
         model.setClusters(clusters);
         model.setReqCluster(reqCluster);
 
-        reqProject(requirementsToCompare,projectRequirements,model,threshold, organization, responseId, true);
+
+        //reqProject(requirementsToCompare,projectRequirements,model,threshold, organization, responseId, true);
+
+        /*
+        Start - Temporary code
+         */
+
+        projectRequirements.addAll(requirementsToCompare);
+
+        reqProject(requirementsToCompare,projectRequirements,model,threshold, organization, responseId, false);
+
+        /*
+        Finish - Temporary code
+         */
 
         /*computeClusterDependencies(organization, responseId, reqCluster, clusters);*/
 
@@ -787,5 +804,30 @@ public class CompareServiceImpl implements CompareService {
             }
         }
         return result;
+    }
+
+    /*public String TestAccuracy(String compare, Clusters input) throws BadRequestException, InternalErrorException {
+        CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
+        Model model = generateModel(compare, deleteDuplicates(input.getRequirements(), null, null));
+        JSONArray scoresArray = new JSONArray();
+        for (Dependency dependency: input.getDependencies()) {
+            String fromid = dependency.getFromid();
+            String toid = dependency.getToid();
+            double value = cosineSimilarity.compute(model.getDocs(), fromid, toid);
+            scoresArray.put(value);
+        }
+        JSONObject result = new JSONObject();
+        result.put("scores", scoresArray);
+        return result.toString();
+    }*/
+
+    private void writeToFile(String fileName, String text) {
+        try (FileWriter fw = new FileWriter(fileName, true);
+             BufferedWriter bw = new BufferedWriter(fw)) {
+            bw.write(text);
+            bw.newLine();
+        } catch (IOException e) {
+            control.showErrorMessage(e.getMessage());
+        }
     }
 }
