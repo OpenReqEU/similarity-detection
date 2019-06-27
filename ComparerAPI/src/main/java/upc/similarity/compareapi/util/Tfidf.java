@@ -26,7 +26,7 @@ public class Tfidf {
 
     private double computeCutOffParameter(long totalSize) {
         if (cutOffDummy) return -1;
-        else return (totalSize > 100) ? 10 : (-6.38 + 3.51*Math.log(totalSize));
+        else return (totalSize > 100) ? 10 : (-9 + 3.51*Math.log(totalSize));
     }
 
     public int deleteReqs(List<Requirement> requirements, Model model) {

@@ -235,16 +235,21 @@ public class RestApiController {
         }
     }
 
-    /*@PostMapping(value = "/TestAccuracy")
+    /*
+    Auxiliary operations
+     */
+
+    @PostMapping(value = "/TestAccuracy")
     public ResponseEntity TestAccuracy(@RequestParam("compare") String compare,
                                      @RequestBody Clusters input) {
-        try {
-            return new ResponseEntity<>(compareService.TestAccuracy(compare,input),HttpStatus.OK);
-        } catch (BadRequestException e) {
-            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }*/
+        return new ResponseEntity<>(compareService.TestAccuracy(compare,input),HttpStatus.OK);
+    }
+
+    @PostMapping(value = "/ExtractModel")
+    public ResponseEntity extractModel(@RequestParam("organization") String organization,
+                                     @RequestParam("compare") String compare,
+                                     @RequestBody Clusters input) {
+        return new ResponseEntity<>(compareService.extractModel(compare,organization,input),HttpStatus.OK);
+    }
 
 }

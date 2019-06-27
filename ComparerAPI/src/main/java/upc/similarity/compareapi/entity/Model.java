@@ -8,8 +8,8 @@ public class Model {
     private Map<String, Map<String, Double>> docs;
     private Map<String, Integer> corpusFrequency;
     private boolean cluster;
-    private Map<String, List<String>> clusters;
-    private Map<String, ReqClusterInfo> reqCluster;
+    private Map<Integer, List<String>> clusters;
+    private List<Dependency> dependencies;
 
     public Model(){}
 
@@ -19,12 +19,12 @@ public class Model {
         this.cluster = false;
     }
 
-    public Model(Map<String, Map<String, Double>> docs, Map<String, Integer> corpusFrequency, Map<String, List<String>> clusters, Map<String, ReqClusterInfo> reqCluster) {
+    public Model(Map<String, Map<String, Double>> docs, Map<String, Integer> corpusFrequency, Map<Integer, List<String>> clusters, List<Dependency> dependencies) {
         this.docs = docs;
         this.corpusFrequency = corpusFrequency;
         this.cluster = true;
         this.clusters = clusters;
-        this.reqCluster = reqCluster;
+        this.dependencies = dependencies;
     }
 
     /*
@@ -43,12 +43,12 @@ public class Model {
         return cluster;
     }
 
-    public Map<String, List<String>> getClusters() {
+    public Map<Integer, List<String>> getClusters() {
         return clusters;
     }
 
-    public Map<String, ReqClusterInfo> getReqCluster() {
-        return reqCluster;
+    public List<Dependency> getDependencies() {
+        return dependencies;
     }
 
     /*
@@ -63,13 +63,12 @@ public class Model {
         this.corpusFrequency = corpusFrequency;
     }
 
-    public void setClusters(Map<String, List<String>> clusters) {
+    public void setClusters(Map<Integer, List<String>> clusters) {
         this.cluster = true;
         this.clusters = clusters;
     }
 
-    public void setReqCluster(Map<String, ReqClusterInfo> reqCluster) {
-        this.cluster = true;
-        this.reqCluster = reqCluster;
+    public void setDependencies(List<Dependency> dependencies) {
+        this.dependencies = dependencies;
     }
 }

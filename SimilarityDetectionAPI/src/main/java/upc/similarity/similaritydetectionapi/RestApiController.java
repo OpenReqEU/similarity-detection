@@ -259,11 +259,9 @@ public class RestApiController {
     public ResponseEntity simReqClusters(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                              @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
                                              @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
-                                             @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/PostResult") @RequestParam("url") String url,
                                              @ApiParam(value="OpenReqJson with requirements", required = true) @RequestBody Requirements input) {
         try {
-            urlOk(url);
-            return new ResponseEntity<>(similarityService.simReqClusters(url,organization,compare,threshold,input),HttpStatus.OK);
+            return new ResponseEntity<>(similarityService.simReqClusters(organization,compare,threshold,input),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }

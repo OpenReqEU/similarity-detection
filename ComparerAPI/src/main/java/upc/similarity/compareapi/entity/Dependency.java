@@ -25,9 +25,16 @@ public class Dependency implements Serializable {
     private String dependencyType;
     @JsonProperty(value="description")
     private List<String> description;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private int clusterId;
 
     public Dependency() {
         this.description = new ArrayList<>();
+    }
+
+    public Dependency(String fromid, String toid) {
+        this.fromid = fromid;
+        this.toid = toid;
     }
 
     public Dependency(double dependencyScore, String fromid, String toid, String status, String dependencyType, String component) {
@@ -75,6 +82,10 @@ public class Dependency implements Serializable {
         return description;
     }
 
+    public int getClusterId() {
+        return clusterId;
+    }
+
     /*
     Set
      */
@@ -101,6 +112,10 @@ public class Dependency implements Serializable {
 
     public void setDescription(List<String> description) {
         this.description = description;
+    }
+
+    public void setClusterId(int clusterId) {
+        this.clusterId = clusterId;
     }
 
     /*

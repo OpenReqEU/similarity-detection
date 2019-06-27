@@ -1,4 +1,3 @@
 {"requirements":[
-    {"id":"UPC-1","text":"","name":"big little pepe"},
-    {"id":"UPC-5","text":"","name":"pepe jota roland"}
+    {"id":"UPC-1","text":"","name":"The innerWidth seems to be reported fine here.\r\n\r\nAfter loading the page is shown as expected (see Screenshot1), with a red background over the whole window. But by pressing the right arrow key it is possible to scroll to the right, where there is only white (see Screenshot2).\r\n\r\nI would expect that scrolling is not possible, because there should not be anything on the right side.\r\n\r\nWhen removing the meta line from the head, scrolling to the right is no longer possible, as one would expect.\r\n\r\nChromium, on the same device, does show the page correctly"}
 ]}

@@ -183,7 +183,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public String simReqClusters(String url, String organization, boolean compare, double threshold, Requirements input) throws ComponentException {
+    public String simReqClusters(String organization, boolean compare, double threshold, Requirements input) throws ComponentException {
 
         checkInput(input, threshold);
         ResultId id = getId();
