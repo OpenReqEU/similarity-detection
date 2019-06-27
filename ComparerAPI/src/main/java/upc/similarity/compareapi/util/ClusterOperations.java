@@ -12,6 +12,7 @@ import java.util.*;
 public class ClusterOperations {
 
     private static ClusterOperations instance = new ClusterOperations();
+    private static boolean dummy = false;
 
     private ClusterOperations(){}
 
@@ -59,7 +60,6 @@ public class ClusterOperations {
         Constants constants = Constants.getInstance();
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         int cont = 0;
-        int pages = 0;
         List<String> requirementsToCompare = new ArrayList<>();
         JSONArray array = new JSONArray();
 
@@ -82,8 +82,7 @@ public class ClusterOperations {
                     array.put(dependency.toJSON());
                     ++cont;
                     if (cont >= constants.getMaxDepsForPage()) {
-                        databaseOperations.generateResponsePage(responseId, organization, pages, array,constants.getDependenciesArrayName());
-                        ++pages;
+                        databaseOperations.generateResponsePage(responseId, organization, array,constants.getDependenciesArrayName());
                         array = new JSONArray();
                         cont = 0;
                     }
@@ -97,20 +96,57 @@ public class ClusterOperations {
                     array.put(dependency.toJSON());
                     ++cont;
                     if (cont >= constants.getMaxDepsForPage()) {
-                        databaseOperations.generateResponsePage(responseId, organization, pages, array,constants.getDependenciesArrayName());
-                        ++pages;
+                        databaseOperations.generateResponsePage(responseId, organization, array,constants.getDependenciesArrayName());
                         array = new JSONArray();
                         cont = 0;
                     }
                 }
             }
-
             requirementsToCompare.add(req1);
         }
 
         if (array.length() > 0) {
-            databaseOperations.generateResponsePage(responseId, organization, pages, array, constants.getDependenciesArrayName());
+            databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
         }
+    }
+
+    //se supone que todos los requisitos estan en el modelo y que los requisitos de entrada no estan en ningun cluster
+    public JSONArray reqClustersNotDb(List<String> requirements, Map<String, Map<String, Double>> docs, Map<Integer, List<String>> clusters, double threshold) {
+        CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
+        Constants constants = Constants.getInstance();
+        List<String> requirementsToCompare = new ArrayList<>();
+        JSONArray array = new JSONArray();
+
+        for (String req1: requirements) {
+            Iterator it = clusters.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry pair = (Map.Entry)it.next();
+                List<String> clusterRequirements = (List<String>) pair.getValue();
+                double maxScore = -1;
+                String maxReq = null;
+                for (String req2: clusterRequirements) {
+                    double score = cosineSimilarity.compute(docs, req1, req2);
+                    if (score > maxScore) {
+                        maxScore = score;
+                        maxReq = req2;
+                    }
+                }
+                if (maxReq != null && maxScore >= threshold) {
+                    Dependency dependency = new Dependency(maxScore, req1, maxReq, constants.getStatus(), constants.getDependencyType(), constants.getComponent());
+                    array.put(dependency.toJSON());
+                }
+            }
+
+            for (String req2: requirementsToCompare) {
+                double score = cosineSimilarity.compute(docs, req1, req2);
+                if (score >= threshold) {
+                    Dependency dependency = new Dependency(score, req1, req2, constants.getStatus(), constants.getDependencyType(), constants.getComponent());
+                    array.put(dependency.toJSON());
+                }
+            }
+            requirementsToCompare.add(req1);
+        }
+        return array;
     }
 
     private void computeDependencies(List<Dependency> dependencies, Map<String,Integer> reqCluster, Map<Integer,List<String>> clusters, Integer countIds) {
@@ -159,6 +195,46 @@ public class ClusterOperations {
                 reqCluster.put(req,clusterReq1);
             }
             clusters.remove(clusterReq2);
+        }
+    }
+
+    private int findFreeClusterIds(Map<Integer,List<String>> clusters, List<Integer> ids) throws InternalErrorException {
+        Set<Integer> keys = clusters.keySet();
+        if (ids.size() > 0) {
+            return ids.remove(0);
+        } else {
+            if (dummy) return
+        }
+    }
+
+    private int searchSerialClusterIds(Set<Integer> keys, List<Integer> ids) throws InternalErrorException {
+        int count = 0;
+        for (int i = 0; i < Integer.MAX_VALUE && count < 10; ++i) {
+            if (!keys.contains(i)) {
+                ids.add(i);
+                ++count;
+            }
+        }
+    }
+
+    private void deleteReqFromClusters(String requirementId, Map<Integer, List<String>> clusters, Map<String, Integer> reqCluster) {
+
+        if (reqCluster.containsKey(requirementId)) {
+            int cluster = reqCluster.get(requirementId);
+            List<String> clusterRequirements = clusters.get(master);
+            clusterRequirements.remove(requirementId);
+            clusters.remove(master);
+            if (master.equals(requirementId) && !clusterRequirements.isEmpty()) {
+                master = findMaster(clusterRequirements, reqCluster);
+            }
+            if (!clusterRequirements.isEmpty()) {
+                clusters.put(master,clusterRequirements);
+                for (String req: clusterRequirements) {
+                    ReqClusterInfo aux = reqCluster.get(req);
+                    reqCluster.put(req, new ReqClusterInfo(master, aux.getDate()));
+                }
+            }
+            reqCluster.remove(requirementId);
         }
     }
 }

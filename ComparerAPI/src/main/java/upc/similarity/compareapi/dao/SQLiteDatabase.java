@@ -34,7 +34,8 @@ public class SQLiteDatabase implements DatabaseModel {
 
         String sql1 = "CREATE TABLE IF NOT EXISTS organizations (\n"
                 + "	id varchar PRIMARY KEY, \n"
-                + " hasClusters integer"
+                + " hasClusters integer, \n"
+                + " lastClusterId integer"
                 + ");";
 
         String sql2 = "CREATE TABLE IF NOT EXISTS responses (\n"
@@ -90,7 +91,7 @@ public class SQLiteDatabase implements DatabaseModel {
         if (found) {
             deleteOrganizationTables(organization);
         } else {
-            insertOrganization(organization,model.hasClusters());
+            insertOrganization(organization,model.hasClusters(),model.getLastClusterId());
         }
         if (model.hasClusters()) setClusters(organization,1);
         else setClusters(organization,0);
@@ -115,10 +116,13 @@ public class SQLiteDatabase implements DatabaseModel {
         Map<Integer, List<String>> clusters = null;
 
         boolean hasClusters;
+        int lastClusterId;
 
         try (Connection conn = DriverManager.getConnection(dbUrl)) {
             conn.setAutoCommit(false);
-            hasClusters = getOrganization(organization,conn);
+            Organization aux = getOrganization(organization,conn);
+            hasClusters = aux.hasClusters;
+            lastClusterId = aux.lastClusterId;
             docs = loadDocs(organization,conn);
             if (withFrequency) corpusFrequency = loadCorpusFrequency(organization,conn);
             if (hasClusters) {
@@ -127,7 +131,7 @@ public class SQLiteDatabase implements DatabaseModel {
             conn.commit();
         }
 
-        return (hasClusters) ? new Model(docs, corpusFrequency, clusters, null) : new Model(docs, corpusFrequency);
+        return (hasClusters) ? new Model(docs, corpusFrequency, lastClusterId, clusters, null) : new Model(docs, corpusFrequency);
     }
 
     @Override
@@ -401,19 +405,25 @@ public class SQLiteDatabase implements DatabaseModel {
         }
     }
 
-    private boolean getOrganization(String organizationId, Connection conn) throws NotFoundException, SQLException {
-
+    private class Organization {
         boolean hasClusters;
-        try (PreparedStatement ps = conn.prepareStatement("SELECT hasClusters FROM organizations WHERE id = ?")) {
+        int lastClusterId;
+    }
+
+    private Organization getOrganization(String organizationId, Connection conn) throws NotFoundException, SQLException {
+
+        Organization result = new Organization();
+        try (PreparedStatement ps = conn.prepareStatement("SELECT hasClusters, lastClusterId FROM organizations WHERE id = ?")) {
             ps.setString(1, organizationId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    hasClusters = rs.getBoolean(1);
+                    result.hasClusters = rs.getBoolean(1);
+                    result.lastClusterId = rs.getInt(2);
                 } else throw new NotFoundException("The organization " + organizationId + " does not exist");
             }
         }
-        return hasClusters;
+        return result;
     }
 
     private void existsOrganizationResponses(String organizationId, Connection conn) throws NotFoundException, SQLException {
@@ -558,9 +568,9 @@ public class SQLiteDatabase implements DatabaseModel {
 
     }
 
-    private void insertOrganization(String organization, boolean hasClusters) throws SQLException {
+    private void insertOrganization(String organization, boolean hasClusters, int lastClusterId) throws SQLException {
 
-        String sql = "INSERT INTO organizations(id, hasClusters) VALUES (?, ?)";
+        String sql = "INSERT INTO organizations(id, hasClusters, lastClusterId) VALUES (?, ?, ?)";
 
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -568,6 +578,7 @@ public class SQLiteDatabase implements DatabaseModel {
             int value = 0;
             if (hasClusters) value = 1;
             ps.setInt(2, value);
+            ps.setInt(3, lastClusterId);
             ps.execute();
         }
 

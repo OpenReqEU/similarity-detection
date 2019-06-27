@@ -162,68 +162,23 @@ public class CompareServiceImpl implements CompareService {
     @Override
     public String simReqClusters(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException {
         control.showInfoMessage("SimReqClusters: Start computing");
+
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         Constants constants = Constants.getInstance();
+        ClusterOperations clusterOperations = ClusterOperations.getInstance();
 
         Model model = databaseOperations.loadModel(organization,true);
-
         if (!model.hasClusters()) throw new BadRequestException("The model does not have clusters");
-
         List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements,null,null);
-
-        HashSet<String> repeatedHash = new HashSet<>();
-        for (Requirement requirement: notDuplicatedRequirements) repeatedHash.add(requirement.getId());
-
-        List<String> projectRequirements = new ArrayList<>();
-        List<String> requirementsToCompare = new ArrayList<>();
-        for (Requirement requirement: notDuplicatedRequirements) requirementsToCompare.add(requirement.getId());
-
-        Iterator it = model.getClusters().entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-            String master = (String) pair.getKey();
-            if (!repeatedHash.contains(master)) projectRequirements.add(master);
-        }
-
         addRequirementsToModel(notDuplicatedRequirements, compare, model);
-
-        /*
-        Start - Temporary code
-         */
-
-        CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
-        long numberDependencies = 0;
-
-        JSONArray array = new JSONArray();
-        for (String req1: requirementsToCompare) {
-            if (model.getDocs().containsKey(req1)) {
-                for (String req2 : projectRequirements) {
-                    if (!req1.equals(req2) && model.getDocs().containsKey(req2)) {
-                        double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
-                        if (score >= threshold) {
-                            ++numberDependencies;
-                            Dependency dependency = new Dependency(score, req1, req2, constants.getStatus(), constants.getDependencyType(), constants.getComponent());
-                            array.put(dependency.toJSON());
-                        }
-                    }
-                }
-                projectRequirements.add(req1);
-            }
-        }
-
-        control.showInfoMessage("Number dependencies: " + numberDependencies);
-
-        JSONObject result = new JSONObject();
-        result.put("dependencies", array);
-
-        /*
-        Finish - Temporary code
-         */
-
         databaseOperations.saveModel(organization, model);
 
-        control.showInfoMessage("SimReqClusters: Finish computing");
+        List<String> requirementsToCompare = new ArrayList<>();
+        for (Requirement requirement: notDuplicatedRequirements) requirementsToCompare.add(requirement.getId());
+        JSONObject result = new JSONObject();
+        result.put(constants.getDependenciesArrayName(), clusterOperations.reqClustersNotDb(requirementsToCompare, model.getDocs(), model.getClusters(), threshold));
 
+        control.showInfoMessage("SimReqClusters: Finish computing");
         return result.toString();
     }
 
@@ -284,10 +239,17 @@ public class CompareServiceImpl implements CompareService {
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
         ClusterAndDeps iniClusters = clusterOperations.computeIniClusters(input.getDependencies(), requirements);
 
-        model = new Model(model.getDocs(), model.getCorpusFrequency(), iniClusters.getClusters());
-        databaseOperations.saveModel(organization, model, iniClusters.getDependencies());
+        model = new Model(model.getDocs(), model.getCorpusFrequency(), iniClusters.getClusters(), iniClusters.getDependencies());
+        databaseOperations.saveModel(organization, model);
 
-        clusterOperations.reqClusters(organization, responseId, , model.getDocs(), model.getClusters(), threshold);
+        Map<String,Integer> reqCluster = iniClusters.getReqCluster();
+        List<String> reqsToCompare = new ArrayList<>();
+        for (Requirement requirement: requirements) {
+            String id = requirement.getId();
+            if (reqCluster.get(id) == -1) reqsToCompare.add(id);
+        }
+
+        clusterOperations.reqClusters(organization, responseId, reqsToCompare, model.getDocs(), model.getClusters(), threshold);
 
         databaseOperations.finishComputation(organization, responseId);
 
@@ -306,8 +268,8 @@ public class CompareServiceImpl implements CompareService {
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
         ClusterAndDeps iniClusters = clusterOperations.computeIniClusters(input.getDependencies(), requirements);
 
-        model = new Model(model.getDocs(), model.getCorpusFrequency(), iniClusters.getClusters());
-        databaseOperations.saveModel(organization, model, iniClusters.getDependencies());
+        model = new Model(model.getDocs(), model.getCorpusFrequency(), iniClusters.getClusters(), iniClusters.getDependencies());
+        databaseOperations.saveModel(organization, model);
 
         databaseOperations.generateEmptyResponse(organization, responseId);
 
@@ -418,7 +380,7 @@ public class CompareServiceImpl implements CompareService {
     private void addRequirementsToModel(List<Requirement> requirements, String compare, Model model) throws InternalErrorException {
 
         if (model.hasClusters()) {
-            /*Map<String, List<String>> clusters = model.getClusters();
+            Map<String, List<String>> clusters = model.getClusters();
             Map<String, ReqClusterInfo> reqCluster = model.getReqCluster();
 
             for (Requirement requirement: requirements) {
@@ -428,7 +390,7 @@ public class CompareServiceImpl implements CompareService {
                 aux.add(id);
                 clusters.put(id,aux);
                 reqCluster.put(id, new ReqClusterInfo(id, requirement.getCreatedAt()));
-            }*/
+            }
         }
 
         int oldSize = model.getDocs().size();
@@ -436,27 +398,6 @@ public class CompareServiceImpl implements CompareService {
 
         updateModel(compare, requirements,model,oldSize);
     }
-
-    /*private void deleteReqFromClusters(String requirementId, Map<String, List<String>> clusters, Map<String, ReqClusterInfo> reqCluster) {
-
-        if (reqCluster.containsKey(requirementId)) {
-            String master = reqCluster.get(requirementId).getCluster();
-            List<String> clusterRequirements = clusters.get(master);
-            clusterRequirements.remove(requirementId);
-            clusters.remove(master);
-            if (master.equals(requirementId) && !clusterRequirements.isEmpty()) {
-                master = findMaster(clusterRequirements, reqCluster);
-            }
-            if (!clusterRequirements.isEmpty()) {
-                clusters.put(master,clusterRequirements);
-                for (String req: clusterRequirements) {
-                    ReqClusterInfo aux = reqCluster.get(req);
-                    reqCluster.put(req, new ReqClusterInfo(master, aux.getDate()));
-                }
-            }
-            reqCluster.remove(requirementId);
-        }
-    }*/
 
     private List<Requirement> deleteDuplicates(List<Requirement> requirements, String organization, String responseId) throws BadRequestException, InternalErrorException {
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
@@ -519,10 +460,10 @@ public class CompareServiceImpl implements CompareService {
     }
 
     public String TestAccuracy(String compare, Clusters input) {
-        return AuxiliaryMethods.getInstance().TestAccuracy(compare, input);
+        return TestMethods.getInstance().TestAccuracy(compare, input);
     }
 
     public String extractModel(String compare, String organization, Clusters input) {
-        return AuxiliaryMethods.getInstance().extractModel(compare, organization, input);
+        return TestMethods.getInstance().extractModel(compare, organization, input);
     }
 }

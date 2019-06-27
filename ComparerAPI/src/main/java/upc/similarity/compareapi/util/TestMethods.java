@@ -15,14 +15,15 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
-public class AuxiliaryMethods {
 
-    private static AuxiliaryMethods instance = new AuxiliaryMethods();
+public class TestMethods {
+
+    private static TestMethods instance = new TestMethods();
     private Control control = Control.getInstance();
 
-    private AuxiliaryMethods(){}
+    private TestMethods(){}
 
-    public static AuxiliaryMethods getInstance() {
+    public static TestMethods getInstance() {
         return instance;
     }
 
