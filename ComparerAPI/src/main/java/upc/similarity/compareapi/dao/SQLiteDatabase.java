@@ -61,8 +61,9 @@ public class SQLiteDatabase implements DatabaseModel {
                 + "	fromid varchar, \n"
                 + " toid varchar, \n"
                 + " status varchar, \n"
+                + " organizationId varchar, \n"
                 + " clusterId integer, \n"
-                + " PRIMARY KEY(fromid, toid)"
+                + " PRIMARY KEY(fromid, toid, organizationId)"
                 + ");";
 
         try (Connection conn = DriverManager.getConnection(dbUrl);
@@ -132,6 +133,20 @@ public class SQLiteDatabase implements DatabaseModel {
         }
 
         return (hasClusters) ? new Model(docs, corpusFrequency, lastClusterId, clusters, null) : new Model(docs, corpusFrequency);
+    }
+
+    @Override
+    public void saveDependency(Dependency dependency) throws SQLException {
+
+        String sql = "INSERT INTO dependencies(fromid, toid, status, organizationId, clusterId) VALUES (?,?,?,?)";
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, dependency.getFromid());
+            ps.setString(2, dependency.getToid());
+            ps.setString(3, dependency.getStatus());
+            ps.setInt(4, dependency.getClusterId());
+            ps.execute();
+        }
     }
 
     @Override
@@ -240,19 +255,20 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public Dependency getDependency(String fromid, String toid) throws SQLException, NotFoundException {
+    public Dependency getDependency(String fromid, String toid, String organizationId) throws SQLException, NotFoundException {
 
         Dependency result = new Dependency(fromid,toid);
 
         try (Connection conn = DriverManager.getConnection(dbUrl)) {
 
-            String sql = "SELECT status, clusterId FROM dependencies WHERE (fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?)";
+            String sql = "SELECT status, clusterId FROM dependencies WHERE organizationId = ? AND ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, fromid);
-                ps.setString(2, toid);
+                ps.setString(1, organizationId);
+                ps.setString(2, fromid);
                 ps.setString(3, toid);
-                ps.setString(4, fromid);
+                ps.setString(4, toid);
+                ps.setString(5, fromid);
 
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
@@ -268,20 +284,46 @@ public class SQLiteDatabase implements DatabaseModel {
         return result;
     }
 
+    public List<Dependency> getClusterDependencies(String organizationId, int clusterId) throws SQLException {
+
+        List<Dependency> result = new ArrayList<>();
+
+        try (Connection conn = DriverManager.getConnection(dbUrl)) {
+
+            String sql = "SELECT fromid, toid FROM dependencies WHERE organizationId = ? AND clusterId = ? AND status = ?";
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, organizationId);
+                ps.setInt(2, clusterId);
+                ps.setString(3, "accepted");
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String fromid = rs.getString("fromid");
+                        String toid = rs.getString("toid");
+                        result.add(new Dependency(fromid,toid));
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
     @Override
-    public boolean existsDependency(String fromid, String toid) throws SQLException {
+    public boolean existsDependency(String fromid, String toid, String organizationId) throws SQLException {
 
         boolean result = false;
 
         try (Connection conn = DriverManager.getConnection(dbUrl)) {
 
-            String sql = "SELECT (count(*) > 0) FROM dependencies WHERE (fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?)";
+            String sql = "SELECT (count(*) > 0) FROM dependencies WHERE organizationId = ? AND ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, fromid);
-                ps.setString(2, toid);
+                ps.setString(1, organizationId);
+                ps.setString(2, fromid);
                 ps.setString(3, toid);
-                ps.setString(4, fromid);
+                ps.setString(4, toid);
+                ps.setString(5, fromid);
 
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) result = true;
@@ -293,15 +335,42 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void updateDependency(String fromid, String toid, String newStatus, int newCluster) throws SQLException, NotFoundException {
-        String sql = "UPDATE dependencies SET status = ?, clusterId = ? WHERE (fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?)";
+    public void updateDependency(String fromid, String toid, String organizationId, String newStatus, int newCluster) throws SQLException, NotFoundException {
+        String sql = "UPDATE dependencies SET status = ?, clusterId = ? WHERE organizationId = ? ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
 
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, fromid);
-            ps.setString(2, toid);
+            ps.setString(1, organizationId);
+            ps.setString(2, fromid);
             ps.setString(3, toid);
-            ps.setString(4, fromid);
+            ps.setString(4, toid);
+            ps.setString(5, fromid);
+            ps.executeUpdate();
+        }
+    }
+
+    @Override
+    public void updateClusterDependencies(String organizationId, int oldClusterId, int newClusterId) throws SQLException {
+        String sql = "UPDATE dependencies SET clusterId = ? WHERE organizationId = ? AND clusterId = ?";
+
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1,newClusterId);
+            ps.setString(2, organizationId);
+            ps.setInt(3, oldClusterId);
+            ps.executeUpdate();
+        }
+    }
+
+    @Override
+    public void deleteReqDependencies(String reqId, String organizationId) throws SQLException {
+        String sql = "DELETE FROM dependencies WHERE organizationId = ? AND (fromid = ? OR toid = ?)";
+
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1,organizationId);
+            ps.setString(2,reqId);
+            ps.setString(3, reqId);
             ps.executeUpdate();
         }
     }

@@ -10,33 +10,41 @@ import java.util.List;
 
 public interface DatabaseModel {
 
-    public void saveModel(String organization, Model model) throws SQLException;
+    void saveModel(String organization, Model model) throws SQLException;
 
-    public Model getModel(String organization, boolean withFrequency) throws SQLException, NotFoundException;
+    Model getModel(String organization, boolean withFrequency) throws SQLException, NotFoundException;
 
-    public void saveResponse(String organizationId, String responseId) throws SQLException;
+    void saveResponse(String organizationId, String responseId) throws SQLException;
 
-    public void saveResponsePage(String organizationId, String responseId, String jsonResponse) throws SQLException, NotFoundException;
+    void saveResponsePage(String organizationId, String responseId, String jsonResponse) throws SQLException, NotFoundException;
 
-    public void saveException(String organizationId, String responseId, String jsonResponse) throws SQLException;
+    void saveException(String organizationId, String responseId, String jsonResponse) throws SQLException;
 
-    public void finishComputation(String organizationId, String responseId) throws SQLException;
+    void finishComputation(String organizationId, String responseId) throws SQLException;
 
-    public String getResponsePage(String organizationId, String responseId) throws SQLException, NotFoundException, NotFinishedException;
+    String getResponsePage(String organizationId, String responseId) throws SQLException, NotFoundException, NotFinishedException;
 
     //public int getTotalPages(String organizationId, String responseId) throws SQLException, NotFoundException;
 
-    public List<Dependency> getResponsePage(String organizationId, String responseId, int pageNumber) throws SQLException, NotFoundException;
+    List<Dependency> getResponsePage(String organizationId, String responseId, int pageNumber) throws SQLException, NotFoundException;
 
-    public Dependency getDependency(String fromid, String toid) throws SQLException, NotFoundException;
+    void saveDependency(Dependency dependency) throws SQLException;
 
-    public boolean existsDependency(String fromid, String toid) throws SQLException;
+    Dependency getDependency(String fromid, String toid, String organizationId) throws SQLException, NotFoundException;
 
-    public void updateDependency(String fromid, String toid, String newStatus, int newCluster) throws SQLException, NotFoundException;
+    List<Dependency> getClusterDependencies(String organizationId, int clusterId) throws SQLException;
 
-    public void clearOrganizationResponses(String organization) throws SQLException, NotFoundException;
+    boolean existsDependency(String fromid, String toid, String organizationId) throws SQLException;
 
-    public void createDatabase() throws SQLException;
+    void updateDependency(String fromid, String toid, String organizationId, String newStatus, int newCluster) throws SQLException, NotFoundException;
+
+    void updateClusterDependencies(String organizationId, int oldClusterId, int newClusterId) throws SQLException;
+
+    void deleteReqDependencies(String reqId, String organizationId) throws SQLException;
+
+    void clearOrganizationResponses(String organization) throws SQLException, NotFoundException;
+
+    void createDatabase() throws SQLException;
 
 
 }

@@ -6,6 +6,7 @@ import upc.similarity.compareapi.entity.ClusterAndDeps;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.exception.InternalErrorException;
+import upc.similarity.compareapi.exception.NotFoundException;
 
 import java.util.*;
 
@@ -51,7 +52,7 @@ public class ClusterOperations {
             }
         }
 
-        return new ClusterAndDeps(clusters, reqCluster, acceptedDependencies);
+        return new ClusterAndDeps(countIds, clusters, reqCluster, acceptedDependencies);
     }
 
     //se supone que todos los requisitos estan en el modelo y que los requisitos de entrada no estan en ningun cluster
@@ -198,43 +199,139 @@ public class ClusterOperations {
         }
     }
 
-    private int findFreeClusterIds(Map<Integer,List<String>> clusters, List<Integer> ids) throws InternalErrorException {
-        Set<Integer> keys = clusters.keySet();
-        if (ids.size() > 0) {
-            return ids.remove(0);
-        } else {
-            if (dummy) return
-        }
-    }
+    public void deleteReqFromClusters(String organization, String responseId, String requirementId, Map<Integer, List<String>> clusters, int lastClusterId) throws InternalErrorException {
 
-    private int searchSerialClusterIds(Set<Integer> keys, List<Integer> ids) throws InternalErrorException {
-        int count = 0;
-        for (int i = 0; i < Integer.MAX_VALUE && count < 10; ++i) {
-            if (!keys.contains(i)) {
-                ids.add(i);
-                ++count;
-            }
-        }
-    }
-
-    private void deleteReqFromClusters(String requirementId, Map<Integer, List<String>> clusters, Map<String, Integer> reqCluster) {
-
-        if (reqCluster.containsKey(requirementId)) {
-            int cluster = reqCluster.get(requirementId);
-            List<String> clusterRequirements = clusters.get(master);
+        int cluster = findClusterId(requirementId, clusters);
+        if (cluster == -1) {
+            DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
+            List<String> clusterRequirements = clusters.get(cluster);
             clusterRequirements.remove(requirementId);
-            clusters.remove(master);
-            if (master.equals(requirementId) && !clusterRequirements.isEmpty()) {
-                master = findMaster(clusterRequirements, reqCluster);
-            }
-            if (!clusterRequirements.isEmpty()) {
-                clusters.put(master,clusterRequirements);
-                for (String req: clusterRequirements) {
-                    ReqClusterInfo aux = reqCluster.get(req);
-                    reqCluster.put(req, new ReqClusterInfo(master, aux.getDate()));
+            HashMap<String,List<String>> reqDeps = loadClusterDependencies(organization, responseId, cluster, clusterRequirements);
+            databaseOperations.deleteReqDependencies(organization, responseId, requirementId);
+            HashMap<Integer,List<String>> candidateClusters = bfsClusters(reqDeps, clusterRequirements, requirementId);
+            if (candidateClusters.size() > 1) {
+                //update dependencies
+                boolean firstOne = true;
+                Iterator it = candidateClusters.entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry pair = (Map.Entry) it.next();
+                    List<String> aux = (List<String>) pair.getValue();
+                    if (firstOne) {
+                        clusters.put(cluster, aux);
+                    } else {
+                        ++lastClusterId;
+                        clusters.put(lastClusterId, aux);
+                    }
                 }
             }
-            reqCluster.remove(requirementId);
         }
+    }
+
+    public HashMap<String, Integer> computeReqClusterMap(Map<Integer,List<String>> clusters, Set<String> requirements) {
+        HashMap<String,Integer> reqCluster = new HashMap<>();
+        for (String requirement: requirements) {
+            reqCluster.put(requirement, -1);
+        }
+        Iterator it = clusters.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry) it.next();
+            int id = (int) pair.getKey();
+            List<String> clusterRequirements = (List<String>) pair.getValue();
+            for (String req: clusterRequirements) {
+                reqCluster.put(req, id);
+            }
+        }
+        return reqCluster;
+    }
+
+    public void addAcceptedDependencies(String organization, String responseId, List<Dependency> acceptedDependencies, Map<Integer,List<String>> clusters, Map<String,Integer> reqCluster, int countIds) throws InternalErrorException{
+        DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
+
+        for (Dependency dependency: acceptedDependencies) {
+            String fromid = dependency.getFromid();
+            String toid = dependency.getToid();
+            int oldId1 = reqCluster.get(fromid);
+            int oldId2 = reqCluster.get(toid);
+            try {
+                databaseOperations.getDependency(organization, responseId, fromid, toid);
+            } catch (NotFoundException e) {
+                mergeClusters(clusters, reqCluster, fromid, toid, countIds);
+                dependency.setClusterId(reqCluster.get(fromid));
+                databaseOperations.saveDependency(organization, responseId, dependency);
+                int newId1 = reqCluster.get(fromid);
+                int newId2 = reqCluster.get(toid);
+                if (oldId1 != newId1 && oldId1 != -1) databaseOperations.updateClusterDependencies(organization, responseId, oldId1, newId1);
+                if (oldId2 != newId2 && oldId2 != -1) databaseOperations.updateClusterDependencies(organization, responseId, oldId2, newId2);
+            }
+        }
+    }
+
+    public void addDeletedDependencies(List<Dependency> deletedDependencies, Map<Integer,List<String>> clusters, Map<String,Integer> reqCluster) {
+        DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
+
+    }
+
+    /*
+    Auxiliary operations
+     */
+
+    private int findClusterId(String requirement, Map<Integer,List<String>> clusters) {
+        Iterator it = clusters.entrySet().iterator();
+        int cluster = -1;
+        while (it.hasNext() && cluster == -1) {
+            Map.Entry pair = (Map.Entry) it.next();
+            int id = (int) pair.getKey();
+            List<String> clusterRequirements = (List<String>) pair.getValue();
+            if (clusterRequirements.contains(requirement)) {
+                cluster = id;
+            }
+        }
+        return cluster;
+    }
+
+    private HashMap<Integer,List<String>> bfsClusters(HashMap<String,List<String>> reqDeps, List<String> clusterRequirements, String requirementId) {
+        HashMap<Integer,List<String>> candidateClusters = new HashMap<>();
+        HashMap<String,Integer> reqCluster = new HashMap<>();
+        PriorityQueue<String> priorityQueue = new PriorityQueue<>();
+        int countIds = 0;
+        for (String requirement: clusterRequirements) {
+            reqCluster.put(requirement, -1);
+        }
+        for (String requirement: reqDeps.get(requirementId)) {
+            List<String> aux = new ArrayList<>();
+            aux.add(requirement);
+            candidateClusters.put(countIds, aux);
+            reqCluster.put(requirement, countIds);
+            priorityQueue.add(requirement);
+            ++countIds;
+        }
+        while(priorityQueue.size() > 0 && candidateClusters.size() > 1) {
+            String requirement = priorityQueue.poll();
+            for (String req2: reqDeps.get(requirement)) {
+                mergeClusters(candidateClusters, reqCluster, requirement, req2, countIds);
+            }
+        }
+        return candidateClusters;
+    }
+
+    private HashMap<String,List<String>> loadClusterDependencies(String organization, String responseId, int clusterId, List<String> clusterRequirements) throws InternalErrorException {
+        DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
+        List<Dependency> dependencies = databaseOperations.getClusterDependencies(organization, responseId, clusterId);
+        HashMap<String,List<String>> reqDeps = new HashMap<>();
+        for (String requirement: clusterRequirements) {
+            List<String> aux = new ArrayList<>();
+            reqDeps.put(requirement, aux);
+        }
+        for (Dependency dependency: dependencies) {
+            String fromid = dependency.getFromid();
+            String toid = dependency.getToid();
+            List<String> aux1 = reqDeps.get(fromid);
+            List<String> aux2 = reqDeps.get(toid);
+            aux1.add(toid);
+            aux2.add(fromid);
+            reqDeps.put(fromid, aux1);
+            reqDeps.put(toid, aux2);
+        }
+        return reqDeps;
     }
 }

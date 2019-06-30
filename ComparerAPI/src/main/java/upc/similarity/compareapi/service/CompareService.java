@@ -14,36 +14,38 @@ import upc.similarity.compareapi.exception.NotFoundException;
 
 public interface CompareService {
 
-    public void buildModel(String responseId, String compare, String organization, List<Requirement> requirements) throws BadRequestException, InternalErrorException;
+    void buildModel(String responseId, String compare, String organization, List<Requirement> requirements) throws BadRequestException, InternalErrorException;
 
-    public void addRequirements(String responseId, String compare, String organization, List<Requirement> requirements) throws InternalErrorException, BadRequestException, NotFoundException;
+    void addRequirements(String responseId, String compare, String organization, List<Requirement> requirements) throws InternalErrorException, BadRequestException, NotFoundException;
 
-    public void deleteRequirements(String responseId, String organization, List<Requirement> requirements) throws InternalErrorException, BadRequestException, NotFoundException;
+    void deleteRequirements(String responseId, String organization, List<Requirement> requirements) throws InternalErrorException, BadRequestException, NotFoundException;
 
-    public Dependency simReqReq(String organization, String req1, String req2) throws NotFoundException, InternalErrorException;
+    Dependency simReqReq(String organization, String req1, String req2) throws NotFoundException, InternalErrorException;
 
-    public void simReqOrganization(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException;
+    void simReqOrganization(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException;
 
-    public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements) throws NotFoundException, InternalErrorException, BadRequestException;
+    void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements) throws NotFoundException, InternalErrorException, BadRequestException;
 
-    public void simProject(String responseId, String organization, double threshold, List<String> projectRequirements) throws NotFoundException, InternalErrorException;
+    void simProject(String responseId, String organization, double threshold, List<String> projectRequirements) throws NotFoundException, InternalErrorException;
 
-    public void buildModelAndCompute(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, BadRequestException, InternalErrorException;
+    void buildModelAndCompute(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, BadRequestException, InternalErrorException;
 
-    public String getResponsePage(String organization, String responseId) throws NotFoundException, InternalErrorException, NotFinishedException;
+    String getResponsePage(String organization, String responseId) throws NotFoundException, InternalErrorException, NotFinishedException;
 
-    public void clearOrganizationResponses(String organization) throws NotFoundException, InternalErrorException;
+    void clearOrganizationResponses(String organization) throws NotFoundException, InternalErrorException;
 
-    public void clearDatabase() throws InternalErrorException;
+    void clearDatabase() throws InternalErrorException;
 
-    public void buildClustersAndCompute(String responseId, String compare, String organization, double threshold, Clusters requirements) throws BadRequestException, InternalErrorException;
+    void buildClustersAndCompute(String responseId, String compare, String organization, double threshold, Clusters requirements) throws BadRequestException, InternalErrorException;
 
-    public void buildClusters(String responseId, String compare, String organization, Clusters requirements) throws BadRequestException, InternalErrorException;
+    void buildClusters(String responseId, String compare, String organization, Clusters requirements) throws BadRequestException, InternalErrorException;
 
-    public String simReqClusters(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException;
+    String simReqClusters(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException;
 
-    public String TestAccuracy(String compare, Clusters input);
+    String TestAccuracy(String compare, Clusters input);
 
-    public String extractModel(String compare, String organization, Clusters input);
+    String extractModel(String compare, String organization, Clusters input);
+
+    void cronMethod(String responseId, String compare, String organization, Clusters input) throws BadRequestException, NotFoundException, InternalErrorException;
 
 }

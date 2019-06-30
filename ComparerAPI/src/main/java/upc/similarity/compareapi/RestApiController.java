@@ -235,6 +235,21 @@ public class RestApiController {
         }
     }
 
+    @PostMapping(value = "/CronMethod")
+    public ResponseEntity cronMethod(@RequestParam("organization") String organization,
+                                        @RequestParam("compare") String compare,
+                                        @RequestParam("filename") String responseId,
+                                        @RequestBody Clusters input) {
+        try {
+            compareService.cronMethod(responseId,compare,organization,input);
+            return new ResponseEntity<>(null,HttpStatus.OK);
+        } catch (BadRequestException e) {
+            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
+        } catch (InternalErrorException e) {
+            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     /*
     Auxiliary operations
      */

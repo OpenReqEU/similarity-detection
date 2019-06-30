@@ -7,11 +7,16 @@ public class ClusterAndDeps {
 
     private Map<Integer, List<String>> clusters;
     private Map<String, Integer> reqCluster;
+    private int lastClusterId;
     private List<Dependency> dependencies;
 
-    public ClusterAndDeps(Map<Integer,List<String>> clusters, Map<String, Integer> reqCluster, List<Dependency> dependencies) {
+    public ClusterAndDeps(int lastClusterId, Map<Integer,List<String>> clusters, Map<String, Integer> reqCluster, List<Dependency> dependencies) {
         this.clusters = clusters;
         this.dependencies = dependencies;
+    }
+
+    public int getLastClusterId() {
+        return lastClusterId;
     }
 
     public Map<Integer, List<String>> getClusters() {

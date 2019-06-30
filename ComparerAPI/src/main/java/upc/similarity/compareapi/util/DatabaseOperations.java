@@ -6,6 +6,7 @@ import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.config.Control;
 import upc.similarity.compareapi.dao.DatabaseModel;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
+import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
 import upc.similarity.compareapi.exception.BadRequestException;
 import upc.similarity.compareapi.exception.InternalErrorException;
@@ -18,6 +19,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DatabaseOperations {
 
@@ -162,6 +165,49 @@ public class DatabaseOperations {
         }
     }
 
+    public List<Dependency> getClusterDependencies(String organizationId, String responseId, int clusterId) throws InternalErrorException {
+        List<Dependency> result = new ArrayList<>();
+        try {
+            result = databaseModel.getClusterDependencies(organizationId,clusterId);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while loading the cluster dependencies from the database");
+        }
+        return result;
+    }
+
+    public void deleteReqDependencies(String organizationId, String responseId, String requirementId) throws InternalErrorException {
+        try {
+            databaseModel.deleteReqDependencies(requirementId, organizationId);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while delete the deleted requirement dependencies");
+        }
+    }
+
+    public Dependency getDependency(String organizationId, String responseId, String fromid, String toid) throws InternalErrorException, NotFoundException {
+        Dependency result = null;
+        try {
+            result = databaseModel.getDependency(fromid, toid, organizationId);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while loading a dependency from the database");
+        }
+        return result;
+    }
+
+    public void saveDependency(String organizationId, String responseId, Dependency dependency) throws InternalErrorException {
+        try {
+            databaseModel.saveDependency(dependency);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while saving a dependency to the database");
+        }
+    }
+
+    public void updateClusterDependencies(String organizationId, String responseId, int oldClusterId, int newClusterId) throws InternalErrorException {
+        try {
+            databaseModel.updateClusterDependencies(organizationId, oldClusterId, newClusterId);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while updating a dependency in the database");
+        }
+    }
 
     /*
     Auxiliary operations

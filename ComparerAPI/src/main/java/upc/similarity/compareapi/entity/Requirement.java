@@ -15,6 +15,8 @@ public class Requirement implements Serializable {
     private String text;
     @JsonProperty(value="created_at")
     private long createdAt;
+    @JsonProperty(value="status")
+    private String status;
 
     public Requirement() {}
 
@@ -38,6 +40,10 @@ public class Requirement implements Serializable {
         return createdAt;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
     /*
     Set
      */
@@ -56,6 +62,10 @@ public class Requirement implements Serializable {
 
     public void setCreatedAt(long created_at) {
         this.createdAt = created_at;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     /*
