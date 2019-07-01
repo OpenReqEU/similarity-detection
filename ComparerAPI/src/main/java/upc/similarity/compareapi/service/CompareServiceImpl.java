@@ -326,7 +326,7 @@ public class CompareServiceImpl implements CompareService {
         //se entiende que las dependencias de un requisito son previas a su actualizacioń
 
         addRequirementsToModel(organization, responseId, addedRequirements, compare, model);
-        clusterOperations.addAcceptedDependencies(acceptedDependencies, clusters, reqCluster);
+        clusterOperations.addAcceptedDependencies(organization, responseId, acceptedDependencies, clusters, reqCluster, model.getLastClusterId());
         clusterOperations.addDeletedDependencies(deletedDependencies, clusters, reqCluster);
         deleteRequirements(responseId, organization, deletedRequirements);
         addRequirementsToModel(organization, responseId, updatedRequirements, compare, model);

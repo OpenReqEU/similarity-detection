@@ -209,6 +209,14 @@ public class DatabaseOperations {
         }
     }
 
+    public void updateDependency(String organizationId, String responseId, String fromid, String toid, String status, int clusterId) throws NotFoundException, InternalErrorException {
+        try {
+            databaseModel.updateDependency(fromid, toid, organizationId, status, clusterId);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while updating a dependency to the database");
+        }
+    }
+
     /*
     Auxiliary operations
      */

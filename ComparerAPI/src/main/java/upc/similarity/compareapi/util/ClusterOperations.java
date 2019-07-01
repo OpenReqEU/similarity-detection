@@ -208,9 +208,9 @@ public class ClusterOperations {
             clusterRequirements.remove(requirementId);
             HashMap<String,List<String>> reqDeps = loadClusterDependencies(organization, responseId, cluster, clusterRequirements);
             databaseOperations.deleteReqDependencies(organization, responseId, requirementId);
-            HashMap<Integer,List<String>> candidateClusters = bfsClusters(reqDeps, clusterRequirements, requirementId);
+            HashMap<Integer,List<String>> candidateClusters = bfsClusters(reqDeps, clusterRequirements, reqDeps.get(requirementId));
             if (candidateClusters.size() > 1) {
-                //update dependencies
+                //TODO update dependencies
                 boolean firstOne = true;
                 Iterator it = candidateClusters.entrySet().iterator();
                 while (it.hasNext()) {
@@ -218,6 +218,7 @@ public class ClusterOperations {
                     List<String> aux = (List<String>) pair.getValue();
                     if (firstOne) {
                         clusters.put(cluster, aux);
+                        firstOne = false;
                     } else {
                         ++lastClusterId;
                         clusters.put(lastClusterId, aux);
@@ -244,7 +245,7 @@ public class ClusterOperations {
         return reqCluster;
     }
 
-    public void addAcceptedDependencies(String organization, String responseId, List<Dependency> acceptedDependencies, Map<Integer,List<String>> clusters, Map<String,Integer> reqCluster, int countIds) throws InternalErrorException{
+    public void addAcceptedDependencies(String organization, String responseId, List<Dependency> acceptedDependencies, Map<Integer,List<String>> clusters, Map<String,Integer> reqCluster, Integer countIds) throws InternalErrorException{
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
         for (Dependency dependency: acceptedDependencies) {
@@ -266,8 +267,42 @@ public class ClusterOperations {
         }
     }
 
-    public void addDeletedDependencies(List<Dependency> deletedDependencies, Map<Integer,List<String>> clusters, Map<String,Integer> reqCluster) {
+    public void addDeletedDependencies(String organization, String responseId, List<Dependency> deletedDependencies, Map<Integer,List<String>> clusters, Map<String,Integer> reqCluster, Integer lastClusterId) throws InternalErrorException {
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
+        for (Dependency dep: deletedDependencies) {
+            try {
+                Dependency dependency = databaseOperations.getDependency(organization, responseId, dep.getFromid(), dep.getToid());
+                if (dependency.getStatus().equals("accepted")) {
+                    int clusterId = dependency.getClusterId();
+                    String fromid = dep.getFromid();
+                    String toid = dep.getToid();
+                    databaseOperations.updateDependency(organization, responseId, fromid, toid, "rejected", -1);
+                    HashMap<String,List<String>> reqDeps = loadClusterDependencies(organization, responseId, clusterId, clusters.get(clusterId));
+                    List<String> aux = new ArrayList<>();
+                    aux.add(fromid);
+                    aux.add(toid);
+                    HashMap<Integer,List<String>> candidateClusters = bfsClusters(reqDeps, clusters.get(clusterId), aux);
+                    if (candidateClusters.size() > 1) {
+                        //TODO update dependencies
+                        boolean firstOne = true;
+                        Iterator it = candidateClusters.entrySet().iterator();
+                        while (it.hasNext()) {
+                            Map.Entry pair = (Map.Entry) it.next();
+                            aux = (List<String>) pair.getValue();
+                            if (firstOne) {
+                                clusters.put(clusterId, aux);
+                                firstOne = false;
+                            } else {
+                                ++lastClusterId;
+                                clusters.put(lastClusterId, aux);
+                            }
+                        }
+                    }
+                }
+            } catch (NotFoundException e) {
+                //empty
+            }
+        }
 
     }
 
@@ -289,7 +324,7 @@ public class ClusterOperations {
         return cluster;
     }
 
-    private HashMap<Integer,List<String>> bfsClusters(HashMap<String,List<String>> reqDeps, List<String> clusterRequirements, String requirementId) {
+    private HashMap<Integer,List<String>> bfsClusters(HashMap<String,List<String>> reqDeps, List<String> clusterRequirements, List<String> requirementIds) {
         HashMap<Integer,List<String>> candidateClusters = new HashMap<>();
         HashMap<String,Integer> reqCluster = new HashMap<>();
         PriorityQueue<String> priorityQueue = new PriorityQueue<>();
@@ -297,7 +332,7 @@ public class ClusterOperations {
         for (String requirement: clusterRequirements) {
             reqCluster.put(requirement, -1);
         }
-        for (String requirement: reqDeps.get(requirementId)) {
+        for (String requirement: requirementIds) {
             List<String> aux = new ArrayList<>();
             aux.add(requirement);
             candidateClusters.put(countIds, aux);

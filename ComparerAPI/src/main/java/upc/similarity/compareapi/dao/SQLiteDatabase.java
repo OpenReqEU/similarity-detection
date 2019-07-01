@@ -15,6 +15,18 @@ public class SQLiteDatabase implements DatabaseModel {
 
     private static String dbName = "models.db";
     private static String dbUrl = "jdbc:sqlite:"+dbName;
+    private Connection conn = null;
+
+    private Connection getConnection() throws SQLException {
+        if (conn != null) return conn;
+        else {
+            //TODO use journal_mode=wal
+            //TODO use test&set in this method
+            conn = DriverManager.getConnection(dbUrl);
+            conn.setAutoCommit(false);
+            return conn;
+        }
+    }
 
     public SQLiteDatabase() throws ClassNotFoundException {
         Class.forName("org.sqlite.JDBC");
@@ -66,12 +78,13 @@ public class SQLiteDatabase implements DatabaseModel {
                 + " PRIMARY KEY(fromid, toid, organizationId)"
                 + ");";
 
-        try (Connection conn = DriverManager.getConnection(dbUrl);
+        try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
             stmt.execute(sql1);
             stmt.execute(sql2);
             stmt.execute(sql3);
             stmt.execute(sql4);
+            conn.commit();
         }
     }
 
@@ -79,7 +92,7 @@ public class SQLiteDatabase implements DatabaseModel {
     public void saveModel(String organization, Model model) throws SQLException {
 
         boolean found = true;
-        try (Connection conn = DriverManager.getConnection(dbUrl);
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement("SELECT (count(*) > 0) as found FROM organizations WHERE id = ?")) {
             ps.setString(1, organization);
 
@@ -96,8 +109,7 @@ public class SQLiteDatabase implements DatabaseModel {
         }
         if (model.hasClusters()) setClusters(organization,1);
         else setClusters(organization,0);
-        try (Connection conn = DriverManager.getConnection(dbUrl)) {
-            conn.setAutoCommit(false);
+        try (Connection conn = getConnection()) {
             createOrganizationTables(organization, conn, model.hasClusters());
             saveDocs(organization, model.getDocs(), conn);
             saveCorpusFrequency(organization, model.getCorpusFrequency(), conn);
@@ -119,8 +131,7 @@ public class SQLiteDatabase implements DatabaseModel {
         boolean hasClusters;
         int lastClusterId;
 
-        try (Connection conn = DriverManager.getConnection(dbUrl)) {
-            conn.setAutoCommit(false);
+        try (Connection conn = getConnection()) {
             Organization aux = getOrganization(organization,conn);
             hasClusters = aux.hasClusters;
             lastClusterId = aux.lastClusterId;
@@ -139,13 +150,14 @@ public class SQLiteDatabase implements DatabaseModel {
     public void saveDependency(Dependency dependency) throws SQLException {
 
         String sql = "INSERT INTO dependencies(fromid, toid, status, organizationId, clusterId) VALUES (?,?,?,?)";
-        try (Connection conn = DriverManager.getConnection(dbUrl);
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, dependency.getFromid());
             ps.setString(2, dependency.getToid());
             ps.setString(3, dependency.getStatus());
             ps.setInt(4, dependency.getClusterId());
             ps.execute();
+            conn.commit();
         }
     }
 
@@ -156,8 +168,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
     @Override
     public void saveResponsePage(String organizationId, String responseId, String jsonResponse) throws SQLException, NotFoundException {
-        try (Connection conn = DriverManager.getConnection(dbUrl)) {
-            conn.setAutoCommit(false);
+        try (Connection conn = getConnection()) {
             int page = getTotalPages(organizationId, responseId, conn);
             insertResponsePage(organizationId,responseId,page,jsonResponse,conn);
             conn.commit();
@@ -167,8 +178,7 @@ public class SQLiteDatabase implements DatabaseModel {
     @Override
     public void saveException(String organizationId, String responseId, String jsonResponse) throws SQLException {
 
-        try (Connection conn = DriverManager.getConnection(dbUrl)) {
-            conn.setAutoCommit(false);
+        try (Connection conn = getConnection()) {
             deleteAllResponsePages(organizationId, responseId, conn);
             insertResponsePage(organizationId, responseId, 0, jsonResponse, conn);
             conn.commit();
@@ -181,7 +191,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
         String result = null;
 
-        try (Connection conn = DriverManager.getConnection(dbUrl)) {
+        try (Connection conn = getConnection()) {
 
             existsOrganizationResponses(organizationId,conn);
 
@@ -210,6 +220,7 @@ public class SQLiteDatabase implements DatabaseModel {
                     }
                 }
             }
+            conn.commit();
         }
         return result;
     }
@@ -220,7 +231,7 @@ public class SQLiteDatabase implements DatabaseModel {
         String jsonResponse;
         List<Dependency> dependencies = new ArrayList<>();
 
-        try (Connection conn = DriverManager.getConnection(dbUrl)) {
+        try (Connection conn = getConnection()) {
 
             String sql = "SELECT jsonResponse FROM responsePages WHERE organizationId = ? AND responseId = ? AND page = ?";
 
@@ -235,6 +246,7 @@ public class SQLiteDatabase implements DatabaseModel {
                     } else throw new NotFoundException("The organization " + organizationId + " has not a response with id " + responseId + " and page " + pageNumber);
                 }
             }
+            conn.commit();
         }
 
         JSONObject jsonObject = new JSONObject(jsonResponse);
@@ -259,7 +271,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
         Dependency result = new Dependency(fromid,toid);
 
-        try (Connection conn = DriverManager.getConnection(dbUrl)) {
+        try (Connection conn = getConnection()) {
 
             String sql = "SELECT status, clusterId FROM dependencies WHERE organizationId = ? AND ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
 
@@ -279,6 +291,7 @@ public class SQLiteDatabase implements DatabaseModel {
                     } else throw new NotFoundException("The dependency between " + fromid + " and " + toid + " does not exist ");
                 }
             }
+            conn.commit();
         }
 
         return result;
@@ -288,7 +301,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
         List<Dependency> result = new ArrayList<>();
 
-        try (Connection conn = DriverManager.getConnection(dbUrl)) {
+        try (Connection conn = getConnection()) {
 
             String sql = "SELECT fromid, toid FROM dependencies WHERE organizationId = ? AND clusterId = ? AND status = ?";
 
@@ -305,6 +318,7 @@ public class SQLiteDatabase implements DatabaseModel {
                     }
                 }
             }
+            conn.commit();
         }
         return result;
     }
@@ -314,7 +328,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
         boolean result = false;
 
-        try (Connection conn = DriverManager.getConnection(dbUrl)) {
+        try (Connection conn = getConnection()) {
 
             String sql = "SELECT (count(*) > 0) FROM dependencies WHERE organizationId = ? AND ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
 
@@ -329,6 +343,7 @@ public class SQLiteDatabase implements DatabaseModel {
                     if (rs.next()) result = true;
                 }
             }
+            conn.commit();
         }
 
         return result;
@@ -338,7 +353,7 @@ public class SQLiteDatabase implements DatabaseModel {
     public void updateDependency(String fromid, String toid, String organizationId, String newStatus, int newCluster) throws SQLException, NotFoundException {
         String sql = "UPDATE dependencies SET status = ?, clusterId = ? WHERE organizationId = ? ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
 
-        try (Connection conn = DriverManager.getConnection(dbUrl);
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, organizationId);
             ps.setString(2, fromid);
@@ -346,6 +361,7 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.setString(4, toid);
             ps.setString(5, fromid);
             ps.executeUpdate();
+            conn.commit();
         }
     }
 
@@ -353,12 +369,13 @@ public class SQLiteDatabase implements DatabaseModel {
     public void updateClusterDependencies(String organizationId, int oldClusterId, int newClusterId) throws SQLException {
         String sql = "UPDATE dependencies SET clusterId = ? WHERE organizationId = ? AND clusterId = ?";
 
-        try (Connection conn = DriverManager.getConnection(dbUrl);
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1,newClusterId);
             ps.setString(2, organizationId);
             ps.setInt(3, oldClusterId);
             ps.executeUpdate();
+            conn.commit();
         }
     }
 
@@ -366,12 +383,13 @@ public class SQLiteDatabase implements DatabaseModel {
     public void deleteReqDependencies(String reqId, String organizationId) throws SQLException {
         String sql = "DELETE FROM dependencies WHERE organizationId = ? AND (fromid = ? OR toid = ?)";
 
-        try (Connection conn = DriverManager.getConnection(dbUrl);
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1,organizationId);
             ps.setString(2,reqId);
             ps.setString(3, reqId);
             ps.executeUpdate();
+            conn.commit();
         }
     }
 
@@ -379,12 +397,13 @@ public class SQLiteDatabase implements DatabaseModel {
     public void finishComputation(String organizationId, String responseId) throws SQLException {
         String sql = "UPDATE responses SET finished = ? WHERE organizationId = ? AND responseId = ?";
 
-        try (Connection conn = DriverManager.getConnection(dbUrl);
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1,1);
             ps.setString(2,organizationId);
             ps.setString(3,responseId);
             ps.executeUpdate();
+            conn.commit();
         }
     }
 
@@ -392,7 +411,7 @@ public class SQLiteDatabase implements DatabaseModel {
     public void clearOrganizationResponses(String organization) throws SQLException, NotFoundException {
         String sql1 = "SELECT responseId, maxPages, finished FROM responses WHERE organizationId = ?";
 
-        try (Connection conn = DriverManager.getConnection(dbUrl)) {
+        try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
             getOrganization(organization,conn);
             try (PreparedStatement ps = conn.prepareStatement(sql1)) {
@@ -410,6 +429,7 @@ public class SQLiteDatabase implements DatabaseModel {
                     }
                 }
             }
+            conn.commit();
         }
     }
 
@@ -512,7 +532,7 @@ public class SQLiteDatabase implements DatabaseModel {
     private void insertResponse(String organizationId, String responseId) throws SQLException {
         String sql = "INSERT INTO responses(organizationId, responseId, actualPage, maxPages, finished) VALUES (?,?,?,?,?)";
 
-        try (Connection conn = DriverManager.getConnection(dbUrl);
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1,organizationId);
             ps.setString(2,responseId);
@@ -520,6 +540,7 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.setInt(4,-1);
             ps.setInt(5,0);
             ps.execute();
+            conn.commit();
         }
     }
 
@@ -615,11 +636,12 @@ public class SQLiteDatabase implements DatabaseModel {
         String sql2 = "DROP TABLE corpus_"+organization;
         String sql3 = "DROP TABLE IF EXISTS clusters_"+organization;
 
-        try (Connection conn = DriverManager.getConnection(dbUrl);
+        try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
             stmt.execute(sql1);
             stmt.execute(sql2);
             stmt.execute(sql3);
+            conn.commit();
         }
 
     }
@@ -628,11 +650,12 @@ public class SQLiteDatabase implements DatabaseModel {
 
         String sql = "UPDATE organizations SET hasClusters = ? WHERE id = ?";
 
-        try (Connection conn = DriverManager.getConnection(dbUrl);
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1,value);
             ps.setString(2, organization);
             ps.execute();
+            conn.commit();
         }
 
     }
@@ -641,7 +664,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
         String sql = "INSERT INTO organizations(id, hasClusters, lastClusterId) VALUES (?, ?, ?)";
 
-        try (Connection conn = DriverManager.getConnection(dbUrl);
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1,organization);
             int value = 0;
@@ -649,6 +672,7 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.setInt(2, value);
             ps.setInt(3, lastClusterId);
             ps.execute();
+            conn.commit();
         }
 
     }
