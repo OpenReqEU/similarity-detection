@@ -257,7 +257,7 @@ public class ControllerTests {
         ++id;
     }
 
-    /*@Test
+    @Test
     public void simReqReq() throws Exception {
         this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
                 .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqReq/input_model.json")))
@@ -266,16 +266,16 @@ public class ControllerTests {
                 .param("req1", "UPC-1").param("req2", "UPC-2"))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "simReqReq/output.json")));
         ++id;
-    }*/
+    }
 
-    /*@Test
+    @Test
     public void simReqProject() throws Exception {
         this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
                 .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqProject/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "SimReqProject").param("organization", "UPC")
-                .param("threshold", "0.06").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"simReqProject/input_operation.json")))
+                .param("threshold", "0.0").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"simReqProject/input_operation.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simReqProject/output.json")));
@@ -289,7 +289,7 @@ public class ControllerTests {
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "SimProject").param("organization", "UPC")
-                .param("threshold", "0.03").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simProject/input_operation.json")))
+                .param("threshold", "0").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simProject/input_operation.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simProject/output.json")));
@@ -318,7 +318,7 @@ public class ControllerTests {
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isNotFound());
         ++id;
-    }*/
+    }
 
 
     /*

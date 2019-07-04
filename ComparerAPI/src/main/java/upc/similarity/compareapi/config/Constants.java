@@ -9,8 +9,10 @@ public class Constants {
     private int maxDepsForPage = 20000;
     private String badRequestMessage = "Bad request";
     private String notFoundMessage = "Not found";
+    private String internalErrorMessage = "Internal Error";
     private String sqlErrorMessage = "Database error";
     private String dependenciesArrayName = "dependencies";
+    private int maxSyncIterations = 5;
 
     private Constants(){}
 
@@ -42,11 +44,19 @@ public class Constants {
         return notFoundMessage;
     }
 
+    public String getInternalErrorMessage() {
+        return internalErrorMessage;
+    }
+
     public String getSqlErrorMessage() {
         return sqlErrorMessage;
     }
 
     public String getDependenciesArrayName() {
         return dependenciesArrayName;
+    }
+
+    public int getMaxSyncIterations() {
+        return maxSyncIterations;
     }
 }

@@ -245,6 +245,8 @@ public class RestApiController {
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (BadRequestException e) {
             return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
+        } catch (NotFoundException e) {
+            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
         } catch (InternalErrorException e) {
             return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
         }

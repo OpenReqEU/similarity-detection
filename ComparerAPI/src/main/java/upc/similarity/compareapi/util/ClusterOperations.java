@@ -210,7 +210,6 @@ public class ClusterOperations {
             databaseOperations.deleteReqDependencies(organization, responseId, requirementId);
             HashMap<Integer,List<String>> candidateClusters = bfsClusters(reqDeps, clusterRequirements, reqDeps.get(requirementId));
             if (candidateClusters.size() > 1) {
-                //TODO update dependencies
                 boolean firstOne = true;
                 Iterator it = candidateClusters.entrySet().iterator();
                 while (it.hasNext()) {
@@ -222,6 +221,9 @@ public class ClusterOperations {
                     } else {
                         ++lastClusterId;
                         clusters.put(lastClusterId, aux);
+                        for (String req: aux) {
+                            databaseOperations.updateClusterDependencies(organization, responseId, req, "accepted", lastClusterId);
+                        }
                     }
                 }
             }
@@ -269,6 +271,7 @@ public class ClusterOperations {
 
     public void addDeletedDependencies(String organization, String responseId, List<Dependency> deletedDependencies, Map<Integer,List<String>> clusters, Map<String,Integer> reqCluster, Integer lastClusterId) throws InternalErrorException {
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
+        //TODO need to update reqCluster?
         for (Dependency dep: deletedDependencies) {
             try {
                 Dependency dependency = databaseOperations.getDependency(organization, responseId, dep.getFromid(), dep.getToid());
@@ -283,18 +286,20 @@ public class ClusterOperations {
                     aux.add(toid);
                     HashMap<Integer,List<String>> candidateClusters = bfsClusters(reqDeps, clusters.get(clusterId), aux);
                     if (candidateClusters.size() > 1) {
-                        //TODO update dependencies
                         boolean firstOne = true;
                         Iterator it = candidateClusters.entrySet().iterator();
                         while (it.hasNext()) {
                             Map.Entry pair = (Map.Entry) it.next();
-                            aux = (List<String>) pair.getValue();
+                            List<String> clusterRequirements = (List<String>) pair.getValue();
                             if (firstOne) {
-                                clusters.put(clusterId, aux);
+                                clusters.put(clusterId, clusterRequirements);
                                 firstOne = false;
                             } else {
                                 ++lastClusterId;
-                                clusters.put(lastClusterId, aux);
+                                clusters.put(lastClusterId, clusterRequirements);
+                                for (String req: clusterRequirements) {
+                                    databaseOperations.updateClusterDependencies(organization, responseId, req, "accepted", lastClusterId);
+                                }
                             }
                         }
                     }

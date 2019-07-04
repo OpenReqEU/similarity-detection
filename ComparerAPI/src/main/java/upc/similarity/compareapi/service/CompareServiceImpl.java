@@ -14,11 +14,14 @@ import upc.similarity.compareapi.exception.NotFinishedException;
 import upc.similarity.compareapi.exception.NotFoundException;
 import upc.similarity.compareapi.util.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service("comparerService")
 public class CompareServiceImpl implements CompareService {
 
     private Control control = Control.getInstance();
+    private ConcurrentHashMap<String, AtomicBoolean> organizationLocks = new ConcurrentHashMap<>(); // true -> locked, false -> free
 
     @Override
     public void buildModel(String responseId, String compare, String organization, List<Requirement> requirements) throws BadRequestException, InternalErrorException {
@@ -92,13 +95,8 @@ public class CompareServiceImpl implements CompareService {
         List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements,organization,responseId);
 
         if (model.hasClusters()) {
-            /*Map<String, List<String>> clusters = model.getClusters();
-            Map<String, ReqClusterInfo> reqCluster = model.getReqCluster();
-
-            for (Requirement requirement: notDuplicatedRequirements) {
-                String id = requirement.getId();
-                deleteReqFromClusters(id, clusters, reqCluster);
-            }*/
+            ClusterOperations clusterOperations = ClusterOperations.getInstance();
+            for (Requirement requirement: notDuplicatedRequirements) clusterOperations.deleteReqFromClusters(organization, responseId, requirement.getId(), model.getClusters(), model.getLastClusterId());
         }
 
         Tfidf.getInstance().deleteReqsAndRecomputeModel(notDuplicatedRequirements,model);
@@ -240,7 +238,9 @@ public class CompareServiceImpl implements CompareService {
         ClusterAndDeps iniClusters = clusterOperations.computeIniClusters(input.getDependencies(), requirements);
 
         model = new Model(model.getDocs(), model.getCorpusFrequency(), iniClusters.getLastClusterId(), iniClusters.getClusters(), iniClusters.getDependencies());
+        getAccessToUpdate(organization, responseId);
         databaseOperations.saveModel(organization, model);
+        releaseAccessToUpdate(organization, responseId);
 
         Map<String,Integer> reqCluster = iniClusters.getReqCluster();
         List<String> reqsToCompare = new ArrayList<>();
@@ -269,7 +269,9 @@ public class CompareServiceImpl implements CompareService {
         ClusterAndDeps iniClusters = clusterOperations.computeIniClusters(input.getDependencies(), requirements);
 
         model = new Model(model.getDocs(), model.getCorpusFrequency(), iniClusters.getLastClusterId(), iniClusters.getClusters(), iniClusters.getDependencies());
+        getAccessToUpdate(organization, responseId);
         databaseOperations.saveModel(organization, model);
+        releaseAccessToUpdate(organization, responseId);
 
         databaseOperations.generateEmptyResponse(organization, responseId);
 
@@ -283,6 +285,8 @@ public class CompareServiceImpl implements CompareService {
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
 
         databaseOperations.generateResponse(organization,responseId);
+
+        getAccessToUpdate(organization, responseId);
 
         Model model = null;
         try {
@@ -327,9 +331,11 @@ public class CompareServiceImpl implements CompareService {
 
         addRequirementsToModel(organization, responseId, addedRequirements, compare, model);
         clusterOperations.addAcceptedDependencies(organization, responseId, acceptedDependencies, clusters, reqCluster, model.getLastClusterId());
-        clusterOperations.addDeletedDependencies(deletedDependencies, clusters, reqCluster);
+        clusterOperations.addDeletedDependencies(organization, responseId, deletedDependencies, clusters, reqCluster, model.getLastClusterId());
         deleteRequirements(responseId, organization, deletedRequirements);
         addRequirementsToModel(organization, responseId, updatedRequirements, compare, model);
+
+        releaseAccessToUpdate(organization, responseId);
 
         databaseOperations.generateEmptyResponse(organization, responseId);
         control.showInfoMessage("CronMethod: Finish computing");
@@ -518,5 +524,46 @@ public class CompareServiceImpl implements CompareService {
 
     public String extractModel(String compare, String organization, Clusters input) {
         return TestMethods.getInstance().extractModel(compare, organization, input);
+    }
+
+    public void getAccessToUpdate(String organization, String responseId) throws InternalErrorException {
+        int maxIterations = Constants.getInstance().getMaxSyncIterations();
+        if (!organizationLocks.containsKey(organization)) {
+            organizationLocks.putIfAbsent(organization, new AtomicBoolean(false));
+        }
+        boolean correct = false;
+        int count = 0;
+        while (!correct && count <= maxIterations) {
+            AtomicBoolean atomicBoolean = organizationLocks.get(organization);
+            if (atomicBoolean == null) DatabaseOperations.getInstance().saveInternalException(organization, responseId, new InternalErrorException("Synchronization error"));
+            correct = atomicBoolean.compareAndSet(false,true);
+            if (!correct) {
+                ++count;
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    DatabaseOperations.getInstance().saveInternalException(organization, responseId, new InternalErrorException("Synchronization error"));
+                }
+            }
+        }
+
+        if (count == (maxIterations + 1)) {
+            DatabaseOperations.getInstance().saveInternalException(organization, responseId, new InternalErrorException("The database is busy"));
+        }
+
+    }
+
+    public void releaseAccessToUpdate(String organization, String responseId) throws InternalErrorException {
+        AtomicBoolean atomicBoolean = organizationLocks.get(organization);
+        if (atomicBoolean == null) DatabaseOperations.getInstance().saveInternalException(organization, responseId, new InternalErrorException("Synchronization error"));
+        atomicBoolean.set(false);
+    }
+
+    public void removeOrganizationLock(String organization) {
+        organizationLocks.remove(organization);
+    }
+
+    public ConcurrentHashMap<String, AtomicBoolean> getConcurrentMap() {
+        return organizationLocks;
     }
 }

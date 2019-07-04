@@ -46,6 +46,7 @@ public class DatabaseOperations {
 
     public void generateResponsePage(String responseId, String organization, JSONArray array, String arrayName) throws InternalErrorException {
         JSONObject json = new JSONObject();
+        json.put("status",200);
         json.put(arrayName,array);
         try {
             databaseModel.saveResponsePage(organization, responseId,json.toString());
@@ -72,6 +73,16 @@ public class DatabaseOperations {
             throw e;
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(),organization,responseId,"Error while saving a bad request exception response to the database");
+        }
+    }
+
+    public void saveInternalException(String organization, String responseId, InternalErrorException e) throws InternalErrorException {
+        try {
+            databaseModel.saveException(organization, responseId, createJsonException(500, Constants.getInstance().getInternalErrorMessage(), e.getMessage()));
+            databaseModel.finishComputation(organization, responseId);
+            throw e;
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(),organization,responseId,"Error while saving a internal error exception response to the database");
         }
     }
 
@@ -114,6 +125,7 @@ public class DatabaseOperations {
     public Model loadModel(String organization, boolean withFrequency) throws NotFoundException, InternalErrorException {
         try {
             return databaseModel.getModel(organization, withFrequency);
+            //TODO handle exception correctly
         } catch (SQLException sq) {
             control.showErrorMessage(sq.getMessage());
             throw new InternalErrorException("Error while loading the model from the database");
@@ -123,6 +135,7 @@ public class DatabaseOperations {
     public void saveModel(String organization, Model model) throws InternalErrorException {
         try {
             databaseModel.saveModel(organization, model);
+            //TODO handle exception correctly
         } catch (SQLException sq) {
             control.showErrorMessage(sq.getMessage());
             throw new InternalErrorException("Error while saving the new model to the database");
@@ -204,6 +217,14 @@ public class DatabaseOperations {
     public void updateClusterDependencies(String organizationId, String responseId, int oldClusterId, int newClusterId) throws InternalErrorException {
         try {
             databaseModel.updateClusterDependencies(organizationId, oldClusterId, newClusterId);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while updating a dependency in the database");
+        }
+    }
+
+    public void updateClusterDependencies(String organizationId, String responseId, String requirementId, String status, int newClusterId) throws InternalErrorException {
+        try {
+            databaseModel.updateClusterDependencies(organizationId, requirementId, status, newClusterId);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organizationId, responseId, "Error while updating a dependency in the database");
         }

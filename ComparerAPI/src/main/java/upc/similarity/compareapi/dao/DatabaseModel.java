@@ -40,6 +40,8 @@ public interface DatabaseModel {
 
     void updateClusterDependencies(String organizationId, int oldClusterId, int newClusterId) throws SQLException;
 
+    void updateClusterDependencies(String organizationId, String requirementId, String status, int newClusterId) throws SQLException;
+
     void deleteReqDependencies(String reqId, String organizationId) throws SQLException;
 
     void clearOrganizationResponses(String organization) throws SQLException, NotFoundException;
