@@ -9,7 +9,7 @@ import java.util.List;
 
 public class Dependencies implements Serializable {
 
-    @JsonProperty(value="requirements")
+    @JsonProperty(value="dependencies")
     private List<Dependency> dependencies;
 
     public Dependencies() {
