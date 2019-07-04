@@ -140,7 +140,7 @@ public class SimilarityServiceImpl implements SimilarityService {
 
         //New thread
         Thread thread = new Thread(() -> {
-            ResultJson result = new ResultJson(id.getId(),"AddClustersAndComputeOrphans");
+            ResultJson result = new ResultJson(id.getId(),"BuildClustersAndCompute");
             try {
                 CompareAdapter compareAdapter = new CompareAdapter();
                 compareAdapter.buildClustersAndComputeOrphans(id.getId(),organization,compare,threshold,input.getRequirements(),input.getDependencies());
@@ -340,7 +340,7 @@ public class SimilarityServiceImpl implements SimilarityService {
             if ((httpStatus >= 200) && (httpStatus < 300)) control.showInfoMessage("The connection with the external server was successful");
             else control.showErrorMessage("An error occurred when connecting with the external server");
         } catch (IOException e) {
-            control.showErrorMessage(e.getMessage());
+            control.showErrorMessage("An error occurred when connecting with the external server. File error");
         }
     }
 
