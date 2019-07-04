@@ -147,7 +147,7 @@ public class ControllerTests {
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
-        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/AddClusters").param("organization", "UPC").param("url", callback)
+        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/BuildClusters").param("organization", "UPC").param("url", callback)
                 .param("compare", "true")
                 .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"orphans/input.json")))
                 .andExpect(status().isOk()).andReturn();

@@ -209,7 +209,7 @@ public class RestApiController {
     }
 
     @CrossOrigin
-    @PostMapping(value = "/AddClusters", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/BuildClusters", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Generates clusters from the input requirements and dependencies", notes = "<p>This method computes the clusters using the existing duplicates. " +
             "All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements " +
             "are pre-processed and stored in the database. The entry duplicates relations are defined by the dependencies with type equal to similar or duplicate. It returns a requirements " +
@@ -219,10 +219,10 @@ public class RestApiController {
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity buildClusters(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                         @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
-                                        @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/PostResult") @RequestParam("url") String url,
+                                        @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
                                         @ApiParam(value="OpenReqJson with requirements and dependencies", required = true) @RequestBody ProjectWithDependencies input) {
         try {
-            urlOk(url);
+            if (url != null) urlOk(url);
             return new ResponseEntity<>(similarityService.buildClusters(url,organization,compare,input),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
