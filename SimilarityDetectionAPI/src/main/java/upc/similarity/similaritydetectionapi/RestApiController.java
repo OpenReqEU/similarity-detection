@@ -12,10 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import upc.similarity.similaritydetectionapi.config.Control;
 import upc.similarity.similaritydetectionapi.config.TestConfig;
 import upc.similarity.similaritydetectionapi.entity.Requirement;
-import upc.similarity.similaritydetectionapi.entity.input_output.ProjectWithDependencies;
-import upc.similarity.similaritydetectionapi.entity.input_output.Projects;
-import upc.similarity.similaritydetectionapi.entity.input_output.Requirements;
-import upc.similarity.similaritydetectionapi.entity.input_output.ResultId;
+import upc.similarity.similaritydetectionapi.entity.input_output.*;
 import upc.similarity.similaritydetectionapi.exception.*;
 import upc.similarity.similaritydetectionapi.service.SimilarityService;
 
@@ -264,6 +261,18 @@ public class RestApiController {
     public ResponseEntity batchProcess(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                        @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
                                        @ApiParam(value="OpenReqJson with requirements and dependencies", required = true) @RequestBody ProjectWithDependencies input) {
+
+        return new ResponseEntity<>(null,HttpStatus.OK);
+    }
+
+    @CrossOrigin
+    @PostMapping(value = "/TreatAcceptedAndRejectedDependencies", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "", notes = "<p>Not working.</p>", tags = "Clusters")
+    @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
+            @ApiResponse(code=400, message = "Bad request"),
+            @ApiResponse(code=500, message = "Internal error")})
+    public ResponseEntity treatAcceptedAndRejectedDependencies(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+                                       @ApiParam(value="OpenReqJson with dependencies", required = true) @RequestBody Dependencies input) {
 
         return new ResponseEntity<>(null,HttpStatus.OK);
     }
