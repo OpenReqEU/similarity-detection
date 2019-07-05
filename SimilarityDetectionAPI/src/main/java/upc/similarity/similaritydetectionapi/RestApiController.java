@@ -227,7 +227,7 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/BuildClustersAndCompute", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Generates the clusters from the input requirements and dependencies and computes the similarity between them", notes = "<p>This method computes the clusters using" +
+    @ApiOperation(value = "Generates the clusters from the input requirements and dependencies and computes the similarity score between them", notes = "<p>This method computes the clusters using" +
             " the existing duplicates. The entry duplicates relations are defined by the dependencies with type equal to similar or duplicate and type equal to accepted. All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. " +
             "All the requirements are pre-processed and stored in the database. Then, we compare each orphan (cluster with only one requirement) with all the requirements of each cluster" +
             " and return the highest similarity score for all the comparisons that are bigger than the established threshold.</p>", tags = "Clusters")
@@ -259,7 +259,7 @@ public class RestApiController {
     @ApiOperation(value = "Updates the organization clusters with the input requirements and dependencies", notes = "<p>Given a set of updates done in the requirements (see next list), updates the clusters accordingly.</p>" +
             "<p><ul>" +
             "<li>New requirements: The input requirements that do not pertain to the organization's model are considered to be new requirements. The method stores the pre-processing of the new requirements and puts the new requirements as clusters of 1 requirement.</li>" +
-            "<li>New or changed dependencies:  All the input similarity dependencies with status equal to accepted are considered of this group. The method uses the accepted and rejected dependencies to update the organization clusters.</li>" +
+            "<li>New or changed dependencies:  All the input similarity dependencies with status equal to accepted are considered of this group. The method uses the accepted dependencies to update the organization clusters.</li>" +
             "<li>Deleted requirements: The input requirements with status equal to deleted are considered deleted requirements. The method deletes them from the model and updates the clusters accordingly.</li>" +
             "<li>Removed dependencies: The input dependencies with status equal to rejected or removed are considered removed dependencies. The method updates them as rejected and changes the clusters accordingly.</li>" +
             "<li>Updated requirements: All requirements with a title or text different from the one stored in the database are considered updated requirements. The method updates their pre-process in the database and updates the cluster to which it belonged.</li>" +
@@ -276,7 +276,7 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/TreatAcceptedAndRejectedDependencies", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Updates the organization clusters with the input dependencies", notes = "<p>Given a set of accepted and rejected dependencies (see next bullet list), updates the clusters and dependencies accordingly.This method is synchronous.</p>", tags = "Clusters")
+    @ApiOperation(value = "Updates the organization clusters with the input dependencies", notes = "<p>Given a set of accepted and rejected dependencies, updates the clusters and dependencies accordingly. This method is synchronous.</p>", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
