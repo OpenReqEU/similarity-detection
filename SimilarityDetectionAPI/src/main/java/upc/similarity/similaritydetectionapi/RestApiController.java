@@ -207,10 +207,9 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/BuildClusters", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Generates clusters from the input requirements and dependencies", notes = "<p>This method computes the clusters using the existing duplicates. " +
-            "All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements " +
-            "are pre-processed and stored in the database. The entry duplicates relations are defined by the dependencies with type equal to similar or duplicate. It returns a requirements " +
-            "array with all the cluster centroids.\n</p>", tags = "Clusters")
+    @ApiOperation(value = "Generates the clusters from the input requirements and dependencies", notes = "<p>This method computes the clusters using the existing duplicates. The entry duplicates relations are " +
+            "defined by the dependencies with type equal to similar or duplicate and type equal to accepted. All the requirements that do not have duplicates relationships with other requirements" +
+            " are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the database.</p>", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -228,7 +227,10 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/BuildClustersAndCompute", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Computes the similarity between the clusters centroids", notes = "<p>Not working.</p>", tags = "Clusters")
+    @ApiOperation(value = "Generates the clusters from the input requirements and dependencies and computes the similarity between them", notes = "<p>This method computes the clusters using" +
+            " the existing duplicates. The entry duplicates relations are defined by the dependencies with type equal to similar or duplicate and type equal to accepted. All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. " +
+            "All the requirements are pre-processed and stored in the database. Then, we compare each orphan (cluster with only one requirement) with all the requirements of each cluster" +
+            " and return the highest similarity score for all the comparisons that are bigger than the established threshold.</p>", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -254,7 +256,14 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/BatchProcess", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "", notes = "<p>Not working.</p>", tags = "Clusters")
+    @ApiOperation(value = "Updates the organization clusters with the input requirements and dependencies", notes = "<p>Given a set of updates done in the requirements (see next list), updates the clusters accordingly.</p>" +
+            "<p><ul>" +
+            "<li>New requirements: The input requirements that do not pertain to the organization's model are considered to be new requirements. The method stores the pre-processing of the new requirements and puts the new requirements as clusters of 1 requirement.</li>" +
+            "<li>New or changed dependencies:  All the input similarity dependencies with status equal to accepted are considered of this group. The method uses the accepted and rejected dependencies to update the organization clusters.</li>" +
+            "<li>Deleted requirements: The input requirements with status equal to deleted are considered deleted requirements. The method deletes them from the model and updates the clusters accordingly.</li>" +
+            "<li>Removed dependencies: The input dependencies with status equal to rejected or removed are considered removed dependencies. The method updates them as rejected and changes the clusters accordingly.</li>" +
+            "<li>Updated requirements: All requirements with a title or text different from the one stored in the database are considered updated requirements. The method updates their pre-process in the database and updates the cluster to which it belonged.</li>" +
+            "</ul></p>", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -267,7 +276,7 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/TreatAcceptedAndRejectedDependencies", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "", notes = "<p>Not working.</p>", tags = "Clusters")
+    @ApiOperation(value = "Updates the organization clusters with the input dependencies", notes = "<p>Given a set of accepted and rejected dependencies (see next bullet list), updates the clusters and dependencies accordingly.This method is synchronous.</p>", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -279,7 +288,11 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/ReqClusters", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Similarity comparison between a set of requirements and all the organization cluster centroids", notes = "<p>Not working.</p>", tags = "Clusters")
+    @ApiOperation(value = "Similarity comparison between a set of requirements and all the organization clusters", notes = "<p>The requirements received should already exist and" +
+            " should have been already preprocessed, we only get the id of the req as a parameter. It returns a dependencies array with the highest similarity comparison between " +
+            "each input requirement and all the requirements of each cluster (it returns both accepted and proposed dependencies, but not the rejected ones). The comparisons are done" +
+            " with all the requirements in the database. If the number of maximum dependencies to be returned is received as parameter (maxNumber), we only return the maxNumber " +
+            "dependencies with highest score. This method is synchronous.</p>", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
