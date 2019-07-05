@@ -7,23 +7,29 @@ public class Model {
 
     private Map<String, Map<String, Double>> docs;
     private Map<String, Integer> corpusFrequency;
+    private double threshold;
+    private boolean compare;
     private boolean cluster;
     private Integer lastClusterId;
     private Map<Integer, List<String>> clusters;
-    private List<Dependency> dependencies;
+    private List<Dependency> dependencies; //accepted and rejected dependencies (proposed dependencies are not included)
 
     public Model(){}
 
-    public Model(Map<String, Map<String, Double>> docs, Map<String, Integer> corpusFrequency) {
+    public Model(Map<String, Map<String, Double>> docs, Map<String, Integer> corpusFrequency, double threshold, boolean compare) {
         this.docs = docs;
         this.corpusFrequency = corpusFrequency;
+        this.threshold = threshold;
+        this.compare = compare;
         this.cluster = false;
         this.lastClusterId = -1;
     }
 
-    public Model(Map<String, Map<String, Double>> docs, Map<String, Integer> corpusFrequency, Integer lastClusterId, Map<Integer, List<String>> clusters, List<Dependency> dependencies) {
+    public Model(Map<String, Map<String, Double>> docs, Map<String, Integer> corpusFrequency, double threshold, boolean compare, Integer lastClusterId, Map<Integer, List<String>> clusters, List<Dependency> dependencies) {
         this.docs = docs;
         this.corpusFrequency = corpusFrequency;
+        this.threshold = threshold;
+        this.compare = compare;
         this.cluster = true;
         this.lastClusterId = lastClusterId;
         this.clusters = clusters;
@@ -40,6 +46,14 @@ public class Model {
 
     public Map<String, Integer> getCorpusFrequency() {
         return corpusFrequency;
+    }
+
+    public double getThreshold() {
+        return threshold;
+    }
+
+    public boolean isCompare() {
+        return compare;
     }
 
     public boolean hasClusters() {
@@ -68,6 +82,18 @@ public class Model {
 
     public void setCorpusFrequency(Map<String, Integer> corpusFrequency) {
         this.corpusFrequency = corpusFrequency;
+    }
+
+    public void setThreshold(double threshold) {
+        this.threshold = threshold;
+    }
+
+    public void setCompare(boolean compare) {
+        this.compare = compare;
+    }
+
+    public void setHasClusters(boolean cluster) {
+        this.cluster = cluster;
     }
 
     public void setLastClusterId(Integer lastClusterId) {

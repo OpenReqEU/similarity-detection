@@ -21,7 +21,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class CompareServiceImpl implements CompareService {
 
     private Control control = Control.getInstance();
+    //next phase -> Map<String,PriorityQueue>
     private ConcurrentHashMap<String, AtomicBoolean> organizationLocks = new ConcurrentHashMap<>(); // true -> locked, false -> free
+    private Random random = new Random();
 
     @Override
     public void buildModel(String responseId, String compare, String organization, List<Requirement> requirements) throws BadRequestException, InternalErrorException {
@@ -540,7 +542,7 @@ public class CompareServiceImpl implements CompareService {
             if (!correct) {
                 ++count;
                 try {
-                    Thread.sleep(10);
+                    Thread.sleep(random.nextInt(50));
                 } catch (InterruptedException e) {
                     DatabaseOperations.getInstance().saveInternalException(organization, responseId, new InternalErrorException("Synchronization error"));
                 }

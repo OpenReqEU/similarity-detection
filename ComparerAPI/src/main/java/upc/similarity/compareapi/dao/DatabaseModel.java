@@ -2,6 +2,7 @@ package upc.similarity.compareapi.dao;
 
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
+import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.exception.NotFinishedException;
 import upc.similarity.compareapi.exception.NotFoundException;
 
@@ -10,7 +11,7 @@ import java.util.List;
 
 public interface DatabaseModel {
 
-    void saveModel(String organization, Model model) throws SQLException;
+    void saveModel(String organization, Model model) throws InternalErrorException, SQLException;
 
     Model getModel(String organization, boolean withFrequency) throws SQLException, NotFoundException;
 
@@ -26,9 +27,9 @@ public interface DatabaseModel {
 
     //public int getTotalPages(String organizationId, String responseId) throws SQLException, NotFoundException;
 
-    List<Dependency> getResponsePage(String organizationId, String responseId, int pageNumber) throws SQLException, NotFoundException;
+    //List<Dependency> getResponsePage(String organizationId, String responseId, int pageNumber) throws SQLException, NotFoundException;
 
-    void saveDependency(Dependency dependency) throws SQLException;
+    /*void saveDependency(Dependency dependency) throws SQLException;
 
     Dependency getDependency(String fromid, String toid, String organizationId) throws SQLException, NotFoundException;
 
@@ -42,7 +43,7 @@ public interface DatabaseModel {
 
     void updateClusterDependencies(String organizationId, String requirementId, String status, int newClusterId) throws SQLException;
 
-    void deleteReqDependencies(String reqId, String organizationId) throws SQLException;
+    void deleteReqDependencies(String reqId, String organizationId) throws SQLException;*/
 
     void clearOrganizationResponses(String organization) throws SQLException, NotFoundException;
 

@@ -54,6 +54,14 @@ public class Dependency implements Serializable {
         this.dependencyType = dependencyType;
     }
 
+    public Dependency(String fromid, String toid, String status, int clusterId) {
+        this.fromid = fromid;
+        this.toid = toid;
+        this.status = status;
+        this.clusterId = clusterId;
+        this.description = new ArrayList<>();
+    }
+
     /*
     Get
      */
