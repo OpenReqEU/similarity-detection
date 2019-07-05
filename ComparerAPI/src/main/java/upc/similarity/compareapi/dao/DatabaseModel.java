@@ -1,17 +1,16 @@
 package upc.similarity.compareapi.dao;
 
-import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
 import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.exception.NotFinishedException;
 import upc.similarity.compareapi.exception.NotFoundException;
 
+import java.io.IOException;
 import java.sql.SQLException;
-import java.util.List;
 
 public interface DatabaseModel {
 
-    void saveModel(String organization, Model model) throws InternalErrorException, SQLException;
+    void saveModel(String organization, Model model) throws InternalErrorException, IOException, SQLException;
 
     Model getModel(String organization, boolean withFrequency) throws SQLException, NotFoundException;
 
@@ -47,7 +46,9 @@ public interface DatabaseModel {
 
     void clearOrganizationResponses(String organization) throws SQLException, NotFoundException;
 
-    void createDatabase() throws SQLException;
+    void clearOrganization(String organization) throws NotFoundException, InternalErrorException, SQLException;
+
+    void clearDatabase() throws IOException, SQLException;
 
 
 }

@@ -33,11 +33,10 @@ public class SQLiteDatabase implements DatabaseModel {
         return organization + ".db";
     }
 
-    //TODO improve performance, synchronized pragma is not very efficient
-    private synchronized Connection configureOrganizationDatabase(String organization) throws SQLException {
-        Connection conn = DriverManager.getConnection(buildDbUrl(organization));
+    private void configureOrganizationDatabase(String organization) throws SQLException {
         String sql = "PRAGMA journal_mode=WAL;";
-        try (PreparedStatement ps = conn.prepareStatement(sql);
+        try (Connection conn = DriverManager.getConnection(buildDbUrl(organization));
+             PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             boolean correct = true;
             if (rs.next()) {
@@ -46,49 +45,36 @@ public class SQLiteDatabase implements DatabaseModel {
             } else correct = false;
             if (!correct) throw  new SQLException("Error when setting wal-mode");
         }
-        return conn;
     }
 
-    private boolean existsFile(String filePath) {
-        File f = new File(filePath);
-        return (f.exists() && !f.isDirectory());
-    }
-
-    private void deleteOrganizationFiles(String organization) throws InternalErrorException {
+    private void deleteAllDataFiles() throws IOException {
         Path dirPath = Paths.get(dbPath);
-        try {
-            Files.walk(dirPath)
-                    .map(Path::toFile)
-                    .forEach(file -> {
-                                if (!file.isDirectory() && file.getName().equals(organization + ".db")) { //TODO also delete wal files
-                                    file.delete(); //TODO check its result
-                                }
+        Files.walk(dirPath)
+                .map(Path::toFile)
+                .forEach(file -> {
+                            if (!file.isDirectory() && file.getName().contains(".db")) { //TODO also delete wal files
+                                file.delete(); //TODO check its result
                             }
-                    );
-        } catch (IOException e) {
-            throw new InternalErrorException("Error while deleting organization files");
-        }
+                        }
+                );
     }
 
-    private void createOrganizationFiles(String organization) throws InternalErrorException {
+    private void createOrganizationFiles(String organization) throws IOException {
         File file = new File(dbPath + buildFileName(organization));
-        try {
-            file.createNewFile(); //TODO check its result
-        } catch (IOException e) {
-            throw new InternalErrorException("Error while creating organization files");
-        }
+        file.createNewFile(); //TODO check its result
     }
 
-    private synchronized Connection insertNewOrganization(String organization, double threshold,  boolean compare, boolean hasClusters, int lastClusterId) throws SQLException, InternalErrorException {
-        if (existsFile(dbPath + buildFileName(organization))) {
-            //TODO maybe don't need for deleting files, just dropping the data from the db tables, more cute
-            deleteOrganizationFiles(organization);
+    //TODO improve performance, synchronized pragma is not very efficient
+    private synchronized void insertNewOrganization(String organization, double threshold,  boolean compare, boolean hasClusters, int lastClusterId) throws SQLException, IOException {
+
+        if (!existsOrganization(organization)) {
+            createOrganizationFiles(organization);
+            configureOrganizationDatabase(organization);
+            try (Connection conn = getConnection(organization)) {
+                createOrganizationTables(conn);
+            }
+            insertOrganization(organization, threshold, compare, hasClusters, lastClusterId);
         }
-        createOrganizationFiles(organization);
-        Connection conn = configureOrganizationDatabase(organization);
-        createOrganizationTables(conn);
-        insertOrganization(organization,threshold,compare,hasClusters,lastClusterId);
-        return conn;
     }
 
     private Connection getConnection(String organization) throws SQLException {
@@ -100,7 +86,22 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void createDatabase() throws SQLException {
+    public void clearOrganization(String organizationId) throws NotFoundException, InternalErrorException, SQLException {
+        if (!existsOrganization(organizationId)) throw new NotFoundException("The organization " + organizationId + " does not exist");
+        try(Connection conn = getConnection(organizationId)) {
+            clearOrganizationTables(conn);
+        }
+    }
+
+    @Override
+    public void clearDatabase() throws IOException, SQLException {
+        resetMainDatabase();
+    }
+
+    private synchronized void resetMainDatabase() throws IOException, SQLException {
+
+        deleteAllDataFiles();
+        createOrganizationFiles(dbMainName);
 
         String sql1 = "CREATE TABLE organizations (\n"
                 + "	id varchar PRIMARY KEY, \n"
@@ -141,12 +142,13 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void saveModel(String organization, Model model) throws InternalErrorException, SQLException {
+    public void saveModel(String organization, Model model) throws InternalErrorException, IOException, SQLException {
 
         insertNewOrganization(organization, model.getThreshold(), model.isCompare(), model.hasClusters(), model.getLastClusterId());
 
         try (Connection conn = getConnection(organization)) {
             conn.setAutoCommit(false);
+            clearOrganizationTables(conn);
             saveDocs(model.getDocs(), conn);
             saveCorpusFrequency(model.getCorpusFrequency(), conn);
             if (model.hasClusters()) {
@@ -216,7 +218,6 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.setInt(4,0);
             ps.setInt(5,0);
             ps.execute();
-            conn.commit();
         }
     }
 
@@ -478,21 +479,21 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void clearOrganizationResponses(String organization) throws SQLException, NotFoundException {
+    public void clearOrganizationResponses(String organizationId) throws SQLException, NotFoundException {
         String sql = "SELECT responseId, finished FROM responses WHERE organizationId = ?";
 
         try (Connection conn = getConnection(dbMainName)) {
             conn.setAutoCommit(false);
-            getOrganization(organization);
+            if (!existsOrganization(organizationId)) throw new NotFoundException("The organization " + organizationId + " does not exist");
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, organization);
+                ps.setString(1, organizationId);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         String responseId = rs.getString("responseId");
                         int finished = rs.getInt("finished");
                         if (finished == 1) {
-                            deleteAllResponsePages(organization, responseId, conn);
-                            deleteResponse(organization,responseId,conn);
+                            deleteAllResponsePages(organizationId, responseId, conn);
+                            deleteResponse(organizationId,responseId,conn);
                         }
                     }
                 }
@@ -582,6 +583,22 @@ public class SQLiteDatabase implements DatabaseModel {
                     } else throw new NotFoundException("The organization " + organizationId + " does not exist");
                 }
         }
+        return result;
+    }
+
+    private boolean existsOrganization(String organizationId) throws SQLException {
+
+        boolean result = true;
+
+        try (Connection conn = DriverManager.getConnection(dbMainName);
+             PreparedStatement ps = conn.prepareStatement("SELECT* FROM organizations WHERE id = ?")) {
+            ps.setString(1, organizationId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) result = false;
+            }
+        }
+
         return result;
     }
 
@@ -686,21 +703,23 @@ public class SQLiteDatabase implements DatabaseModel {
         }
     }
 
-    /*private void deleteOrganizationTables(String organization) throws SQLException {
+    private void clearOrganizationTables(Connection conn) throws SQLException {
 
-        String sql1 = "DROP TABLE docs_"+organization;
-        String sql2 = "DROP TABLE corpus_"+organization;
-        String sql3 = "DROP TABLE IF EXISTS clusters_"+organization;
+        String sql1 = "DELETE* FROM docs";
+        String sql2 = "DELETE* FROM corpus";
+        String sql3 = "DELETE* FROM clusters";
+        String sql4 = "DELETE* FROM dependencies";
+        String sql5 = "DELETE* FROM proposed_dependencies";
 
-        try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement()) {
+        try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql1);
             stmt.execute(sql2);
             stmt.execute(sql3);
-            conn.commit();
+            stmt.execute(sql4);
+            stmt.execute(sql5);
         }
 
-    }*/
+    }
 
     private void insertOrganization(String organization, double threshold, boolean compare, boolean hasClusters, int lastClusterId) throws SQLException {
 
