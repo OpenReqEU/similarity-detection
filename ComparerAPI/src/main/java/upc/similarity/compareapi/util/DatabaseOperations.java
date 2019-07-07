@@ -182,7 +182,7 @@ public class DatabaseOperations {
         }
     }
 
-    /*public List<Dependency> getClusterDependencies(String organizationId, String responseId, int clusterId) throws InternalErrorException {
+    public List<Dependency> getClusterDependencies(String organizationId, String responseId, int clusterId) throws InternalErrorException {
         List<Dependency> result = new ArrayList<>();
         try {
             result = databaseModel.getClusterDependencies(organizationId,clusterId);
@@ -192,6 +192,7 @@ public class DatabaseOperations {
         return result;
     }
 
+    /*
     public void deleteReqDependencies(String organizationId, String responseId, String requirementId) throws InternalErrorException {
         try {
             databaseModel.deleteReqDependencies(requirementId, organizationId);

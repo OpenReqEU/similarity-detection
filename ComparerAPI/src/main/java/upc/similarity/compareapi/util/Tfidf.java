@@ -29,12 +29,11 @@ public class Tfidf {
         else return (totalSize > 100) ? 10 : (-9 + 3.51*Math.log(totalSize));
     }
 
-    public int deleteReqs(List<Requirement> requirements, Model model) {
+    public int deleteReqs(List<String> requirements, Model model) {
         Map<String, Map<String, Double>> docs = model.getDocs();
         Map<String, Integer> corpusFrequency = model.getCorpusFrequency();
         int size = model.getDocs().size();
-        for (Requirement requirement: requirements) {
-            String id = requirement.getId();
+        for (String id: requirements) {
             if (docs.containsKey(id)) { //problem: if the requirement had this word before applying cutoff parameter
                 --size;
                 Map<String, Double> words = docs.get(id);
@@ -49,7 +48,7 @@ public class Tfidf {
         return size;
     }
 
-    public void deleteReqsAndRecomputeModel(List<Requirement> requirements, Model model) {
+    public void deleteReqsAndRecomputeModel(List<String> requirements, Model model) {
 
         Map<String, Map<String, Double>> docs = model.getDocs();
         Map<String, Integer> corpusFrequency = model.getCorpusFrequency();

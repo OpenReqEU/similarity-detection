@@ -1,4 +1,6 @@
-package upc.similarity.compareapi.entity;
+package upc.similarity.compareapi.entity.auxiliary;
+
+import upc.similarity.compareapi.entity.Dependency;
 
 import java.util.List;
 import java.util.Map;

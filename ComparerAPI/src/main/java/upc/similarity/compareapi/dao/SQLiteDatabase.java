@@ -355,13 +355,14 @@ public class SQLiteDatabase implements DatabaseModel {
         }
 
         return result;
-    }
+    }*/
 
+    @Override
     public List<Dependency> getClusterDependencies(String organizationId, int clusterId) throws SQLException {
 
         List<Dependency> result = new ArrayList<>();
 
-        try (Connection conn = getConnection()) {
+        try (Connection conn = getConnection(organizationId)) {
 
             String sql = "SELECT fromid, toid FROM dependencies WHERE organizationId = ? AND clusterId = ? AND status = ?";
 
@@ -383,7 +384,7 @@ public class SQLiteDatabase implements DatabaseModel {
         return result;
     }
 
-    @Override
+    /*@Override
     public boolean existsDependency(String fromid, String toid, String organizationId) throws SQLException {
 
         boolean result = false;
@@ -758,7 +759,6 @@ public class SQLiteDatabase implements DatabaseModel {
                 ps.setString(2,wordsConversionToJson(words).toString());
                 ps.execute();
             }
-            it.remove();
         }
     }
 
@@ -771,7 +771,6 @@ public class SQLiteDatabase implements DatabaseModel {
             aux.put("id",pair.getKey());
             aux.put("value",pair.getValue());
             result.put(aux);
-            it.remove();
         }
         return result;
     }
@@ -794,7 +793,6 @@ public class SQLiteDatabase implements DatabaseModel {
             aux.put("id",pair.getKey());
             aux.put("value",pair.getValue());
             result.put(aux);
-            it.remove();
         }
         return result.toString();
     }
@@ -812,7 +810,6 @@ public class SQLiteDatabase implements DatabaseModel {
                 ps.setString(2,requirementsArrayConversionToJson(requirements).toString());
                 ps.execute();
             }
-            it.remove();
         }
     }
 
