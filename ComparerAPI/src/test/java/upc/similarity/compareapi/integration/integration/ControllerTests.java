@@ -41,24 +41,23 @@ public class ControllerTests {
 
     @BeforeClass
     public static void createTestDB() throws Exception {
-        String absoluteFilePath = "models_test.db";
-        File file = new File(absoluteFilePath);
-        boolean result = file.createNewFile();
-        SQLiteDatabase.setDbName("models_test.db");
+        SQLiteDatabase.setDbPath("../testing/integration/test_database/");
         SQLiteDatabase db = new SQLiteDatabase();
-        db.createDatabase();
+        db.clearDatabase();
         Tfidf.setCutOffDummy(true);
     }
 
     @AfterClass
     public static void deleteTestDB() throws Exception {
-        File file = new File("models_test.db");
+        SQLiteDatabase db = new SQLiteDatabase();
+        db.clearDatabase();
+        File file = new File("../testing/integration/test_database/main.db");
         boolean result = file.delete();
     }
 
     @Test
     public void buildModel() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
                 .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"buildModel/input.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
@@ -157,12 +156,12 @@ public class ControllerTests {
 
     @Test
     public void simReqOrganization() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
                 .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqOrganization/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
-        this.mockMvc.perform(post(url + "SimReqOrganization").param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqOrganization/input_reqs.json")))
+        this.mockMvc.perform(post(url + "SimReqOrganization").param("organization", "UPC")
+                .param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqOrganization/input_reqs.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simReqOrganization/output.json")));
@@ -259,7 +258,7 @@ public class ControllerTests {
 
     @Test
     public void simReqReq() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
                 .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqReq/input_model.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(post(url + "SimReqReq").param("organization", "UPC")
@@ -270,12 +269,12 @@ public class ControllerTests {
 
     @Test
     public void simReqProject() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
                 .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqProject/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "SimReqProject").param("organization", "UPC")
-                .param("threshold", "0.0").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"simReqProject/input_operation.json")))
+                .param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"simReqProject/input_operation.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simReqProject/output.json")));
@@ -284,12 +283,12 @@ public class ControllerTests {
 
     @Test
     public void simProject() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
                 .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simProject/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "SimProject").param("organization", "UPC")
-                .param("threshold", "0").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simProject/input_operation.json")))
+                .param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simProject/input_operation.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simProject/output.json")));
@@ -298,7 +297,7 @@ public class ControllerTests {
 
     @Test
     public void clearOrganizationResponses() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
                 .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"deleteResponses/input_model.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(delete(url + "ClearOrganizationResponses").param("organization", "UPC"))
@@ -310,7 +309,7 @@ public class ControllerTests {
 
     @Test
     public void clearDatabase() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0")
                 .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"clearDatabase/input_model.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(delete(url + "ClearDatabase"))

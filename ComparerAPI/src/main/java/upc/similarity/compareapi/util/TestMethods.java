@@ -27,7 +27,7 @@ public class TestMethods {
         return instance;
     }
 
-    public String TestAccuracy(String compare, Clusters input) {
+    public String TestAccuracy(boolean compare, Clusters input) {
         CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
         Model model = null;
         try {
@@ -47,7 +47,7 @@ public class TestMethods {
         return result.toString();
     }
 
-    public String extractModel(String compare, String organization, Clusters input) {
+    public String extractModel(boolean compare, String organization, Clusters input) {
         Model model = null;
         try {
             model = generateModel(compare, deleteDuplicates(input.getRequirements(), null, null));
@@ -106,22 +106,22 @@ public class TestMethods {
         }
     }
 
-    private Model generateModel(String compare, List<Requirement> requirements) throws InternalErrorException {
+    private Model generateModel(boolean compare, List<Requirement> requirements) throws InternalErrorException {
         Tfidf tfidf = Tfidf.getInstance();
         Map<String, Integer> corpusFrequency = new HashMap<>();
         List<String> text = new ArrayList<>();
         List<String> ids = new ArrayList<>();
         buildCorpus(compare,requirements,text,ids);
         Map<String, Map<String, Double>> docs = tfidf.extractKeywords(text,ids,corpusFrequency);
-        return new Model(docs,corpusFrequency);
+        return new Model(docs,corpusFrequency,0,true);
     }
 
-    private void buildCorpus(String compare, List<Requirement> requirements, List<String> arrayText, List<String> arrayIds) {
+    private void buildCorpus(boolean compare, List<Requirement> requirements, List<String> arrayText, List<String> arrayIds) {
         for (Requirement requirement: requirements) {
             arrayIds.add(requirement.getId());
             String text = "";
             if (requirement.getName() != null) text = text.concat(cleanText(requirement.getName()) + ". ");
-            if ((compare.equals("true")) && (requirement.getText() != null)) text = text.concat(cleanText(requirement.getText()));
+            if (compare && (requirement.getText() != null)) text = text.concat(cleanText(requirement.getText()));
             arrayText.add(text);
         }
     }

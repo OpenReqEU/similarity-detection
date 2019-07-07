@@ -26,32 +26,32 @@ public class CompareServiceImpl implements CompareService {
     private Random random = new Random();
 
     @Override
-    public void buildModel(String responseId, String compare, String organization, List<Requirement> requirements) throws BadRequestException, InternalErrorException {
+    public void buildModel(String responseId, boolean compare, double threshold, String organization, List<Requirement> requirements) throws BadRequestException, InternalErrorException {
         control.showInfoMessage("BuildModel: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId);
-        databaseOperations.saveModel(organization, generateModel(compare, deleteDuplicates(requirements,organization,responseId)));
+        databaseOperations.saveModel(organization, responseId, generateModel(compare, threshold, deleteDuplicates(requirements,organization,responseId)));
         databaseOperations.generateEmptyResponse(organization, responseId);
 
         control.showInfoMessage("BuildModel: Finish computing");
     }
 
     @Override
-    public void buildModelAndCompute(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws BadRequestException, NotFoundException, InternalErrorException {
+    public void buildModelAndCompute(String responseId, boolean compare, String organization, double threshold, List<Requirement> requirements) throws BadRequestException, NotFoundException, InternalErrorException {
         control.showInfoMessage("BuildModelAndCompute: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId);
 
-        Model model = generateModel(compare, deleteDuplicates(requirements,organization,responseId));
+        Model model = generateModel(compare, threshold, deleteDuplicates(requirements,organization,responseId));
         List<String> requirementsIds = new ArrayList<>();
         for (Requirement requirement: requirements) {
             requirementsIds.add(requirement.getId());
         }
 
         project(requirementsIds, model, threshold, responseId, organization);
-        databaseOperations.saveModel(organization, model);
+        databaseOperations.saveModel(organization, responseId, model);
 
         databaseOperations.finishComputation(organization, responseId);
 
@@ -59,7 +59,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void addRequirements(String responseId, String compare, String organization, List<Requirement> requirements) throws InternalErrorException, BadRequestException, NotFoundException {
+    public void addRequirements(String responseId, String organization, List<Requirement> requirements) throws InternalErrorException, BadRequestException, NotFoundException {
         control.showInfoMessage("AddRequirements: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
@@ -67,14 +67,14 @@ public class CompareServiceImpl implements CompareService {
 
         Model model = null;
         try {
-            model = databaseOperations.loadModel(organization, true);
+            model = databaseOperations.loadModel(organization, responseId,true);
         } catch (NotFoundException e) {
             databaseOperations.saveNotFoundException(organization, responseId, e);
         }
 
         List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements,organization,responseId);
-        addRequirementsToModel(organization, responseId, notDuplicatedRequirements, compare, model);
-        databaseOperations.saveModel(organization, model);
+        addRequirementsToModel(organization, responseId, notDuplicatedRequirements, model.isCompare(), model);
+        databaseOperations.saveModel(organization, responseId, model);
         databaseOperations.generateEmptyResponse(organization, responseId);
 
         control.showInfoMessage("AddRequirements: Finish computing");
@@ -89,7 +89,7 @@ public class CompareServiceImpl implements CompareService {
 
         Model model = null;
         try {
-            model = databaseOperations.loadModel(organization, true);
+            model = databaseOperations.loadModel(organization, responseId,true);
         } catch (NotFoundException e) {
             databaseOperations.saveNotFoundException(organization, responseId, e);
         }
@@ -98,11 +98,11 @@ public class CompareServiceImpl implements CompareService {
 
         if (model.hasClusters()) {
             ClusterOperations clusterOperations = ClusterOperations.getInstance();
-            for (Requirement requirement: notDuplicatedRequirements) clusterOperations.deleteReqFromClusters(organization, responseId, requirement.getId(), model.getClusters(), model.getLastClusterId());
+            //for (Requirement requirement: notDuplicatedRequirements) clusterOperations.deleteReqFromClusters(organization, responseId, requirement.getId(), model.getClusters(), model.getLastClusterId());
         }
 
         Tfidf.getInstance().deleteReqsAndRecomputeModel(notDuplicatedRequirements,model);
-        databaseOperations.saveModel(organization, model);
+        databaseOperations.saveModel(organization, responseId, model);
         databaseOperations.generateEmptyResponse(organization, responseId);
 
         control.showInfoMessage("DeleteRequirements: Finish computing");
@@ -114,7 +114,7 @@ public class CompareServiceImpl implements CompareService {
         CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         Constants constants = Constants.getInstance();
-        Model model = databaseOperations.loadModel(organization,false);
+        Model model = databaseOperations.loadModel(organization,null, false);
         if (!model.getDocs().containsKey(req1)) throw new NotFoundException("The requirement with id " + req1 + " is not present in the model loaded form the database");
         if (!model.getDocs().containsKey(req2)) throw new NotFoundException("The requirement with id " + req2 + " is not present in the model loaded form the database");
         double score = cosineSimilarity.compute(model.getDocs(),req1,req2);
@@ -122,21 +122,21 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void simReqOrganization(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException {
+    public void simReqOrganization(String responseId, String organization, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException {
         control.showInfoMessage("SimReqOrganization: Start computing");
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId);
 
         Model model = null;
         try {
-            model = databaseOperations.loadModel(organization,true);
+            model = databaseOperations.loadModel(organization, responseId, true);
         } catch (NotFoundException e) {
             databaseOperations.saveNotFoundException(organization, responseId, e);
         }
 
         List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements,organization,responseId);
 
-        addRequirementsToModel(organization, responseId, notDuplicatedRequirements, compare, model);
+        addRequirementsToModel(organization, responseId, notDuplicatedRequirements, model.isCompare(), model);
         HashSet<String> repeatedHash = new HashSet<>();
         for (Requirement requirement: notDuplicatedRequirements) repeatedHash.add(requirement.getId());
 
@@ -151,8 +151,8 @@ public class CompareServiceImpl implements CompareService {
             if (!repeatedHash.contains(id)) projectRequirements.add(id);
         }
 
-        reqProject(requirementsToCompare, projectRequirements, model, threshold, organization, responseId);
-        databaseOperations.saveModel(organization, model);
+        reqProject(requirementsToCompare, projectRequirements, model, model.getThreshold(), organization, responseId);
+        databaseOperations.saveModel(organization, responseId, model);
 
         databaseOperations.finishComputation(organization, responseId);
 
@@ -160,30 +160,30 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public String simReqClusters(String responseId, String compare, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException {
+    public String simReqClusters(String responseId, String organization, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException {
         control.showInfoMessage("SimReqClusters: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         Constants constants = Constants.getInstance();
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
 
-        Model model = databaseOperations.loadModel(organization,true);
+        Model model = databaseOperations.loadModel(organization, responseId, true);
         if (!model.hasClusters()) throw new BadRequestException("The model does not have clusters");
         List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements,null,null);
-        addRequirementsToModel(organization, null, notDuplicatedRequirements, compare, model); //TODO check if the method is working when responseId = null
-        databaseOperations.saveModel(organization, model);
+        addRequirementsToModel(organization, null, notDuplicatedRequirements, model.isCompare(), model); //TODO check if the method is working when responseId = null
+        databaseOperations.saveModel(organization, responseId, model);
 
         List<String> requirementsToCompare = new ArrayList<>();
         for (Requirement requirement: notDuplicatedRequirements) requirementsToCompare.add(requirement.getId());
         JSONObject result = new JSONObject();
-        result.put(constants.getDependenciesArrayName(), clusterOperations.reqClustersNotDb(requirementsToCompare, model.getDocs(), model.getClusters(), threshold));
+        result.put(constants.getDependenciesArrayName(), clusterOperations.reqClustersNotDb(requirementsToCompare, model.getDocs(), model.getClusters(), model.getThreshold()));
 
         control.showInfoMessage("SimReqClusters: Finish computing");
         return result.toString();
     }
 
     @Override
-    public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements) throws NotFoundException, InternalErrorException, BadRequestException {
+    public void simReqProject(String responseId, String organization, ReqProject projectRequirements) throws NotFoundException, InternalErrorException, BadRequestException {
         control.showInfoMessage("SimReqProject: Start computing");
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
@@ -191,7 +191,7 @@ public class CompareServiceImpl implements CompareService {
 
         Model model = null;
         try {
-            model = databaseOperations.loadModel(organization,false);
+            model = databaseOperations.loadModel(organization, responseId, false);
             for (String req: projectRequirements.getReqsToCompare()) {
                 if (projectRequirements.getProjectReqs().contains(req)) throw new BadRequestException("The requirement with id " + req + " is already inside the project");
             }
@@ -201,14 +201,14 @@ public class CompareServiceImpl implements CompareService {
             databaseOperations.saveBadRequestException(organization, responseId, e);
         }
 
-        reqProject(projectRequirements.getReqsToCompare(), projectRequirements.getProjectReqs(), model, threshold, organization, responseId);
+        reqProject(projectRequirements.getReqsToCompare(), projectRequirements.getProjectReqs(), model, model.getThreshold(), organization, responseId);
 
         databaseOperations.finishComputation(organization, responseId);
         control.showInfoMessage("SimReqProject: Finish computing");
     }
 
     @Override
-    public void simProject(String responseId, String organization, double threshold, List<String> projectRequirements) throws NotFoundException, InternalErrorException {
+    public void simProject(String responseId, String organization, List<String> projectRequirements) throws NotFoundException, InternalErrorException {
         control.showInfoMessage("SimProject: Start computing");
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
@@ -216,32 +216,32 @@ public class CompareServiceImpl implements CompareService {
 
         Model model = null;
         try {
-            model = databaseOperations.loadModel(organization,false);
+            model = databaseOperations.loadModel(organization, responseId, false);
         } catch (NotFoundException e) {
             databaseOperations.saveNotFoundException(organization, responseId, e);
         }
 
-        project(projectRequirements, model, threshold, responseId, organization);
+        project(projectRequirements, model, model.getThreshold(), responseId, organization);
 
         databaseOperations.finishComputation(organization, responseId);
         control.showInfoMessage("SimProject: Finish computing");
     }
 
     @Override
-    public void buildClustersAndCompute(String responseId, String compare, String organization, double threshold, Clusters input) throws BadRequestException, InternalErrorException {
+    public void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, Clusters input) throws BadRequestException, InternalErrorException {
         control.showInfoMessage("BuildClustersAndCompute: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
         databaseOperations.generateResponse(organization,responseId);
         List<Requirement> requirements = deleteDuplicates(input.getRequirements(),organization,responseId);
-        Model model = generateModel(compare, requirements);
+        Model model = generateModel(compare, threshold, requirements);
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
         ClusterAndDeps iniClusters = clusterOperations.computeIniClusters(input.getDependencies(), requirements);
 
-        model = new Model(model.getDocs(), model.getCorpusFrequency(), iniClusters.getLastClusterId(), iniClusters.getClusters(), iniClusters.getDependencies());
+        model = new Model(model.getDocs(), model.getCorpusFrequency(), model.getThreshold(), model.isCompare(), iniClusters.getLastClusterId(), iniClusters.getClusters(), iniClusters.getDependencies());
         getAccessToUpdate(organization, responseId);
-        databaseOperations.saveModel(organization, model);
+        databaseOperations.saveModel(organization, responseId, model);
         releaseAccessToUpdate(organization, responseId);
 
         Map<String,Integer> reqCluster = iniClusters.getReqCluster();
@@ -259,20 +259,20 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void buildClusters(String responseId, String compare, String organization, Clusters input) throws BadRequestException, InternalErrorException {
+    public void buildClusters(String responseId, boolean compare, double threshold, String organization, Clusters input) throws BadRequestException, InternalErrorException {
         control.showInfoMessage("BuildClusters: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
         databaseOperations.generateResponse(organization,responseId);
         List<Requirement> requirements = deleteDuplicates(input.getRequirements(),organization,responseId);
-        Model model = generateModel(compare, requirements);
+        Model model = generateModel(compare, threshold, requirements);
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
         ClusterAndDeps iniClusters = clusterOperations.computeIniClusters(input.getDependencies(), requirements);
 
-        model = new Model(model.getDocs(), model.getCorpusFrequency(), iniClusters.getLastClusterId(), iniClusters.getClusters(), iniClusters.getDependencies());
+        model = new Model(model.getDocs(), model.getCorpusFrequency(), model.getThreshold(), model.isCompare(), iniClusters.getLastClusterId(), iniClusters.getClusters(), iniClusters.getDependencies());
         getAccessToUpdate(organization, responseId);
-        databaseOperations.saveModel(organization, model);
+        databaseOperations.saveModel(organization, responseId, model);
         releaseAccessToUpdate(organization, responseId);
 
         databaseOperations.generateEmptyResponse(organization, responseId);
@@ -281,7 +281,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void cronMethod(String responseId, String compare, String organization, Clusters input) throws BadRequestException, InternalErrorException, NotFoundException {
+    public void cronMethod(String responseId, String organization, Clusters input) throws BadRequestException, InternalErrorException, NotFoundException {
         control.showInfoMessage("CronMethod: Start computing");
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
@@ -292,7 +292,7 @@ public class CompareServiceImpl implements CompareService {
 
         Model model = null;
         try {
-            model = databaseOperations.loadModel(organization,true);
+            model = databaseOperations.loadModel(organization, responseId, true);
         } catch (NotFoundException e) {
             databaseOperations.saveNotFoundException(organization, responseId, e);
         }
@@ -304,7 +304,7 @@ public class CompareServiceImpl implements CompareService {
         }
 
         Map<Integer,List<String>> clusters = model.getClusters();
-        Map<String,Integer> reqCluster = clusterOperations.computeReqClusterMap(clusters, model.getDocs().keySet());
+        Map<String,Integer> reqCluster = null; /* clusterOperations.computeReqClusterMap(clusters, model.getDocs().keySet());*/
 
         List<Requirement> addedRequirements = new ArrayList<>();
         List<Requirement> updatedRequirements = new ArrayList<>();
@@ -331,11 +331,11 @@ public class CompareServiceImpl implements CompareService {
 
         //se entiende que las dependencias de un requisito son previas a su actualizacioń
 
-        addRequirementsToModel(organization, responseId, addedRequirements, compare, model);
-        clusterOperations.addAcceptedDependencies(organization, responseId, acceptedDependencies, clusters, reqCluster, model.getLastClusterId());
-        clusterOperations.addDeletedDependencies(organization, responseId, deletedDependencies, clusters, reqCluster, model.getLastClusterId());
+        addRequirementsToModel(organization, responseId, addedRequirements, model.isCompare(), model);
+        /*clusterOperations.addAcceptedDependencies(organization, responseId, acceptedDependencies, clusters, reqCluster, model.getLastClusterId());
+        clusterOperations.addDeletedDependencies(organization, responseId, deletedDependencies, clusters, reqCluster, model.getLastClusterId());*/
         deleteRequirements(responseId, organization, deletedRequirements);
-        addRequirementsToModel(organization, responseId, updatedRequirements, compare, model);
+        addRequirementsToModel(organization, responseId, updatedRequirements, model.isCompare(), model);
 
         releaseAccessToUpdate(organization, responseId);
 
@@ -352,6 +352,13 @@ public class CompareServiceImpl implements CompareService {
     @Override
     public void clearOrganizationResponses(String organization) throws InternalErrorException, NotFoundException {
         DatabaseOperations.getInstance().clearOrganizationResponses(organization);
+    }
+
+    @Override
+    public void clearOrganization(String organization) throws NotFoundException, InternalErrorException {
+        getAccessToUpdate(organization, null);
+        DatabaseOperations.getInstance().clearOrganization(organization);
+        releaseAccessToUpdate(organization, null);
     }
 
     @Override
@@ -444,13 +451,13 @@ public class CompareServiceImpl implements CompareService {
         control.showInfoMessage("Number dependencies: " + numberDependencies);
     }
 
-    private void addRequirementsToModel(String organization, String responseId, List<Requirement> requirements, String compare, Model model) throws InternalErrorException {
+    private void addRequirementsToModel(String organization, String responseId, List<Requirement> requirements, boolean compare, Model model) throws InternalErrorException {
 
         if (model.hasClusters()) {
             ClusterOperations clusterOperations = ClusterOperations.getInstance();
 
             for (Requirement requirement: requirements) {
-                clusterOperations.deleteReqFromClusters(organization, responseId, requirement.getId(), model.getClusters(),model.getLastClusterId());
+                //clusterOperations.deleteReqFromClusters(organization, responseId, requirement.getId(), model.getClusters(),model.getLastClusterId());
             }
         }
 
@@ -479,17 +486,17 @@ public class CompareServiceImpl implements CompareService {
         return result;
     }
 
-    private Model generateModel(String compare, List<Requirement> requirements) throws InternalErrorException {
+    private Model generateModel(boolean compare, double threshold, List<Requirement> requirements) throws InternalErrorException {
         Tfidf tfidf = Tfidf.getInstance();
         Map<String, Integer> corpusFrequency = new HashMap<>();
         List<String> text = new ArrayList<>();
         List<String> ids = new ArrayList<>();
         buildCorpus(compare,requirements,text,ids);
         Map<String, Map<String, Double>> docs = tfidf.extractKeywords(text,ids,corpusFrequency);
-        return new Model(docs,corpusFrequency);
+        return new Model(docs,corpusFrequency,threshold,compare);
     }
 
-    private void updateModel(String compare, List<Requirement> requirements, Model model, int oldSize) throws InternalErrorException {
+    private void updateModel(boolean compare, List<Requirement> requirements, Model model, int oldSize) throws InternalErrorException {
         Tfidf tfidf = Tfidf.getInstance();
         List<String> text = new ArrayList<>();
         List<String> ids = new ArrayList<>();
@@ -497,12 +504,12 @@ public class CompareServiceImpl implements CompareService {
         tfidf.addNewReqsAndRecomputeModel(text,ids,model,oldSize);
     }
 
-    private void buildCorpus(String compare, List<Requirement> requirements, List<String> arrayText, List<String> arrayIds) {
+    private void buildCorpus(boolean compare, List<Requirement> requirements, List<String> arrayText, List<String> arrayIds) {
         for (Requirement requirement: requirements) {
             arrayIds.add(requirement.getId());
             String text = "";
             if (requirement.getName() != null) text = text.concat(cleanText(requirement.getName()) + ". ");
-            if ((compare.equals("true")) && (requirement.getText() != null)) text = text.concat(cleanText(requirement.getText()));
+            if (compare && (requirement.getText() != null)) text = text.concat(cleanText(requirement.getText()));
             arrayText.add(text);
         }
     }
@@ -520,11 +527,11 @@ public class CompareServiceImpl implements CompareService {
         return result;
     }
 
-    public String TestAccuracy(String compare, Clusters input) {
+    public String TestAccuracy(boolean compare, Clusters input) {
         return TestMethods.getInstance().TestAccuracy(compare, input);
     }
 
-    public String extractModel(String compare, String organization, Clusters input) {
+    public String extractModel(boolean compare, String organization, Clusters input) {
         return TestMethods.getInstance().extractModel(compare, organization, input);
     }
 

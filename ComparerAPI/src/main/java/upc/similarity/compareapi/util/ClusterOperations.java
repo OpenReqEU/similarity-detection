@@ -199,7 +199,7 @@ public class ClusterOperations {
         }
     }
 
-    public void deleteReqFromClusters(String organization, String responseId, String requirementId, Map<Integer, List<String>> clusters, int lastClusterId) throws InternalErrorException {
+    /*public void deleteReqFromClusters(String organization, String responseId, String requirementId, Map<Integer, List<String>> clusters, int lastClusterId) throws InternalErrorException {
 
         int cluster = findClusterId(requirementId, clusters);
         if (cluster == -1) {
@@ -309,7 +309,7 @@ public class ClusterOperations {
             }
         }
 
-    }
+    }*/
 
     /*
     Auxiliary operations
@@ -354,7 +354,7 @@ public class ClusterOperations {
         return candidateClusters;
     }
 
-    private HashMap<String,List<String>> loadClusterDependencies(String organization, String responseId, int clusterId, List<String> clusterRequirements) throws InternalErrorException {
+    /*private HashMap<String,List<String>> loadClusterDependencies(String organization, String responseId, int clusterId, List<String> clusterRequirements) throws InternalErrorException {
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         List<Dependency> dependencies = databaseOperations.getClusterDependencies(organization, responseId, clusterId);
         HashMap<String,List<String>> reqDeps = new HashMap<>();
@@ -373,5 +373,5 @@ public class ClusterOperations {
             reqDeps.put(toid, aux2);
         }
         return reqDeps;
-    }
+    }*/
 }

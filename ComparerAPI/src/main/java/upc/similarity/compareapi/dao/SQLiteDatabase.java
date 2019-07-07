@@ -25,6 +25,10 @@ public class SQLiteDatabase implements DatabaseModel {
     private static String dbPath = "../data/";
     private static String driversName = "jdbc:sqlite:";
 
+    public static void setDbPath(String dbPath) {
+        SQLiteDatabase.dbPath = dbPath;
+    }
+
     private String buildDbUrl(String organization) {
         return driversName + dbPath + buildFileName(organization);
     }
@@ -35,7 +39,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
     private void configureOrganizationDatabase(String organization) throws SQLException {
         String sql = "PRAGMA journal_mode=WAL;";
-        try (Connection conn = DriverManager.getConnection(buildDbUrl(organization));
+        try (Connection conn = getConnection(organization);
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             boolean correct = true;
@@ -570,7 +574,7 @@ public class SQLiteDatabase implements DatabaseModel {
     private Organization getOrganization(String organizationId) throws NotFoundException, SQLException {
 
         Organization result = new Organization();
-        try (Connection conn = DriverManager.getConnection(dbMainName);
+        try (Connection conn = getConnection(dbMainName);
              PreparedStatement ps = conn.prepareStatement("SELECT threshold, compare, hasClusters, lastClusterId FROM organizations WHERE id = ?")) {
                 ps.setString(1, organizationId);
 
@@ -590,7 +594,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
         boolean result = true;
 
-        try (Connection conn = DriverManager.getConnection(dbMainName);
+        try (Connection conn = getConnection(dbMainName);
              PreparedStatement ps = conn.prepareStatement("SELECT* FROM organizations WHERE id = ?")) {
             ps.setString(1, organizationId);
 
@@ -705,11 +709,11 @@ public class SQLiteDatabase implements DatabaseModel {
 
     private void clearOrganizationTables(Connection conn) throws SQLException {
 
-        String sql1 = "DELETE* FROM docs";
-        String sql2 = "DELETE* FROM corpus";
-        String sql3 = "DELETE* FROM clusters";
-        String sql4 = "DELETE* FROM dependencies";
-        String sql5 = "DELETE* FROM proposed_dependencies";
+        String sql1 = "DELETE FROM docs";
+        String sql2 = "DELETE FROM corpus";
+        String sql3 = "DELETE FROM clusters";
+        String sql4 = "DELETE FROM dependencies";
+        String sql5 = "DELETE FROM proposed_dependencies";
 
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql1);
