@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.util.Tfidf;
+import static org.junit.Assert.assertEquals;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -137,36 +138,27 @@ public class ControllerTests {
 
     @Test
     public void simReqClusters() throws Exception {
-        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "0")
                 .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"simReqClusters/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
-        this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqClusters/input_reqs.json")))
-                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simReqClusters/aux1.json")));
-
-        this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
-                .andExpect(status().isNotFound());/*.andExpect(content().string(read_file_json(path + "simReqClusters/aux2.json")));*/
-        ++id;
-        this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqClusters/input_operation.json")))
-                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simReqClusters/aux3.json")));;
-        ++id;
+        this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("maxValue", "0")
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqClusters/input_operation.json")))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "simReqClusters/output.json")));
     }
 
-    /*@Test
+    @Test
     public void addClustersAndCompute() throws Exception {
         this.mockMvc.perform(post(url + "BuildClustersAndCompute").param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"computeOrphans/input_reqs.json")))
+                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"generateClustersAndCompute/input.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
-                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "computeOrphans/output.json")));
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "generateClustersAndCompute/output.json")));
         ++id;
-        this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"computeOrphans/input_req_clusters.json")))
-                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "computeOrphans/aux1.json")));
-        ++id;
-    }*/
+        SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
+        List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
+        assertEquals(read_file_array(path+"generateClustersAndCompute/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
+    }
 
 
     /*
@@ -217,6 +209,9 @@ public class ControllerTests {
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "generateClusters/output_build.json")));
         ++id;
+        SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
+        List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
+        assertEquals(read_file_array(path+"generateClusters/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
     }
 
     @Test

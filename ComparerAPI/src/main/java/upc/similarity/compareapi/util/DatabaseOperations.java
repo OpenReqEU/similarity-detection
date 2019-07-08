@@ -10,11 +10,7 @@ import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
 import upc.similarity.compareapi.exception.*;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;

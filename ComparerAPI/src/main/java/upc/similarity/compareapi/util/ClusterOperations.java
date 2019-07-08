@@ -27,15 +27,27 @@ public class ClusterOperations {
 
         HashMap<Integer,List<String>> clusters = new HashMap<>();
         HashMap<String, Integer> reqCluster = new HashMap<>();
-        Integer countIds = 0;
+        int countIds = 0;
 
         for (Requirement requirement: requirements) {
-            List<String> aux = new ArrayList<>();
-            aux.add(requirement.getId());
-            clusters.put(-1,aux);
+            reqCluster.put(requirement.getId(),-1);
         }
 
-        computeDependencies(dependencies, reqCluster, clusters, countIds);
+        countIds = computeDependencies(dependencies, reqCluster, clusters, countIds);
+
+        Iterator it = reqCluster.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next();
+            String requirementId = (String) pair.getKey();
+            int clusterId = (int) pair.getValue();
+            if (clusterId == -1) {
+                List<String> aux = new ArrayList<>();
+                aux.add(requirementId);
+                clusters.put(countIds, aux);
+                reqCluster.put(requirementId, countIds);
+                ++countIds;
+            }
+        }
 
         List<Dependency> acceptedDependencies = new ArrayList<>();
         HashSet<String> notRepeated = new HashSet<>();
@@ -54,7 +66,17 @@ public class ClusterOperations {
             }
         }
 
-        return new ClusterAndDeps(countIds, clusters, reqCluster, acceptedDependencies);
+        return new ClusterAndDeps(countIds, clusters, reqCluster, duplicateDependencies(acceptedDependencies));
+    }
+
+    //TODO maybe change this
+    private List<Dependency> duplicateDependencies(List<Dependency> dependencies) {
+        List<Dependency> result = new ArrayList<>();
+        for (Dependency dependency: dependencies) {
+            result.add(dependency);
+            result.add(new Dependency(dependency.getToid(), dependency.getFromid(), dependency.getStatus(), dependency.getDependencyScore(), dependency.getClusterId()));
+        }
+        return result;
     }
 
     //se supone que todos los requisitos estan en el modelo y que los requisitos de entrada no estan en ningun cluster
@@ -193,11 +215,10 @@ public class ClusterOperations {
 
     }
 
-    public List<Dependency> computeProposedDependencies(String organization, String responseId, Set<Integer> clustersIds, Model model) throws InternalErrorException {
+    public List<Dependency> computeProposedDependencies(String organization, String responseId, Set<String> requirements, Set<Integer> clustersIds, Model model) throws InternalErrorException {
         CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
         Map<Integer,List<String>> clusters = model.getClusters();
         Set<String> rejectedDependencies = loadRejectedDependencies(organization, responseId);
-        Set<String> requirements = model.getDocs().keySet();
         List<Dependency> proposedDependencies = new ArrayList<>();
         //TODO this is causing n*n efficiency, can be improved saving the result of the pairs and only compute half of the matrix (less memory efficiency)
         for (String req1: requirements) {
@@ -215,7 +236,7 @@ public class ClusterOperations {
                     }
                 }
                 if (maxReq != null) {
-                    proposedDependencies.add(new Dependency(req1,maxReq,"proposed",-1));
+                    proposedDependencies.add(new Dependency(req1,maxReq,"proposed",maxScore,-1));
                 }
             }
         }
@@ -262,8 +283,9 @@ public class ClusterOperations {
             for (Dependency dependency: dependencies) {
                 String fromId = dependency.getFromid();
                 String toId = dependency.getToid();
+                double score = dependency.getDependencyScore();
                 if (!avoidReqs.contains(fromId) && !avoidReqs.contains(toId) && reqCluster.get(fromId) != clusterId) {
-                    Dependency auxDependency = new Dependency(fromId, toId, "accepted", reqCluster.get(fromId));
+                    Dependency auxDependency = new Dependency(fromId, toId, "accepted", score,reqCluster.get(fromId));
                     updatedDependencies.add(auxDependency);
                 }
             }
@@ -427,16 +449,17 @@ public class ClusterOperations {
         return reqDeps;
     }
 
-    private void computeDependencies(List<Dependency> dependencies, Map<String,Integer> reqCluster, Map<Integer,List<String>> clusters, Integer countIds) {
+    private int computeDependencies(List<Dependency> dependencies, Map<String,Integer> reqCluster, Map<Integer,List<String>> clusters, int countIds) {
         for (Dependency dependency: dependencies) {
             if (validDependency(dependency)) {
                 String fromid = dependency.getFromid();
                 String toid = dependency.getToid();
                 if (reqCluster.containsKey(fromid) && reqCluster.containsKey(toid)) {
-                    mergeClusters(clusters, reqCluster, fromid, toid, countIds);
+                     countIds = mergeClusters(clusters, reqCluster, fromid, toid, countIds);
                 }
             }
         }
+        return countIds;
     }
 
     private boolean validDependency(Dependency dependency) {
@@ -444,7 +467,7 @@ public class ClusterOperations {
         return (type != null && (type.equals("similar") || type.equals("duplicates")) && dependency.getStatus().equals("accepted"));
     }
 
-    private void mergeClusters(Map<Integer,List<String>> clusters, Map<String,Integer> reqCluster, String req1, String req2, Integer countIds) {
+    private int mergeClusters(Map<Integer,List<String>> clusters, Map<String,Integer> reqCluster, String req1, String req2, int countIds) {
         int clusterReq1 = reqCluster.get(req1);
         int clusterReq2 = reqCluster.get(req2);
         if (clusterReq1 == -1 && clusterReq2 == -1) {
@@ -474,5 +497,6 @@ public class ClusterOperations {
             }
             clusters.remove(clusterReq2);
         }
+        return countIds;
     }
 }

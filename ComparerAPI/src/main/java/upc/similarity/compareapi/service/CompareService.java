@@ -7,6 +7,7 @@ import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.entity.input.Clusters;
 import upc.similarity.compareapi.entity.input.ReqProject;
+import upc.similarity.compareapi.entity.output.Dependencies;
 import upc.similarity.compareapi.exception.BadRequestException;
 import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.exception.NotFinishedException;
@@ -42,7 +43,7 @@ public interface CompareService {
 
     void buildClusters(String responseId, boolean compare, double threshold, String organization, Clusters requirements) throws BadRequestException, InternalErrorException;
 
-    List<Dependency> simReqClusters(String organization, List<Requirement> requirements, int maxValue) throws NotFoundException, InternalErrorException, BadRequestException;
+    Dependencies simReqClusters(String organization, List<String> requirements, int maxValue) throws NotFoundException, InternalErrorException;
 
     String TestAccuracy(boolean compare, Clusters input);
 

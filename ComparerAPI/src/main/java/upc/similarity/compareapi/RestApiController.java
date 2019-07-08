@@ -102,13 +102,11 @@ public class RestApiController {
     @PostMapping(value = "/SimReqClusters")
     public ResponseEntity simReqClusters(@RequestParam("organization") String organization,
                                          @RequestParam("maxValue") int maxValue,
-                                        @RequestBody List<Requirement> requirements) {
+                                        @RequestBody List<String> requirements) {
         try {
             return new ResponseEntity<>(compareService.simReqClusters(organization,requirements,maxValue),HttpStatus.OK);
         } catch (NotFoundException e) {
             return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
-        } catch (BadRequestException e) {
-            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
         } catch (InternalErrorException e) {
             return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
         }

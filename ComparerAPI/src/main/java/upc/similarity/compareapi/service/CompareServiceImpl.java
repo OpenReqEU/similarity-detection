@@ -1,7 +1,6 @@
 package upc.similarity.compareapi.service;
 
 import org.json.JSONArray;
-import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.config.Control;
@@ -9,6 +8,7 @@ import upc.similarity.compareapi.entity.*;
 import upc.similarity.compareapi.entity.auxiliary.ClusterAndDeps;
 import upc.similarity.compareapi.entity.input.Clusters;
 import upc.similarity.compareapi.entity.input.ReqProject;
+import upc.similarity.compareapi.entity.output.Dependencies;
 import upc.similarity.compareapi.exception.BadRequestException;
 import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.exception.NotFinishedException;
@@ -225,7 +225,8 @@ public class CompareServiceImpl implements CompareService {
         ClusterAndDeps iniClusters = clusterOperations.computeIniClusters(input.getDependencies(), requirements);
 
         model = new Model(model.getDocs(), model.getCorpusFrequency(), model.getThreshold(), model.isCompare(), iniClusters.getLastClusterId(), iniClusters.getClusters(), iniClusters.getDependencies());
-        model.getDependencies().addAll(clusterOperations.computeProposedDependencies(organization, responseId, model.getClusters().keySet(), model));
+        model.getDependencies().addAll(iniClusters.getDependencies());
+        model.getDependencies().addAll(clusterOperations.computeProposedDependencies(organization, responseId,  model.getDocs().keySet(), model.getClusters().keySet(), model));
         getAccessToUpdate(organization, responseId);
         databaseOperations.saveModel(organization, responseId, model);
         releaseAccessToUpdate(organization, responseId);
@@ -248,18 +249,43 @@ public class CompareServiceImpl implements CompareService {
         ClusterAndDeps iniClusters = clusterOperations.computeIniClusters(input.getDependencies(), requirements);
 
         model = new Model(model.getDocs(), model.getCorpusFrequency(), model.getThreshold(), model.isCompare(), iniClusters.getLastClusterId(), iniClusters.getClusters(), iniClusters.getDependencies());
+        model.getDependencies().addAll(iniClusters.getDependencies());
+        model.getDependencies().addAll(clusterOperations.computeProposedDependencies(organization, responseId,  model.getDocs().keySet(), model.getClusters().keySet(), model));
         getAccessToUpdate(organization, responseId);
         databaseOperations.saveModel(organization, responseId, model);
         releaseAccessToUpdate(organization, responseId);
 
-        Map<String,Integer> reqCluster = iniClusters.getReqCluster();
-        List<String> reqsToCompare = new ArrayList<>();
-        for (Requirement requirement: requirements) {
-            String id = requirement.getId();
-            if (reqCluster.get(id) == -1) reqsToCompare.add(id);
+        int cont = 0;
+        JSONArray array = new JSONArray();
+        Constants constants = Constants.getInstance();
+        HashSet<String> repeated = new HashSet<>();
+        Iterator it = model.getClusters().entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next();
+            List<String> clusterRequirements = (List<String>) pair.getValue();
+            if (clusterRequirements.size() == 1) {
+                String orphan = clusterRequirements.get(0);
+                List<Dependency> proposedDependencies = databaseOperations.getReqDepedencies(organization, responseId, orphan);
+                for (Dependency dependency: proposedDependencies) {
+                    Dependency aux = new Dependency(dependency.getDependencyScore(),orphan,dependency.getToid(),constants.getStatus(), constants.getDependencyType(), constants.getComponent());
+                    if (!repeated.contains(aux.getFromid()+aux.getToid())) {
+                        array.put(aux.toJSON());
+                        ++cont;
+                        if (cont >= constants.getMaxDepsForPage()) {
+                            databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
+                            array = new JSONArray();
+                            cont = 0;
+                        }
+                        repeated.add(aux.getFromid()+aux.getToid());
+                        repeated.add(aux.getToid()+aux.getFromid());
+                    }
+                }
+            }
         }
 
-        clusterOperations.reqClusters(organization, responseId, reqsToCompare, model.getDocs(), model.getClusters(), threshold);
+        if (array.length() > 0) {
+            databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
+        }
 
         databaseOperations.finishComputation(organization, responseId);
 
@@ -267,28 +293,30 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public List<Dependency> simReqClusters(String organization, List<Requirement> requirements, int maxValue) throws NotFoundException, InternalErrorException, BadRequestException {
+    public Dependencies simReqClusters(String organization, List<String> requirements, int maxValue) throws NotFoundException, InternalErrorException {
         control.showInfoMessage("SimReqClusters: Start computing");
         List<Dependency> result = new ArrayList<>();
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
+        if (!databaseOperations.existsOrganization(null, organization)) throw new NotFoundException("The organization with id " + organization + " does not exist");
         Constants constants = Constants.getInstance();
         HashSet<String> repeated = new HashSet<>();
 
-        for (Requirement requirement: requirements) {
-            String id = requirement.getId();
+        for (String id: requirements) {
             List<Dependency> proposedDependencies = databaseOperations.getReqDepedencies(organization, null, id);
             for (Dependency dependency: proposedDependencies) {
-                Dependency aux = new Dependency(-1,id,dependency.getToid(),constants.getStatus(), constants.getDependencyType(), constants.getComponent());
-                if (!repeated.contains(aux.getFromid()+aux.getToid())) result.add(aux);
-                repeated.add(aux.getFromid()+aux.getToid());
-                repeated.add(aux.getToid()+aux.getFromid());
+                Dependency aux = new Dependency(dependency.getDependencyScore(),id,dependency.getToid(),dependency.getStatus(), constants.getDependencyType(), constants.getComponent());
+                if (!repeated.contains(aux.getFromid()+aux.getToid())) {
+                    result.add(aux);
+                    repeated.add(aux.getFromid()+aux.getToid());
+                    repeated.add(aux.getToid()+aux.getFromid());
+                }
             }
         }
 
         //TODO sort dependencies and only return k values
         control.showInfoMessage("SimReqClusters: Finish computing");
-        return result;
+        return new Dependencies(result);
     }
 
     @Override

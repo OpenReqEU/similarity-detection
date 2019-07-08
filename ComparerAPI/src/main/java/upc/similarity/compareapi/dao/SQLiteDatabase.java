@@ -4,7 +4,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
-import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.exception.NotFinishedException;
 import upc.similarity.compareapi.exception.NotFoundException;
 
@@ -378,21 +377,7 @@ public class SQLiteDatabase implements DatabaseModel {
         List<Dependency> result = new ArrayList<>();
 
         try (Connection conn = getConnection(organizationId)) {
-
-            String sql = "SELECT* FROM dependencies";
-
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        String fromid = rs.getString("fromid");
-                        String toid = rs.getString("toid");
-                        String status = rs.getString("status");
-                        int clusterId = rs.getInt("clusterId");
-                        result.add(new Dependency(fromid,toid,status,clusterId));
-                    }
-                }
-            }
+            result = loadDependencies(conn);
         }
         return result;
     }
@@ -451,7 +436,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
         try (Connection conn = getConnection(organizationId)) {
 
-            String sql = "SELECT toid, status FROM dependencies WHERE fromid = ? AND (status = ? OR status = ?)";
+            String sql = "SELECT toid, status, score FROM dependencies WHERE fromid = ? AND (status = ? OR status = ?)";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, requirementId);
@@ -462,7 +447,8 @@ public class SQLiteDatabase implements DatabaseModel {
                     while (rs.next()) {
                         String toid = rs.getString("toid");
                         String status = rs.getString("status");
-                        result.add(new Dependency(requirementId,toid,status,-1));
+                        double score = rs.getDouble("score");
+                        result.add(new Dependency(requirementId,toid,status,score,-1));
                     }
                 }
             }
@@ -619,13 +605,16 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     private void saveDependencies(List<Dependency> dependencies, Connection conn) throws SQLException {
-        String sql = "INSERT OR IGNORE INTO dependencies(fromid,toid,status,clusterId) VALUES (?,?,?,?)";
+        String sqlProposed = "INSERT OR IGNORE INTO dependencies(fromid,toid,status,score,clusterId) VALUES (?,?,?,?,?)";
+        String sqlAccepted = "INSERT OR REPLACE INTO dependencies(fromid,toid,status,score,clusterId) VALUES (?,?,?,?,?)";
         for (Dependency dependency: dependencies) {
+            String sql = (dependency.getStatus().equals("proposed")) ? sqlProposed : sqlAccepted;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, dependency.getFromid());
                 ps.setString(2, dependency.getToid());
                 ps.setString(3, dependency.getStatus());
-                ps.setInt(4, dependency.getClusterId());
+                ps.setDouble(4,dependency.getDependencyScore());
+                ps.setInt(5, dependency.getClusterId());
                 ps.execute();
             }
         }
@@ -758,6 +747,7 @@ public class SQLiteDatabase implements DatabaseModel {
                 + "	fromid varchar, \n"
                 + " toid varchar, \n"
                 + " status varchar, \n"
+                + " score double, \n"
                 + " clusterId integer, \n"
                 + " PRIMARY KEY(fromid, toid)"
                 + ");";
@@ -994,8 +984,9 @@ public class SQLiteDatabase implements DatabaseModel {
                 String fromid = rs.getString("fromid");
                 String toid = rs.getString("toid");
                 String status = rs.getString("status");
+                double score = rs.getDouble("score");
                 int clusterId = rs.getInt("clusterId");
-                dependencies.add(new Dependency(fromid,toid,status,clusterId));
+                dependencies.add(new Dependency(fromid,toid,status,score,clusterId));
             }
         }
 
