@@ -8,6 +8,7 @@ import upc.similarity.compareapi.entity.Model;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.entity.auxiliary.CronAuxiliary;
 import upc.similarity.compareapi.exception.InternalErrorException;
+import upc.similarity.compareapi.exception.NotFoundException;
 
 import java.util.*;
 
@@ -151,55 +152,6 @@ public class ClusterOperations {
         return array;
     }
 
-    private void computeDependencies(List<Dependency> dependencies, Map<String,Integer> reqCluster, Map<Integer,List<String>> clusters, Integer countIds) {
-        for (Dependency dependency: dependencies) {
-            if (validDependency(dependency)) {
-                String fromid = dependency.getFromid();
-                String toid = dependency.getToid();
-                if (reqCluster.containsKey(fromid) && reqCluster.containsKey(toid)) {
-                    mergeClusters(clusters, reqCluster, fromid, toid, countIds);
-                }
-            }
-        }
-    }
-
-    private boolean validDependency(Dependency dependency) {
-        String type = dependency.getDependencyType();
-        return (type != null && (type.equals("similar") || type.equals("duplicates")) && dependency.getStatus().equals("accepted"));
-    }
-
-    private void mergeClusters(Map<Integer,List<String>> clusters, Map<String,Integer> reqCluster, String req1, String req2, Integer countIds) {
-        int clusterReq1 = reqCluster.get(req1);
-        int clusterReq2 = reqCluster.get(req2);
-        if (clusterReq1 == -1 && clusterReq2 == -1) {
-            List<String> aux = new ArrayList<>();
-            aux.add(req1);
-            aux.add(req2);
-            clusters.put(countIds, aux);
-            reqCluster.put(req1, countIds);
-            reqCluster.put(req2, countIds);
-            ++countIds;
-        } else if (clusterReq1 == -1) {
-            List<String> aux = clusters.get(clusterReq2);
-            aux.add(req1);
-            clusters.put(clusterReq2, aux);
-            reqCluster.put(req1, clusterReq2);
-        } else if (clusterReq2 == -1) {
-            List<String> aux = clusters.get(clusterReq1);
-            aux.add(req2);
-            clusters.put(clusterReq1, aux);
-            reqCluster.put(req2, clusterReq1);
-        } else if (clusterReq1 != clusterReq2) {
-            List<String> aux1 = clusters.get(clusterReq1);
-            List<String> aux2 = clusters.get(clusterReq2);
-            aux1.addAll(aux2);
-            for (String req: aux2) {
-                reqCluster.put(req,clusterReq1);
-            }
-            clusters.remove(clusterReq2);
-        }
-    }
-
     public void deleteReqsFromClusters(String organization, String responseId, List<Requirement> deletedRequirements, Model model, CronAuxiliary cronAuxiliary) throws InternalErrorException {
         HashMap<Integer,List<String>> clusterDeletedReqs = new HashMap<>();
         HashSet<String> deletedReqs = new HashSet<>();
@@ -239,6 +191,35 @@ public class ClusterOperations {
         }
 
 
+    }
+
+    public List<Dependency> computeProposedDependencies(String organization, String responseId, Set<Integer> clustersIds, Model model) throws InternalErrorException {
+        CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
+        Map<Integer,List<String>> clusters = model.getClusters();
+        Set<String> rejectedDependencies = loadRejectedDependencies(organization, responseId);
+        Set<String> requirements = model.getDocs().keySet();
+        List<Dependency> proposedDependencies = new ArrayList<>();
+        //TODO this is causing n*n efficiency, can be improved saving the result of the pairs and only compute half of the matrix (less memory efficiency)
+        for (String req1: requirements) {
+            for (int clusterId: clustersIds) {
+                List<String> clusterRequirements = clusters.get(clusterId);
+                double maxScore = model.getThreshold();
+                String maxReq = null;
+                for (String req2: clusterRequirements) {
+                    if (!rejectedDependencies.contains(req1+req2) && !req1.equals(req2)) {
+                        double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
+                        if (score >= maxScore) {
+                            maxScore = score;
+                            maxReq = req2;
+                        }
+                    }
+                }
+                if (maxReq != null) {
+                    proposedDependencies.add(new Dependency(req1,maxReq,"proposed",-1));
+                }
+            }
+        }
+        return proposedDependencies;
     }
 
     private void deleteReqsFromCluster(String organization, String responseId, int clusterId, List<String> requirementsId, Model model, CronAuxiliary cronAuxiliary) throws InternalErrorException {
@@ -378,20 +359,6 @@ public class ClusterOperations {
     Auxiliary operations
      */
 
-    private int findClusterId(String requirement, Map<Integer,List<String>> clusters) {
-        Iterator it = clusters.entrySet().iterator();
-        int cluster = -1;
-        while (it.hasNext() && cluster == -1) {
-            Map.Entry pair = (Map.Entry) it.next();
-            int id = (int) pair.getKey();
-            List<String> clusterRequirements = (List<String>) pair.getValue();
-            if (clusterRequirements.contains(requirement)) {
-                cluster = id;
-            }
-        }
-        return cluster;
-    }
-
     private class Clusters {
         HashMap<Integer,List<String>> candidateClusters;
         HashMap<String,Integer> reqCluster;
@@ -399,6 +366,21 @@ public class ClusterOperations {
             this.candidateClusters = candidateClusters;
             this.reqCluster = reqCluster;
         }
+    }
+
+    private Set<String> loadRejectedDependencies(String organization, String responseId) throws InternalErrorException {
+        Set<String> result = new HashSet<>();
+        DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
+        if (databaseOperations.existsOrganization(responseId, organization)) {
+            List<Dependency> dependencies = DatabaseOperations.getInstance().getRejectedDependencies(organization, responseId);
+            for (Dependency dependency : dependencies) {
+                String fromId = dependency.getFromid();
+                String toId = dependency.getToid();
+                result.add(fromId + toId);
+                result.add(toId + fromId);
+            }
+        }
+        return result;
     }
 
     private Clusters bfsClusters(HashMap<String,List<String>> reqDeps, List<String> clusterRequirements, List<String> requirementIds, HashSet<String> avoidReqs) {
@@ -443,5 +425,54 @@ public class ClusterOperations {
             reqDeps.put(toid, aux2);
         }
         return reqDeps;
+    }
+
+    private void computeDependencies(List<Dependency> dependencies, Map<String,Integer> reqCluster, Map<Integer,List<String>> clusters, Integer countIds) {
+        for (Dependency dependency: dependencies) {
+            if (validDependency(dependency)) {
+                String fromid = dependency.getFromid();
+                String toid = dependency.getToid();
+                if (reqCluster.containsKey(fromid) && reqCluster.containsKey(toid)) {
+                    mergeClusters(clusters, reqCluster, fromid, toid, countIds);
+                }
+            }
+        }
+    }
+
+    private boolean validDependency(Dependency dependency) {
+        String type = dependency.getDependencyType();
+        return (type != null && (type.equals("similar") || type.equals("duplicates")) && dependency.getStatus().equals("accepted"));
+    }
+
+    private void mergeClusters(Map<Integer,List<String>> clusters, Map<String,Integer> reqCluster, String req1, String req2, Integer countIds) {
+        int clusterReq1 = reqCluster.get(req1);
+        int clusterReq2 = reqCluster.get(req2);
+        if (clusterReq1 == -1 && clusterReq2 == -1) {
+            List<String> aux = new ArrayList<>();
+            aux.add(req1);
+            aux.add(req2);
+            clusters.put(countIds, aux);
+            reqCluster.put(req1, countIds);
+            reqCluster.put(req2, countIds);
+            ++countIds;
+        } else if (clusterReq1 == -1) {
+            List<String> aux = clusters.get(clusterReq2);
+            aux.add(req1);
+            clusters.put(clusterReq2, aux);
+            reqCluster.put(req1, clusterReq2);
+        } else if (clusterReq2 == -1) {
+            List<String> aux = clusters.get(clusterReq1);
+            aux.add(req2);
+            clusters.put(clusterReq1, aux);
+            reqCluster.put(req2, clusterReq1);
+        } else if (clusterReq1 != clusterReq2) {
+            List<String> aux1 = clusters.get(clusterReq1);
+            List<String> aux2 = clusters.get(clusterReq2);
+            aux1.addAll(aux2);
+            for (String req: aux2) {
+                reqCluster.put(req,clusterReq1);
+            }
+            clusters.remove(clusterReq2);
+        }
     }
 }

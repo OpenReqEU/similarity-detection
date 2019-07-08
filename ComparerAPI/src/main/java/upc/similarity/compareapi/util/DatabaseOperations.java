@@ -8,10 +8,7 @@ import upc.similarity.compareapi.dao.DatabaseModel;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
-import upc.similarity.compareapi.exception.BadRequestException;
-import upc.similarity.compareapi.exception.InternalErrorException;
-import upc.similarity.compareapi.exception.NotFinishedException;
-import upc.similarity.compareapi.exception.NotFoundException;
+import upc.similarity.compareapi.exception.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DatabaseOperations {
+    //TODO catch right connectionErrorExceptions
 
     private static DatabaseOperations instance = new DatabaseOperations();
     private DatabaseModel databaseModel = getValue();
@@ -42,6 +40,16 @@ public class DatabaseOperations {
 
     public static DatabaseOperations getInstance() {
         return instance;
+    }
+
+    public boolean existsOrganization(String responseId, String organizationId) throws InternalErrorException {
+        boolean result = false;
+        try {
+            result = databaseModel.existsOrganization(organizationId);
+        } catch ( SQLException sq) {
+            treatSQLException(sq.getMessage(),organizationId,responseId,"Error while checking existence of an organization in the database");
+        }
+        return result;
     }
 
     public void generateResponsePage(String responseId, String organization, JSONArray array, String arrayName) throws InternalErrorException {
@@ -77,6 +85,7 @@ public class DatabaseOperations {
     }
 
     public void saveInternalException(String organization, String responseId, InternalErrorException e) throws InternalErrorException {
+        Control.getInstance().showErrorMessage(e.getMessage());
         try {
             if (organization != null && responseId != null) {
                 databaseModel.saveException(organization, responseId, createJsonException(500, Constants.getInstance().getInternalErrorMessage(), e.getMessage()));
@@ -188,6 +197,26 @@ public class DatabaseOperations {
             result = databaseModel.getClusterDependencies(organizationId,clusterId);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organizationId, responseId, "Error while loading the cluster dependencies from the database");
+        }
+        return result;
+    }
+
+    public List<Dependency> getRejectedDependencies(String organizationId, String responseId) throws InternalErrorException {
+        List<Dependency> result = new ArrayList<>();
+        try {
+            result = databaseModel.getRejectedDependencies(organizationId);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while loading the rejected dependencies from the database");
+        }
+        return result;
+    }
+
+    public List<Dependency> getReqDepedencies(String organizationId, String responseId, String requirementId) throws InternalErrorException {
+        List<Dependency> result = new ArrayList<>();
+        try {
+            result = databaseModel.getReqDependencies(organizationId, requirementId);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while loading the "+requirementId+" dependencies from the database");
         }
         return result;
     }

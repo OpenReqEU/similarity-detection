@@ -225,6 +225,7 @@ public class CompareServiceImpl implements CompareService {
         ClusterAndDeps iniClusters = clusterOperations.computeIniClusters(input.getDependencies(), requirements);
 
         model = new Model(model.getDocs(), model.getCorpusFrequency(), model.getThreshold(), model.isCompare(), iniClusters.getLastClusterId(), iniClusters.getClusters(), iniClusters.getDependencies());
+        model.getDependencies().addAll(clusterOperations.computeProposedDependencies(organization, responseId, model.getClusters().keySet(), model));
         getAccessToUpdate(organization, responseId);
         databaseOperations.saveModel(organization, responseId, model);
         releaseAccessToUpdate(organization, responseId);
@@ -266,26 +267,28 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public String simReqClusters(String responseId, String organization, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException {
+    public List<Dependency> simReqClusters(String organization, List<Requirement> requirements, int maxValue) throws NotFoundException, InternalErrorException, BadRequestException {
         control.showInfoMessage("SimReqClusters: Start computing");
+        List<Dependency> result = new ArrayList<>();
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         Constants constants = Constants.getInstance();
-        ClusterOperations clusterOperations = ClusterOperations.getInstance();
+        HashSet<String> repeated = new HashSet<>();
 
-        Model model = databaseOperations.loadModel(organization, responseId, true);
-        if (!model.hasClusters()) throw new BadRequestException("The model does not have clusters");
-        List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements,null,null);
-        //addRequirementsToModel(organization, null, notDuplicatedRequirements, model.isCompare(), model); //TODO check if the method is working when responseId = null
-        databaseOperations.saveModel(organization, responseId, model);
+        for (Requirement requirement: requirements) {
+            String id = requirement.getId();
+            List<Dependency> proposedDependencies = databaseOperations.getReqDepedencies(organization, null, id);
+            for (Dependency dependency: proposedDependencies) {
+                Dependency aux = new Dependency(-1,id,dependency.getToid(),constants.getStatus(), constants.getDependencyType(), constants.getComponent());
+                if (!repeated.contains(aux.getFromid()+aux.getToid())) result.add(aux);
+                repeated.add(aux.getFromid()+aux.getToid());
+                repeated.add(aux.getToid()+aux.getFromid());
+            }
+        }
 
-        List<String> requirementsToCompare = new ArrayList<>();
-        for (Requirement requirement: notDuplicatedRequirements) requirementsToCompare.add(requirement.getId());
-        JSONObject result = new JSONObject();
-        result.put(constants.getDependenciesArrayName(), clusterOperations.reqClustersNotDb(requirementsToCompare, model.getDocs(), model.getClusters(), model.getThreshold()));
-
+        //TODO sort dependencies and only return k values
         control.showInfoMessage("SimReqClusters: Finish computing");
-        return result.toString();
+        return result;
     }
 
     @Override

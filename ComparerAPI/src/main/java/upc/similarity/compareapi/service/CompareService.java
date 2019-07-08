@@ -42,7 +42,7 @@ public interface CompareService {
 
     void buildClusters(String responseId, boolean compare, double threshold, String organization, Clusters requirements) throws BadRequestException, InternalErrorException;
 
-    String simReqClusters(String responseId, String organization, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException;
+    List<Dependency> simReqClusters(String organization, List<Requirement> requirements, int maxValue) throws NotFoundException, InternalErrorException, BadRequestException;
 
     String TestAccuracy(boolean compare, Clusters input);
 

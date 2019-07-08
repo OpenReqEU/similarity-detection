@@ -14,11 +14,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
+import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.util.Tfidf;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -311,7 +313,7 @@ public class ControllerTests {
         }
     }
 
-    protected String read_file_raw(String path) throws Exception {
+    private String read_file_raw(String path) throws Exception {
         String result = "";
         String line = "";
         try(FileReader fileReader =new FileReader(path);
@@ -321,6 +323,17 @@ public class ControllerTests {
             }
             return result;
         }
+    }
+
+    private JSONArray listDependenciesToJson(List<Dependency> dependencies) {
+
+        JSONArray jsonDeps = new JSONArray();
+
+        for (Dependency dep: dependencies) {
+            jsonDeps.put(dep.toJSON());
+        }
+
+        return jsonDeps;
     }
 
 

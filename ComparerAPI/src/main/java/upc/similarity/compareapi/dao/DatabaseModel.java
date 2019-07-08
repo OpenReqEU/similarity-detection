@@ -2,7 +2,6 @@ package upc.similarity.compareapi.dao;
 
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
-import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.exception.NotFinishedException;
 import upc.similarity.compareapi.exception.NotFoundException;
 
@@ -12,9 +11,11 @@ import java.util.List;
 
 public interface DatabaseModel {
 
-    void saveModel(String organization, Model model) throws InternalErrorException, IOException, SQLException;
+    boolean existsOrganization(String organizationId) throws SQLException;
 
-    Model getModel(String organization, boolean withFrequency) throws SQLException, NotFoundException;
+    void saveModel(String organizationId, Model model) throws IOException, SQLException;
+
+    Model getModel(String organizationId, boolean withFrequency) throws SQLException, NotFoundException;
 
     void saveResponse(String organizationId, String responseId) throws SQLException;
 
@@ -36,6 +37,12 @@ public interface DatabaseModel {
 
     List<Dependency> getClusterDependencies(String organizationId, int clusterId) throws SQLException;
 
+    List<Dependency> getRejectedDependencies(String organizationId) throws SQLException;
+
+    List<Dependency> getReqDependencies(String organizationId, String requirementId) throws SQLException;
+
+    List<Dependency> getDependencies(String organizationId) throws SQLException;
+
     /*boolean existsDependency(String fromid, String toid, String organizationId) throws SQLException;
 
     void updateDependency(String fromid, String toid, String organizationId, String newStatus, int newCluster) throws SQLException, NotFoundException;
@@ -46,9 +53,9 @@ public interface DatabaseModel {
 
     void deleteReqDependencies(String reqId, String organizationId) throws SQLException;*/
 
-    void clearOrganizationResponses(String organization) throws SQLException, NotFoundException;
+    void clearOrganizationResponses(String organizationId) throws SQLException, NotFoundException;
 
-    void clearOrganization(String organization) throws NotFoundException, InternalErrorException, SQLException;
+    void clearOrganization(String organizationId) throws NotFoundException, SQLException;
 
     void clearDatabase() throws IOException, SQLException;
 

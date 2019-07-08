@@ -18,8 +18,7 @@ import java.util.*;
 
 public class SQLiteDatabase implements DatabaseModel {
 
-    //TODO is needed a lock for the mainDb! or use the same connection <-
-    //TODO clusterId in dependencies table is really needed?
+    //TODO is needed a lock for the mainDb!
 
     private static String dbMainName = "main";
     private static String dbPath = "../data/";
@@ -56,7 +55,7 @@ public class SQLiteDatabase implements DatabaseModel {
         Files.walk(dirPath)
                 .map(Path::toFile)
                 .forEach(file -> {
-                            if (!file.isDirectory() && file.getName().contains(".db")) { //TODO also delete wal files
+                            if (!file.isDirectory() && file.getName().contains(".db")) {
                                 file.delete(); //TODO check its result
                             }
                         }
@@ -90,7 +89,24 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void clearOrganization(String organizationId) throws NotFoundException, InternalErrorException, SQLException {
+    public boolean existsOrganization(String organizationId) throws SQLException {
+
+        boolean result = true;
+
+        try (Connection conn = getConnection(dbMainName);
+             PreparedStatement ps = conn.prepareStatement("SELECT* FROM organizations WHERE id = ?")) {
+            ps.setString(1, organizationId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) result = false;
+            }
+        }
+
+        return result;
+    }
+
+    @Override
+    public void clearOrganization(String organizationId) throws NotFoundException, SQLException {
         if (!existsOrganization(organizationId)) throw new NotFoundException("The organization " + organizationId + " does not exist");
         try(Connection conn = getConnection(organizationId)) {
             clearOrganizationTables(conn);
@@ -146,7 +162,7 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void saveModel(String organization, Model model) throws InternalErrorException, IOException, SQLException {
+    public void saveModel(String organization, Model model) throws IOException, SQLException {
 
         insertNewOrganization(organization, model.getThreshold(), model.isCompare(), model.hasClusters(), model.getLastClusterId());
 
@@ -358,18 +374,41 @@ public class SQLiteDatabase implements DatabaseModel {
     }*/
 
     @Override
+    public List<Dependency> getDependencies(String organizationId) throws SQLException {
+        List<Dependency> result = new ArrayList<>();
+
+        try (Connection conn = getConnection(organizationId)) {
+
+            String sql = "SELECT* FROM dependencies";
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String fromid = rs.getString("fromid");
+                        String toid = rs.getString("toid");
+                        String status = rs.getString("status");
+                        int clusterId = rs.getInt("clusterId");
+                        result.add(new Dependency(fromid,toid,status,clusterId));
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    @Override
     public List<Dependency> getClusterDependencies(String organizationId, int clusterId) throws SQLException {
 
         List<Dependency> result = new ArrayList<>();
 
         try (Connection conn = getConnection(organizationId)) {
 
-            String sql = "SELECT fromid, toid FROM dependencies WHERE organizationId = ? AND clusterId = ? AND status = ?";
+            String sql = "SELECT fromid, toid FROM dependencies WHERE clusterId = ? AND status = ?";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, organizationId);
-                ps.setInt(2, clusterId);
-                ps.setString(3, "accepted");
+                ps.setInt(1, clusterId);
+                ps.setString(2, "accepted");
 
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
@@ -379,7 +418,54 @@ public class SQLiteDatabase implements DatabaseModel {
                     }
                 }
             }
-            conn.commit();
+        }
+        return result;
+    }
+
+    @Override
+    public List<Dependency> getRejectedDependencies(String organizationId) throws SQLException {
+        List<Dependency> result = new ArrayList<>();
+
+        try (Connection conn = getConnection(organizationId)) {
+
+            String sql = "SELECT fromid, toid FROM dependencies WHERE status = ?";
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, "rejected");
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String fromid = rs.getString("fromid");
+                        String toid = rs.getString("toid");
+                        result.add(new Dependency(fromid,toid));
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public List<Dependency> getReqDependencies(String organizationId, String requirementId) throws SQLException {
+        List<Dependency> result = new ArrayList<>();
+
+        try (Connection conn = getConnection(organizationId)) {
+
+            String sql = "SELECT toid, status FROM dependencies WHERE fromid = ? AND (status = ? OR status = ?)";
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, requirementId);
+                ps.setString(2, "accepted");
+                ps.setString(3, "proposed");
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String toid = rs.getString("toid");
+                        String status = rs.getString("status");
+                        result.add(new Dependency(requirementId,toid,status,-1));
+                    }
+                }
+            }
         }
         return result;
     }
@@ -533,13 +619,13 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     private void saveDependencies(List<Dependency> dependencies, Connection conn) throws SQLException {
-        String sql = "INSERT INTO dependencies(fromid,toid,status,clusterId) VALUES (?,?,?,?)";
+        String sql = "INSERT OR IGNORE INTO dependencies(fromid,toid,status,clusterId) VALUES (?,?,?,?)";
         for (Dependency dependency: dependencies) {
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1,dependency.getFromid());
-                ps.setString(2,dependency.getToid());
-                ps.setString(3,dependency.getStatus());
-                ps.setInt(4,dependency.getClusterId());
+                ps.setString(1, dependency.getFromid());
+                ps.setString(2, dependency.getToid());
+                ps.setString(3, dependency.getStatus());
+                ps.setInt(4, dependency.getClusterId());
                 ps.execute();
             }
         }
@@ -588,22 +674,6 @@ public class SQLiteDatabase implements DatabaseModel {
                     } else throw new NotFoundException("The organization " + organizationId + " does not exist");
                 }
         }
-        return result;
-    }
-
-    private boolean existsOrganization(String organizationId) throws SQLException {
-
-        boolean result = true;
-
-        try (Connection conn = getConnection(dbMainName);
-             PreparedStatement ps = conn.prepareStatement("SELECT* FROM organizations WHERE id = ?")) {
-            ps.setString(1, organizationId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) result = false;
-            }
-        }
-
         return result;
     }
 
@@ -692,19 +762,19 @@ public class SQLiteDatabase implements DatabaseModel {
                 + " PRIMARY KEY(fromid, toid)"
                 + ");";
 
-        String sql5 = "CREATE TABLE proposed_dependencies (\n"
+        /*String sql5 = "CREATE TABLE proposed_dependencies (\n"
                 + "	fromid varchar, \n"
                 + " toid varchar, \n"
                 + " status varchar, \n"
                 + " PRIMARY KEY(fromid, toid)"
-                + ");";
+                + ");";*/
 
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql1);
             stmt.execute(sql2);
             stmt.execute(sql3);
             stmt.execute(sql4);
-            stmt.execute(sql5);
+            //stmt.execute(sql5);
         }
     }
 
@@ -714,14 +784,14 @@ public class SQLiteDatabase implements DatabaseModel {
         String sql2 = "DELETE FROM corpus";
         String sql3 = "DELETE FROM clusters";
         String sql4 = "DELETE FROM dependencies";
-        String sql5 = "DELETE FROM proposed_dependencies";
+        //String sql5 = "DELETE FROM proposed_dependencies";
 
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql1);
             stmt.execute(sql2);
             stmt.execute(sql3);
             stmt.execute(sql4);
-            stmt.execute(sql5);
+            //stmt.execute(sql5);
         }
 
     }
