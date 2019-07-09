@@ -33,7 +33,7 @@ public class CompareServiceImpl implements CompareService {
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId);
         getAccessToUpdate(organization, responseId);
-        databaseOperations.saveModel(organization, responseId, generateModel(compare, threshold, deleteDuplicates(requirements,organization,responseId)));
+        databaseOperations.saveModel(organization, responseId, generateModel(compare, threshold, deleteDuplicates(requirements,organization,responseId)), false);
         releaseAccessToUpdate(organization, responseId);
         databaseOperations.generateEmptyResponse(organization, responseId);
 
@@ -54,7 +54,7 @@ public class CompareServiceImpl implements CompareService {
         }
 
         getAccessToUpdate(organization, responseId);
-        databaseOperations.saveModel(organization, responseId, model);
+        databaseOperations.saveModel(organization, responseId, model, false);
         releaseAccessToUpdate(organization, responseId);
 
         project(requirementsIds, model, threshold, responseId, organization);
@@ -82,7 +82,7 @@ public class CompareServiceImpl implements CompareService {
 
         List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements,organization,responseId);
         addRequirementsToModel(notDuplicatedRequirements, model);
-        databaseOperations.saveModel(organization, responseId, model);
+        databaseOperations.saveModel(organization, responseId, model, false);
         releaseAccessToUpdate(organization, responseId);
         databaseOperations.generateEmptyResponse(organization, responseId);
 
@@ -109,7 +109,7 @@ public class CompareServiceImpl implements CompareService {
         for (Requirement requirement: notDuplicatedRequirements) requirementsIds.add(requirement.getId());
 
         Tfidf.getInstance().deleteReqsAndRecomputeModel(requirementsIds,model);
-        databaseOperations.saveModel(organization, responseId, model);
+        databaseOperations.saveModel(organization, responseId, model, false);
         releaseAccessToUpdate(organization, responseId);
         databaseOperations.generateEmptyResponse(organization, responseId);
 
@@ -160,7 +160,7 @@ public class CompareServiceImpl implements CompareService {
         }
 
         reqProject(requirementsToCompare, projectRequirements, model, model.getThreshold(), organization, responseId);
-        databaseOperations.saveModel(organization, responseId, model);
+        databaseOperations.saveModel(organization, responseId, model, false);
 
         databaseOperations.finishComputation(organization, responseId);
 
@@ -226,9 +226,9 @@ public class CompareServiceImpl implements CompareService {
 
         model = new Model(model.getDocs(), model.getCorpusFrequency(), model.getThreshold(), model.isCompare(), iniClusters.getLastClusterId(), iniClusters.getClusters(), iniClusters.getDependencies());
         model.getDependencies().addAll(iniClusters.getDependencies());
-        model.getDependencies().addAll(clusterOperations.computeProposedDependencies(organization, responseId,  model.getDocs().keySet(), model.getClusters().keySet(), model));
+        model.getDependencies().addAll(clusterOperations.computeProposedDependencies(organization, responseId,  model.getDocs().keySet(), model.getClusters().keySet(), model, false));
         getAccessToUpdate(organization, responseId);
-        databaseOperations.saveModel(organization, responseId, model);
+        databaseOperations.saveModel(organization, responseId, model, false);
         releaseAccessToUpdate(organization, responseId);
 
         databaseOperations.generateEmptyResponse(organization, responseId);
@@ -250,9 +250,9 @@ public class CompareServiceImpl implements CompareService {
 
         model = new Model(model.getDocs(), model.getCorpusFrequency(), model.getThreshold(), model.isCompare(), iniClusters.getLastClusterId(), iniClusters.getClusters(), iniClusters.getDependencies());
         model.getDependencies().addAll(iniClusters.getDependencies());
-        model.getDependencies().addAll(clusterOperations.computeProposedDependencies(organization, responseId,  model.getDocs().keySet(), model.getClusters().keySet(), model));
+        model.getDependencies().addAll(clusterOperations.computeProposedDependencies(organization, responseId,  model.getDocs().keySet(), model.getClusters().keySet(), model, false));
         getAccessToUpdate(organization, responseId);
-        databaseOperations.saveModel(organization, responseId, model);
+        databaseOperations.saveModel(organization, responseId, model, false);
         releaseAccessToUpdate(organization, responseId);
 
         int cont = 0;
@@ -265,7 +265,7 @@ public class CompareServiceImpl implements CompareService {
             List<String> clusterRequirements = (List<String>) pair.getValue();
             if (clusterRequirements.size() == 1) {
                 String orphan = clusterRequirements.get(0);
-                List<Dependency> proposedDependencies = databaseOperations.getReqDepedencies(organization, responseId, orphan);
+                List<Dependency> proposedDependencies = databaseOperations.getReqDepedencies(organization, responseId, orphan, false);
                 for (Dependency dependency: proposedDependencies) {
                     Dependency aux = new Dependency(dependency.getDependencyScore(),orphan,dependency.getToid(),constants.getStatus(), constants.getDependencyType(), constants.getComponent());
                     if (!repeated.contains(aux.getFromid()+aux.getToid())) {
@@ -303,7 +303,7 @@ public class CompareServiceImpl implements CompareService {
         HashSet<String> repeated = new HashSet<>();
 
         for (String id: requirements) {
-            List<Dependency> proposedDependencies = databaseOperations.getReqDepedencies(organization, null, id);
+            List<Dependency> proposedDependencies = databaseOperations.getReqDepedencies(organization, null, id, false);
             for (Dependency dependency: proposedDependencies) {
                 Dependency aux = new Dependency(dependency.getDependencyScore(),id,dependency.getToid(),dependency.getStatus(), constants.getDependencyType(), constants.getComponent());
                 if (!repeated.contains(aux.getFromid()+aux.getToid())) {
@@ -380,6 +380,52 @@ public class CompareServiceImpl implements CompareService {
 
         databaseOperations.generateEmptyResponse(organization, responseId);
         control.showInfoMessage("CronMethod: Finish computing");
+    }
+
+    @Override
+    public void treatAcceptedAndRejectedDependencies(String organization, List<Dependency> dependencies) throws NotFoundException, BadRequestException, InternalErrorException {
+        control.showInfoMessage("TreatAcceptedAndRejectedDependencies: Start computing");
+
+        DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
+        getAccessToUpdate(organization, null);
+        Model model = databaseOperations.loadModel(organization, null, false);
+        Map<String,Map<String,Double>> docs = model.getDocs();
+
+        HashSet<String> repeatedAccepted = new HashSet<>();
+        HashSet<String> repeatedRejected = new HashSet<>();
+        List<Dependency> acceptedDependencies = new ArrayList<>();
+        List<Dependency> rejectedDependencies = new ArrayList<>();
+        for (Dependency dependency: dependencies) {
+            String status = dependency.getStatus();
+            String fromid = dependency.getFromid();
+            String toid = dependency.getToid();
+            if (!docs.containsKey(fromid)) throw new NotFoundException("The requirement with id " + fromid + " does not exists in the organization's model");
+            if (!docs.containsKey(toid)) throw new NotFoundException("The requirement with id " + toid + " does not exists in the organization's model");
+            if (status.equals("accepted")) {
+                if (!repeatedAccepted.contains(fromid+toid)) {
+                    repeatedAccepted.add(fromid+toid);
+                    repeatedAccepted.add(toid+fromid);
+                    acceptedDependencies.add(dependency);
+                } else throw new BadRequestException("There are two input accepted dependencies with the same two requirements: " + fromid + " and " + toid);
+            }
+            if (status.equals("rejected")) {
+                if (!repeatedRejected.contains(fromid+toid)) {
+                    repeatedRejected.add(fromid+toid);
+                    repeatedRejected.add(toid+fromid);
+                    rejectedDependencies.add(dependency);
+                } else throw new BadRequestException("There are two input rejected dependencies with the same two requirements: " + fromid + " and " + toid);
+            }
+        }
+
+        databaseOperations.createDepsAuxiliaryTable(organization, null);
+
+        ClusterOperations clusterOperations = ClusterOperations.getInstance();
+        clusterOperations.addAcceptedDependencies(organization,null, acceptedDependencies, model);
+        clusterOperations.addDeletedDependencies(organization, null, rejectedDependencies, model);
+        databaseOperations.updateModelClustersAndDependencies(organization, null, model, true);
+        releaseAccessToUpdate(organization, null);
+
+        control.showInfoMessage("TreatAcceptedAndRejectedDependencies: Finish computing");
     }
 
     @Override

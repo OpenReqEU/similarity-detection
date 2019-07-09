@@ -139,10 +139,10 @@ public class DatabaseOperations {
         return model;
     }
 
-    public void saveModel(String organization, String responseId, Model model) throws InternalErrorException {
+    public void saveModel(String organization, String responseId, Model model, boolean useDepsAuxiliaryTable) throws InternalErrorException {
         String errorMessage = "Error while saving the new model to the database";
         try {
-            databaseModel.saveModel(organization, model);
+            databaseModel.saveModel(organization, model, useDepsAuxiliaryTable);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organization, responseId, errorMessage);
         } catch (IOException e) {
@@ -187,46 +187,107 @@ public class DatabaseOperations {
         }
     }
 
-    public List<Dependency> getClusterDependencies(String organizationId, String responseId, int clusterId) throws InternalErrorException {
+    public void createDepsAuxiliaryTable(String organizationId, String responseId) throws InternalErrorException {
+        try {
+            databaseModel.createDepsAuxiliaryTable(organizationId);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while creating an auxiliary table");
+        }
+    }
+
+    public Dependency getDependency(String organizationId, String responseId, String fromid, String toid, boolean useAuxiliaryTable) throws NotFoundException, InternalErrorException {
+        Dependency result = null;
+        try {
+            result = databaseModel.getDependency(fromid, toid, organizationId, useAuxiliaryTable);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while loading a dependency from the database");
+        }
+        return result;
+    }
+
+    public void updateModelClustersAndDependencies(String organization, String responseId, Model model, boolean useDepsAuxiliaryTable) throws InternalErrorException {
+        String errorMessage = "Error while saving the new model to the database";
+        try {
+            databaseModel.updateClustersAndDependencies(organization, model, useDepsAuxiliaryTable);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organization, responseId, errorMessage);
+        } catch (IOException e) {
+            saveInternalException(organization, responseId, new InternalErrorException(errorMessage));
+        }
+    }
+
+    public void updateClusterDependencies(String organizationId, String responseId, int oldClusterId, int newClusterId, boolean useAuxiliaryTable) throws InternalErrorException {
+        try {
+            databaseModel.updateClusterDependencies(organizationId, oldClusterId, newClusterId, useAuxiliaryTable);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while loading the cluster dependencies from the database");
+        }
+    }
+
+    public void updateClusterDependencies(String organizationId, String responseId, String requirementId, int newClusterId, boolean useAuxiliaryTable) throws InternalErrorException {
+        try {
+            databaseModel.updateClusterDependencies(organizationId, requirementId, newClusterId, useAuxiliaryTable);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while loading the cluster dependencies from the database");
+        }
+    }
+
+    public void saveDependency(String organizationId, String responseId, Dependency dependency, boolean useAuxiliaryTable) throws InternalErrorException {
+        try {
+            databaseModel.saveDependency(organizationId, dependency, useAuxiliaryTable);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while saving a dependency to the database");
+        }
+    }
+
+    public void updateDependencyStatus(String organizationId, String responseId, String fromid, String toid, String newStatus, boolean useAuxiliaryTable) throws InternalErrorException {
+        try {
+            databaseModel.updateDependencyStatus(organizationId, fromid, toid, newStatus, useAuxiliaryTable);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while updating a dependency from the database");
+        }
+    }
+
+    public List<Dependency> getClusterDependencies(String organizationId, String responseId, int clusterId, boolean useAuxiliaryTable) throws InternalErrorException {
         List<Dependency> result = new ArrayList<>();
         try {
-            result = databaseModel.getClusterDependencies(organizationId,clusterId);
+            result = databaseModel.getClusterDependencies(organizationId,clusterId,useAuxiliaryTable);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organizationId, responseId, "Error while loading the cluster dependencies from the database");
         }
         return result;
     }
 
-    public List<Dependency> getRejectedDependencies(String organizationId, String responseId) throws InternalErrorException {
+    public List<Dependency> getRejectedDependencies(String organizationId, String responseId, boolean useAuxiliaryTable) throws InternalErrorException {
         List<Dependency> result = new ArrayList<>();
         try {
-            result = databaseModel.getRejectedDependencies(organizationId);
+            result = databaseModel.getRejectedDependencies(organizationId, useAuxiliaryTable);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organizationId, responseId, "Error while loading the rejected dependencies from the database");
         }
         return result;
     }
 
-    public List<Dependency> getReqDepedencies(String organizationId, String responseId, String requirementId) throws InternalErrorException {
+    public List<Dependency> getReqDepedencies(String organizationId, String responseId, String requirementId, boolean useAuxiliaryTable) throws InternalErrorException {
         List<Dependency> result = new ArrayList<>();
         try {
-            result = databaseModel.getReqDependencies(organizationId, requirementId);
+            result = databaseModel.getReqDependencies(organizationId, requirementId, useAuxiliaryTable);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organizationId, responseId, "Error while loading the "+requirementId+" dependencies from the database");
         }
         return result;
     }
 
-    /*
-    public void deleteReqDependencies(String organizationId, String responseId, String requirementId) throws InternalErrorException {
+
+    public void deleteReqDependencies(String organizationId, String responseId, String requirementId, boolean useAuxiliaryTable) throws InternalErrorException {
         try {
-            databaseModel.deleteReqDependencies(requirementId, organizationId);
+            databaseModel.deleteReqDependencies(organizationId, requirementId, useAuxiliaryTable);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organizationId, responseId, "Error while delete the deleted requirement dependencies");
         }
     }
 
-    public Dependency getDependency(String organizationId, String responseId, String fromid, String toid) throws InternalErrorException, NotFoundException {
+    /*public Dependency getDependency(String organizationId, String responseId, String fromid, String toid) throws InternalErrorException, NotFoundException {
         Dependency result = null;
         try {
             result = databaseModel.getDependency(fromid, toid, organizationId);

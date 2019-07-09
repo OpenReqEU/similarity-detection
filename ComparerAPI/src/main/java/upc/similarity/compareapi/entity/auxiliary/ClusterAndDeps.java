@@ -13,7 +13,9 @@ public class ClusterAndDeps {
     private List<Dependency> dependencies;
 
     public ClusterAndDeps(int lastClusterId, Map<Integer,List<String>> clusters, Map<String, Integer> reqCluster, List<Dependency> dependencies) {
+        this.lastClusterId = lastClusterId;
         this.clusters = clusters;
+        this.reqCluster = reqCluster;
         this.dependencies = dependencies;
     }
 

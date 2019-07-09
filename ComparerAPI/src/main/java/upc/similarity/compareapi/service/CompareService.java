@@ -51,4 +51,6 @@ public interface CompareService {
 
     void cronMethod(String responseId, String organization, Clusters input) throws BadRequestException, NotFoundException, InternalErrorException;
 
+    void treatAcceptedAndRejectedDependencies(String organization, List<Dependency> dependencies) throws NotFoundException, BadRequestException, InternalErrorException;
+
 }

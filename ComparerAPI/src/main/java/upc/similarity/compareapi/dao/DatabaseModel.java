@@ -13,7 +13,9 @@ public interface DatabaseModel {
 
     boolean existsOrganization(String organizationId) throws SQLException;
 
-    void saveModel(String organizationId, Model model) throws IOException, SQLException;
+    void saveModel(String organizationId, Model model, boolean useDepsAuxiliaryTable) throws IOException, SQLException;
+
+    void updateClustersAndDependencies(String organization, Model model, boolean useDepsAuxiliaryTable) throws IOException, SQLException;
 
     Model getModel(String organizationId, boolean withFrequency) throws SQLException, NotFoundException;
 
@@ -31,27 +33,29 @@ public interface DatabaseModel {
 
     //List<Dependency> getResponsePage(String organizationId, String responseId, int pageNumber) throws SQLException, NotFoundException;
 
-    /*void saveDependency(Dependency dependency) throws SQLException;
+    void createDepsAuxiliaryTable(String organizationId) throws SQLException;
 
-    Dependency getDependency(String fromid, String toid, String organizationId) throws SQLException, NotFoundException;*/
+    void saveDependency(String organizationId, Dependency dependency, boolean useAuxiliaryTable) throws SQLException;
 
-    List<Dependency> getClusterDependencies(String organizationId, int clusterId) throws SQLException;
+    Dependency getDependency(String fromid, String toid, String organizationId, boolean useAuxiliaryTable) throws SQLException, NotFoundException;
 
-    List<Dependency> getRejectedDependencies(String organizationId) throws SQLException;
+    List<Dependency> getClusterDependencies(String organizationId, int clusterId, boolean useAuxiliaryTable) throws SQLException;
 
-    List<Dependency> getReqDependencies(String organizationId, String requirementId) throws SQLException;
+    List<Dependency> getRejectedDependencies(String organizationId, boolean useAuxiliaryTable) throws SQLException;
+
+    List<Dependency> getReqDependencies(String organizationId, String requirementId, boolean useAuxiliaryTable) throws SQLException;
 
     List<Dependency> getDependencies(String organizationId) throws SQLException;
 
-    /*boolean existsDependency(String fromid, String toid, String organizationId) throws SQLException;
+    //boolean existsDependency(String fromid, String toid, String organizationId) throws SQLException;
 
-    void updateDependency(String fromid, String toid, String organizationId, String newStatus, int newCluster) throws SQLException, NotFoundException;
+    void updateDependencyStatus(String organizationId, String fromid, String toid, String newStatus, boolean useAuxiliaryTable) throws SQLException;
 
-    void updateClusterDependencies(String organizationId, int oldClusterId, int newClusterId) throws SQLException;
+    void updateClusterDependencies(String organizationId, int oldClusterId, int newClusterId, boolean useAuxiliaryTable) throws SQLException;
 
-    void updateClusterDependencies(String organizationId, String requirementId, String status, int newClusterId) throws SQLException;
+    void updateClusterDependencies(String organizationId, String requirementId, int newClusterId, boolean useAuxiliaryTable) throws SQLException;
 
-    void deleteReqDependencies(String reqId, String organizationId) throws SQLException;*/
+    void deleteReqDependencies(String organizationId, String reqId, boolean useAuxiliaryTable) throws SQLException;
 
     void clearOrganizationResponses(String organizationId) throws SQLException, NotFoundException;
 

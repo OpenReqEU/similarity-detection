@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.entity.input.Clusters;
 import upc.similarity.compareapi.entity.input.ReqProject;
@@ -99,19 +100,6 @@ public class RestApiController {
         }
     }
 
-    @PostMapping(value = "/SimReqClusters")
-    public ResponseEntity simReqClusters(@RequestParam("organization") String organization,
-                                         @RequestParam("maxValue") int maxValue,
-                                        @RequestBody List<String> requirements) {
-        try {
-            return new ResponseEntity<>(compareService.simReqClusters(organization,requirements,maxValue),HttpStatus.OK);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
     @PostMapping(value = "/SimReqProject")
     public ResponseEntity simReqProject(@RequestParam("organization") String organization,
                                            @RequestParam("filename") String responseId,
@@ -160,6 +148,22 @@ public class RestApiController {
         }
     }
 
+    @PostMapping(value = "/BuildClusters")
+    public ResponseEntity buildClusters(@RequestParam("organization") String organization,
+                                        @RequestParam("compare") boolean compare,
+                                        @RequestParam("threshold") double threshold,
+                                        @RequestParam("filename") String responseId,
+                                        @RequestBody Clusters input) {
+        try {
+            compareService.buildClusters(responseId,compare,threshold,organization,input);
+            return new ResponseEntity<>(null,HttpStatus.OK);
+        } catch (BadRequestException e) {
+            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
+        } catch (InternalErrorException e) {
+            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @PostMapping(value = "/BuildClustersAndCompute")
     public ResponseEntity buildClustersAndCompute(@RequestParam("organization") String organization,
                                                   @RequestParam("compare") boolean compare,
@@ -176,15 +180,27 @@ public class RestApiController {
         }
     }
 
-    @PostMapping(value = "/BuildClusters")
-    public ResponseEntity buildClusters(@RequestParam("organization") String organization,
-                                        @RequestParam("compare") boolean compare,
-                                        @RequestParam("threshold") double threshold,
-                                        @RequestParam("filename") String responseId,
-                                        @RequestBody Clusters input) {
+    @PostMapping(value = "/SimReqClusters")
+    public ResponseEntity simReqClusters(@RequestParam("organization") String organization,
+                                         @RequestParam("maxValue") int maxValue,
+                                         @RequestBody List<String> requirements) {
         try {
-            compareService.buildClusters(responseId,compare,threshold,organization,input);
+            return new ResponseEntity<>(compareService.simReqClusters(organization,requirements,maxValue),HttpStatus.OK);
+        } catch (NotFoundException e) {
+            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
+        } catch (InternalErrorException e) {
+            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping(value = "/TreatAcceptedAndRejectedDependencies")
+    public ResponseEntity treatAcceptedAndRejectedDependencies(@RequestParam("organization") String organization,
+                                         @RequestBody List<Dependency> dependencies) {
+        try {
+            compareService.treatAcceptedAndRejectedDependencies(organization, dependencies);
             return new ResponseEntity<>(null,HttpStatus.OK);
+        } catch (NotFoundException e) {
+            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
         } catch (BadRequestException e) {
             return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
         } catch (InternalErrorException e) {

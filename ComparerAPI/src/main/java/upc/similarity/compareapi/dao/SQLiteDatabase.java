@@ -66,8 +66,7 @@ public class SQLiteDatabase implements DatabaseModel {
         file.createNewFile(); //TODO check its result
     }
 
-    //TODO improve performance, synchronized pragma is not very efficient
-    private synchronized void insertNewOrganization(String organization, double threshold,  boolean compare, boolean hasClusters, int lastClusterId) throws SQLException, IOException {
+    private void insertNewOrganization(String organization, double threshold,  boolean compare, boolean hasClusters, int lastClusterId) throws SQLException, IOException {
 
         if (!existsOrganization(organization)) {
             createOrganizationFiles(organization);
@@ -161,18 +160,35 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void saveModel(String organization, Model model) throws IOException, SQLException {
+    public void saveModel(String organization, Model model, boolean useDepsAuxiliaryTable) throws IOException, SQLException {
 
         insertNewOrganization(organization, model.getThreshold(), model.isCompare(), model.hasClusters(), model.getLastClusterId());
 
         try (Connection conn = getConnection(organization)) {
             conn.setAutoCommit(false);
             clearOrganizationTables(conn);
+            clearClusterTables(conn);
             saveDocs(model.getDocs(), conn);
             saveCorpusFrequency(model.getCorpusFrequency(), conn);
             if (model.hasClusters()) {
                 saveClusters(model.getClusters(), conn);
-                saveDependencies(model.getDependencies(), conn);
+                saveDependencies(model.getDependencies(), conn, useDepsAuxiliaryTable);
+            }
+            conn.commit();
+        }
+    }
+
+    @Override
+    public void updateClustersAndDependencies(String organization, Model model, boolean useDepsAuxiliaryTable) throws IOException, SQLException {
+
+        insertNewOrganization(organization, model.getThreshold(), model.isCompare(), model.hasClusters(), model.getLastClusterId());
+
+        try (Connection conn = getConnection(organization)) {
+            conn.setAutoCommit(false);
+            clearClusterTables(conn);
+            if (model.hasClusters()) {
+                saveClusters(model.getClusters(), conn);
+                saveDependencies(model.getDependencies(), conn, useDepsAuxiliaryTable);
             }
             conn.commit();
         }
@@ -209,21 +225,6 @@ public class SQLiteDatabase implements DatabaseModel {
 
         return (hasClusters) ? new Model(docs, corpusFrequency, threshold, compare, lastClusterId, clusters, dependencies) : new Model(docs, corpusFrequency, threshold, compare);
     }
-
-    /*@Override
-    public void saveDependency(Dependency dependency) throws SQLException {
-
-        String sql = "INSERT INTO dependencies(fromid, toid, status, organizationId, clusterId) VALUES (?,?,?,?)";
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, dependency.getFromid());
-            ps.setString(2, dependency.getToid());
-            ps.setString(3, dependency.getStatus());
-            ps.setInt(4, dependency.getClusterId());
-            ps.execute();
-            conn.commit();
-        }
-    }*/
 
     @Override
     public void saveResponse(String organizationId, String responseId) throws SQLException {
@@ -339,38 +340,75 @@ public class SQLiteDatabase implements DatabaseModel {
         }
 
         return dependencies;
+    }*/
+
+    @Override
+    public void createDepsAuxiliaryTable(String organizationId) throws SQLException {
+        String sql1 = "CREATE TABLE aux_dependencies (\n"
+                + "	fromid varchar, \n"
+                + " toid varchar, \n"
+                + " status varchar, \n"
+                + " score double, \n"
+                + " clusterId integer, \n"
+                + " PRIMARY KEY(fromid, toid)"
+                + ");";
+
+        String sql2 = "INSERT INTO aux_dependencies SELECT * FROM dependencies;";
+
+        try (Connection conn = getConnection(organizationId);
+             Statement stmt = conn.createStatement()) {
+            conn.setAutoCommit(false);
+            stmt.execute(sql1);
+            stmt.execute(sql2);
+            conn.commit();
+        }
+
     }
 
     @Override
-    public Dependency getDependency(String fromid, String toid, String organizationId) throws SQLException, NotFoundException {
+    public void saveDependency(String organizationId, Dependency dependency, boolean useAuxiliaryTable) throws SQLException {
+        String sql = "INSERT INTO dependencies(fromid, toid, status, score, clusterId) VALUES (?,?,?,?,?)";
+        if (useAuxiliaryTable) sql = "INSERT INTO aux_dependencies(fromid, toid, status, score, clusterId) VALUES (?,?,?,?,?)";
+        try (Connection conn = getConnection(organizationId);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, dependency.getFromid());
+            ps.setString(2, dependency.getToid());
+            ps.setString(3, dependency.getStatus());
+            ps.setDouble(4, dependency.getDependencyScore());
+            ps.setInt(5, dependency.getClusterId());
+            ps.execute();
+        }
+    }
 
-        Dependency result = new Dependency(fromid,toid);
+    @Override
+    public Dependency getDependency(String fromid, String toid, String organizationId, boolean useAuxiliaryTables) throws SQLException, NotFoundException {
 
-        try (Connection conn = getConnection()) {
+        Dependency result = null;
 
-            String sql = "SELECT status, clusterId FROM dependencies WHERE organizationId = ? AND ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
+        try (Connection conn = getConnection(organizationId)) {
+
+            String sql = "SELECT status, clusterId, score FROM dependencies WHERE (fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?)";
+            if (useAuxiliaryTables) sql = "SELECT status, clusterId, score FROM aux_dependencies WHERE (fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?)";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, organizationId);
-                ps.setString(2, fromid);
+                ps.setString(1, fromid);
+                ps.setString(2, toid);
                 ps.setString(3, toid);
-                ps.setString(4, toid);
-                ps.setString(5, fromid);
+                ps.setString(4, fromid);
 
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         String status = rs.getString(1);
                         int clusterId = rs.getInt(2);
-                        result.setStatus(status);
-                        result.setClusterId(clusterId);
+                        double score = rs.getDouble(3);
+                        result = new Dependency(fromid, toid, status, score, clusterId);
                     } else throw new NotFoundException("The dependency between " + fromid + " and " + toid + " does not exist ");
                 }
             }
-            conn.commit();
         }
 
         return result;
-    }*/
+    }
 
     @Override
     public List<Dependency> getDependencies(String organizationId) throws SQLException {
@@ -383,14 +421,14 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public List<Dependency> getClusterDependencies(String organizationId, int clusterId) throws SQLException {
+    public List<Dependency> getClusterDependencies(String organizationId, int clusterId, boolean useAuxiliaryTable) throws SQLException {
 
         List<Dependency> result = new ArrayList<>();
 
         try (Connection conn = getConnection(organizationId)) {
 
             String sql = "SELECT fromid, toid FROM dependencies WHERE clusterId = ? AND status = ?";
-
+            if (useAuxiliaryTable) sql = "SELECT fromid, toid FROM aux_dependencies WHERE clusterId = ? AND status = ?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, clusterId);
                 ps.setString(2, "accepted");
@@ -408,12 +446,13 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public List<Dependency> getRejectedDependencies(String organizationId) throws SQLException {
+    public List<Dependency> getRejectedDependencies(String organizationId, boolean useAuxiliaryTable) throws SQLException {
         List<Dependency> result = new ArrayList<>();
 
         try (Connection conn = getConnection(organizationId)) {
 
             String sql = "SELECT fromid, toid FROM dependencies WHERE status = ?";
+            if (useAuxiliaryTable) sql = "SELECT fromid, toid FROM aux_dependencies WHERE status = ?";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, "rejected");
@@ -431,12 +470,13 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public List<Dependency> getReqDependencies(String organizationId, String requirementId) throws SQLException {
+    public List<Dependency> getReqDependencies(String organizationId, String requirementId, boolean useAuxiliaryTable) throws SQLException {
         List<Dependency> result = new ArrayList<>();
 
         try (Connection conn = getConnection(organizationId)) {
 
             String sql = "SELECT toid, status, score FROM dependencies WHERE fromid = ? AND (status = ? OR status = ?)";
+            if (useAuxiliaryTable) sql = "SELECT toid, status, score FROM aux_dependencies WHERE fromid = ? AND (status = ? OR status = ?)";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, requirementId);
@@ -480,67 +520,60 @@ public class SQLiteDatabase implements DatabaseModel {
         }
 
         return result;
-    }
+    }*/
 
     @Override
-    public void updateDependency(String fromid, String toid, String organizationId, String newStatus, int newCluster) throws SQLException, NotFoundException {
-        String sql = "UPDATE dependencies SET status = ?, clusterId = ? WHERE organizationId = ? ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
-
-        try (Connection conn = getConnection();
+    public void updateDependencyStatus(String organizationId, String fromid, String toid, String newStatus, boolean useAuxiliaryTable) throws SQLException {
+        String sql = "UPDATE dependencies SET status = ? WHERE ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
+        if (useAuxiliaryTable) sql = "UPDATE aux_dependencies SET status = ? WHERE ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
+        try (Connection conn = getConnection(organizationId);
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, organizationId);
+            ps.setString(1, newStatus);
             ps.setString(2, fromid);
             ps.setString(3, toid);
             ps.setString(4, toid);
             ps.setString(5, fromid);
             ps.executeUpdate();
-            conn.commit();
         }
     }
 
     @Override
-    public void updateClusterDependencies(String organizationId, int oldClusterId, int newClusterId) throws SQLException {
-        String sql = "UPDATE dependencies SET clusterId = ? WHERE organizationId = ? AND clusterId = ?";
-
-        try (Connection conn = getConnection();
+    public void updateClusterDependencies(String organizationId, int oldClusterId, int newClusterId, boolean useAuxiliaryTable) throws SQLException {
+        String sql = "UPDATE dependencies SET clusterId = ? WHERE clusterId = ?";
+        if (useAuxiliaryTable) sql = "UPDATE aux_dependencies SET clusterId = ? WHERE clusterId = ?";
+        try (Connection conn = getConnection(organizationId);
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1,newClusterId);
-            ps.setString(2, organizationId);
-            ps.setInt(3, oldClusterId);
+            ps.setInt(2, oldClusterId);
             ps.executeUpdate();
-            conn.commit();
         }
     }
 
     @Override
-    public void updateClusterDependencies(String organizationId, String requirementId, String status, int newClusterId) throws SQLException {
-        String sql = "UPDATE dependencies SET clusterId = ? WHERE organizationId = ? AND status = ? AND (fromid = ? OR toid = ?)";
-
-        try (Connection conn = DriverManager.getConnection(dbUrl);
+    public void updateClusterDependencies(String organizationId, String requirementId, int newClusterId, boolean useAuxiliaryTable) throws SQLException {
+        String sql = "UPDATE dependencies SET clusterId = ? WHERE status = ? AND (fromid = ? OR toid = ?)";
+        if (useAuxiliaryTable) sql = "UPDATE aux_dependencies SET clusterId = ? WHERE status = ? AND (fromid = ? OR toid = ?)";
+        try (Connection conn = getConnection(organizationId);
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1,newClusterId);
-            ps.setString(2, organizationId);
-            ps.setString(3, status);
+            ps.setString(2, "accepted");
+            ps.setString(3, requirementId);
             ps.setString(4, requirementId);
-            ps.setString(5, requirementId);
             ps.executeUpdate();
-            conn.commit();
         }
     }
 
     @Override
-    public void deleteReqDependencies(String reqId, String organizationId) throws SQLException {
-        String sql = "DELETE FROM dependencies WHERE organizationId = ? AND (fromid = ? OR toid = ?)";
-
-        try (Connection conn = getConnection();
+    public void deleteReqDependencies(String organizationId, String reqId, boolean useAuxiliaryTable) throws SQLException {
+        String sql = "DELETE FROM dependencies WHERE (fromid = ? OR toid = ?)";
+        if (useAuxiliaryTable) sql = "DELETE FROM aux_dependencies WHERE (fromid = ? OR toid = ?)";
+        try (Connection conn = getConnection(organizationId);
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1,organizationId);
-            ps.setString(2,reqId);
-            ps.setString(3, reqId);
+            ps.setString(1,reqId);
+            ps.setString(2, reqId);
             ps.executeUpdate();
-            conn.commit();
         }
-    }*/
+    }
 
     @Override
     public void finishComputation(String organizationId, String responseId) throws SQLException {
@@ -604,18 +637,27 @@ public class SQLiteDatabase implements DatabaseModel {
         return totalPages;
     }
 
-    private void saveDependencies(List<Dependency> dependencies, Connection conn) throws SQLException {
-        String sqlProposed = "INSERT OR IGNORE INTO dependencies(fromid,toid,status,score,clusterId) VALUES (?,?,?,?,?)";
-        String sqlAccepted = "INSERT OR REPLACE INTO dependencies(fromid,toid,status,score,clusterId) VALUES (?,?,?,?,?)";
-        for (Dependency dependency: dependencies) {
-            String sql = (dependency.getStatus().equals("proposed")) ? sqlProposed : sqlAccepted;
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, dependency.getFromid());
-                ps.setString(2, dependency.getToid());
-                ps.setString(3, dependency.getStatus());
-                ps.setDouble(4,dependency.getDependencyScore());
-                ps.setInt(5, dependency.getClusterId());
-                ps.execute();
+    private void saveDependencies(List<Dependency> dependencies, Connection conn, boolean useDepsAuxiliaryTable) throws SQLException {
+        if (useDepsAuxiliaryTable) {
+            String sql1 = "INSERT INTO dependencies SELECT * FROM aux_dependencies;";
+            String sql2 = "DROP TABLE aux_dependencies;";
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute(sql1);
+                stmt.execute(sql2);
+            }
+        } else {
+            String sqlProposed = "INSERT OR IGNORE INTO dependencies(fromid,toid,status,score,clusterId) VALUES (?,?,?,?,?)";
+            String sqlAccepted = "INSERT OR REPLACE INTO dependencies(fromid,toid,status,score,clusterId) VALUES (?,?,?,?,?)";
+            for (Dependency dependency : dependencies) {
+                String sql = (dependency.getStatus().equals("proposed")) ? sqlProposed : sqlAccepted;
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, dependency.getFromid());
+                    ps.setString(2, dependency.getToid());
+                    ps.setString(3, dependency.getStatus());
+                    ps.setDouble(4, dependency.getDependencyScore());
+                    ps.setInt(5, dependency.getClusterId());
+                    ps.execute();
+                }
             }
         }
     }
@@ -752,19 +794,11 @@ public class SQLiteDatabase implements DatabaseModel {
                 + " PRIMARY KEY(fromid, toid)"
                 + ");";
 
-        /*String sql5 = "CREATE TABLE proposed_dependencies (\n"
-                + "	fromid varchar, \n"
-                + " toid varchar, \n"
-                + " status varchar, \n"
-                + " PRIMARY KEY(fromid, toid)"
-                + ");";*/
-
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql1);
             stmt.execute(sql2);
             stmt.execute(sql3);
             stmt.execute(sql4);
-            //stmt.execute(sql5);
         }
     }
 
@@ -772,16 +806,22 @@ public class SQLiteDatabase implements DatabaseModel {
 
         String sql1 = "DELETE FROM docs";
         String sql2 = "DELETE FROM corpus";
-        String sql3 = "DELETE FROM clusters";
-        String sql4 = "DELETE FROM dependencies";
-        //String sql5 = "DELETE FROM proposed_dependencies";
 
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql1);
             stmt.execute(sql2);
-            stmt.execute(sql3);
-            stmt.execute(sql4);
-            //stmt.execute(sql5);
+        }
+
+    }
+
+    private void clearClusterTables(Connection conn) throws SQLException {
+
+        String sql1 = "DELETE FROM clusters";
+        String sql2 = "DELETE FROM dependencies";
+
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql1);
+            stmt.execute(sql2);
         }
 
     }
