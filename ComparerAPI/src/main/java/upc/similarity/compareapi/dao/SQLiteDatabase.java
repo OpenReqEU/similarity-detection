@@ -160,7 +160,7 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void saveModel(String organization, Model model, boolean useDepsAuxiliaryTable) throws IOException, SQLException {
+    public void saveModel(String organization, Model model) throws IOException, SQLException {
 
         insertNewOrganization(organization);
 
@@ -173,7 +173,7 @@ public class SQLiteDatabase implements DatabaseModel {
             saveCorpusFrequency(model.getCorpusFrequency(), conn);
             if (model.hasClusters()) {
                 saveClusters(model.getClusters(), conn);
-                saveDependencies(model.getDependencies(), conn, useDepsAuxiliaryTable);
+                saveDependencies(model.getDependencies(), conn, false);
             }
             conn.commit();
         }
@@ -188,7 +188,8 @@ public class SQLiteDatabase implements DatabaseModel {
             if (model.hasClusters()) {
                 updateOrganizationClustersInfo(organization,model.getLastClusterId(),conn);
                 saveClusters(model.getClusters(), conn);
-                saveDependencies(model.getDependencies(), conn, useDepsAuxiliaryTable);
+                if (!useDepsAuxiliaryTable) saveDependencies(model.getDependencies(), conn, false);
+                else insertAuxiliaryDepsTable(conn);
             }
             conn.commit();
         }
@@ -368,9 +369,9 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void saveDependency(String organizationId, Dependency dependency, boolean useAuxiliaryTable) throws SQLException {
-        String sql = "INSERT INTO dependencies(fromid, toid, status, score, clusterId) VALUES (?,?,?,?,?)";
-        if (useAuxiliaryTable) sql = "INSERT INTO aux_dependencies(fromid, toid, status, score, clusterId) VALUES (?,?,?,?,?)";
+    public void saveDependencyOrReplace(String organizationId, Dependency dependency, boolean useAuxiliaryTable) throws SQLException {
+        String sql = "INSERT OR REPLACE INTO dependencies(fromid, toid, status, score, clusterId) VALUES (?,?,?,?,?)";
+        if (useAuxiliaryTable) sql = "INSERT OR REPLACE INTO aux_dependencies(fromid, toid, status, score, clusterId) VALUES (?,?,?,?,?)";
         try (Connection conn = getConnection(organizationId);
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, dependency.getFromid());
@@ -379,6 +380,13 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.setDouble(4, dependency.getDependencyScore());
             ps.setInt(5, dependency.getClusterId());
             ps.execute();
+        }
+    }
+
+    @Override
+    public void saveDependencies(String organizationId, List<Dependency> dependencies, boolean useAuxiliaryTable) throws SQLException {
+        try (Connection conn = getConnection(organizationId)) {
+            saveDependencies(dependencies, conn, useAuxiliaryTable);
         }
     }
 
@@ -445,6 +453,18 @@ public class SQLiteDatabase implements DatabaseModel {
             }
         }
         return result;
+    }
+
+    @Override
+    public void deleteProposedClusterDependencies(String organizationId, int clusterId, boolean useAuxiliaryTable) throws SQLException {
+        String sql = "DELETE FROM dependencies WHERE clusterId = ? AND status = ?";
+        if (useAuxiliaryTable) sql = "DELETE FROM aux_dependencies WHERE clusterId = ? AND status = ?";
+        try (Connection conn = getConnection(organizationId);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, clusterId);
+            ps.setString(2, "proposed");
+            ps.executeUpdate();
+        }
     }
 
     @Override
@@ -640,27 +660,31 @@ public class SQLiteDatabase implements DatabaseModel {
         return totalPages;
     }
 
-    private void saveDependencies(List<Dependency> dependencies, Connection conn, boolean useDepsAuxiliaryTable) throws SQLException {
-        if (useDepsAuxiliaryTable) {
-            String sql1 = "INSERT INTO dependencies SELECT * FROM aux_dependencies;";
-            String sql2 = "DROP TABLE aux_dependencies;";
-            try (Statement stmt = conn.createStatement()) {
-                stmt.execute(sql1);
-                stmt.execute(sql2);
-            }
-        } else {
-            String sqlProposed = "INSERT OR IGNORE INTO dependencies(fromid,toid,status,score,clusterId) VALUES (?,?,?,?,?)";
-            String sqlAccepted = "INSERT OR REPLACE INTO dependencies(fromid,toid,status,score,clusterId) VALUES (?,?,?,?,?)";
-            for (Dependency dependency : dependencies) {
-                String sql = (dependency.getStatus().equals("proposed")) ? sqlProposed : sqlAccepted;
-                try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                    ps.setString(1, dependency.getFromid());
-                    ps.setString(2, dependency.getToid());
-                    ps.setString(3, dependency.getStatus());
-                    ps.setDouble(4, dependency.getDependencyScore());
-                    ps.setInt(5, dependency.getClusterId());
-                    ps.execute();
-                }
+    private void insertAuxiliaryDepsTable(Connection conn) throws SQLException {
+        String sql1 = "INSERT INTO dependencies SELECT * FROM aux_dependencies;";
+        String sql2 = "DROP TABLE aux_dependencies;";
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql1);
+            stmt.execute(sql2);
+        }
+    }
+
+    private void saveDependencies(List<Dependency> dependencies, Connection conn, boolean useAuxiliaryTable) throws SQLException {
+        String sqlProposed = "INSERT OR IGNORE INTO dependencies(fromid,toid,status,score,clusterId) VALUES (?,?,?,?,?)";
+        String sqlAccepted = "INSERT OR REPLACE INTO dependencies(fromid,toid,status,score,clusterId) VALUES (?,?,?,?,?)";
+        if (useAuxiliaryTable) {
+            sqlProposed = "INSERT OR IGNORE INTO aux_dependencies(fromid,toid,status,score,clusterId) VALUES (?,?,?,?,?)";
+            sqlAccepted = "INSERT OR REPLACE INTO aux_dependencies(fromid,toid,status,score,clusterId) VALUES (?,?,?,?,?)";
+        }
+        for (Dependency dependency : dependencies) {
+            String sql = (dependency.getStatus().equals("proposed")) ? sqlProposed : sqlAccepted;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, dependency.getFromid());
+                ps.setString(2, dependency.getToid());
+                ps.setString(3, dependency.getStatus());
+                ps.setDouble(4, dependency.getDependencyScore());
+                ps.setInt(5, dependency.getClusterId());
+                ps.execute();
             }
         }
     }

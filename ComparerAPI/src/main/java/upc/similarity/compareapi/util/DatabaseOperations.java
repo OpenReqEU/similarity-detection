@@ -141,10 +141,10 @@ public class DatabaseOperations {
         return model;
     }
 
-    public void saveModel(String organization, String responseId, Model model, boolean useDepsAuxiliaryTable) throws InternalErrorException {
+    public void saveModel(String organization, String responseId, Model model) throws InternalErrorException {
         String errorMessage = "Error while saving the new model to the database";
         try {
-            databaseModel.saveModel(organization, model, useDepsAuxiliaryTable);
+            databaseModel.saveModel(organization, model);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organization, responseId, errorMessage);
         } catch (IOException e) {
@@ -232,9 +232,25 @@ public class DatabaseOperations {
         }
     }
 
-    public void saveDependency(String organizationId, String responseId, Dependency dependency, boolean useAuxiliaryTable) throws InternalErrorException {
+    public void deleteProposedClusterDependencies(String organizationId, String responseId, int clusterId, boolean useAuxiliaryTable) throws InternalErrorException {
         try {
-            databaseModel.saveDependency(organizationId, dependency, useAuxiliaryTable);
+            databaseModel.deleteProposedClusterDependencies(organizationId, clusterId, useAuxiliaryTable);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while deleting the cluster dependencies from the database");
+        }
+    }
+
+    public void saveDependencyOrReplace(String organizationId, String responseId, Dependency dependency, boolean useAuxiliaryTable) throws InternalErrorException {
+        try {
+            databaseModel.saveDependencyOrReplace(organizationId, dependency, useAuxiliaryTable);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while saving a dependency to the database");
+        }
+    }
+
+    public void saveDependencies(String organizationId, String responseId, List<Dependency> dependencies, boolean useAuxiliaryTable) throws InternalErrorException {
+        try {
+            databaseModel.saveDependencies(organizationId, dependencies, useAuxiliaryTable);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organizationId, responseId, "Error while saving a dependency to the database");
         }

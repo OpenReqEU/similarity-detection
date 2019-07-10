@@ -13,7 +13,7 @@ public interface DatabaseModel {
 
     boolean existsOrganization(String organizationId) throws SQLException;
 
-    void saveModel(String organizationId, Model model, boolean useDepsAuxiliaryTable) throws IOException, SQLException;
+    void saveModel(String organizationId, Model model) throws IOException, SQLException;
 
     void updateClustersAndDependencies(String organization, Model model, boolean useDepsAuxiliaryTable) throws SQLException;
 
@@ -35,11 +35,15 @@ public interface DatabaseModel {
 
     void createDepsAuxiliaryTable(String organizationId) throws SQLException;
 
-    void saveDependency(String organizationId, Dependency dependency, boolean useAuxiliaryTable) throws SQLException;
+    void saveDependencyOrReplace(String organizationId, Dependency dependency, boolean useAuxiliaryTable) throws SQLException;
+
+    void saveDependencies(String organizationId, List<Dependency> dependencies, boolean useAuxiliaryTable) throws SQLException;
 
     Dependency getDependency(String fromid, String toid, String organizationId, boolean useAuxiliaryTable) throws SQLException, NotFoundException;
 
     List<Dependency> getClusterDependencies(String organizationId, int clusterId, boolean useAuxiliaryTable) throws SQLException;
+
+    void deleteProposedClusterDependencies(String organizationId, int clusterId, boolean useAuxiliaryTable) throws SQLException;
 
     List<Dependency> getRejectedDependencies(String organizationId, boolean useAuxiliaryTable) throws SQLException;
 

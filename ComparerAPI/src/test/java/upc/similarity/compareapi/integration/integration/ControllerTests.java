@@ -17,7 +17,6 @@ import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
 import upc.similarity.compareapi.util.DatabaseOperations;
-import upc.similarity.compareapi.util.TestMethods;
 import upc.similarity.compareapi.util.Tfidf;
 import static org.junit.Assert.assertEquals;
 
@@ -179,6 +178,7 @@ public class ControllerTests {
 
     @Test
     public void addClusters() throws Exception {
+        //TODO check this strange thing
         this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "0")
                 .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"generateClusters/input.json")))
                 .andExpect(status().isOk());
@@ -219,6 +219,7 @@ public class ControllerTests {
         this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "1.1")
                 .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"treatDependencies/input_model.json")))
                 .andExpect(status().isOk());
+        ++id;
         this.mockMvc.perform(post(url + "TreatAcceptedAndRejectedDependencies").param("organization", "UPC")
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"treatDependencies/input_treat.json")))
                 .andExpect(status().isOk());
@@ -226,6 +227,21 @@ public class ControllerTests {
         List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
         assertEquals(read_file_array(path+"treatDependencies/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"treatDependencies/output_model.json"), extractModel("UPC",false, false));
+    }
+
+    @Test
+    public void treatDependenciesWithProposed() throws Exception {
+        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "0")
+                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"treatDependencies/input_model.json")))
+                .andExpect(status().isOk());
+        ++id;
+        this.mockMvc.perform(post(url + "TreatAcceptedAndRejectedDependencies").param("organization", "UPC")
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"treatDependencies/input_treat.json")))
+                .andExpect(status().isOk());
+        SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
+        List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
+        assertEquals(read_file_array(path+"treatDependencies/output_dependencies_with_proposed.json"),listDependenciesToJson(dependencies).toString());
+        assertEquals(read_file_json(path+"treatDependencies/output_model_with_proposed.json"), extractModel("UPC",false, false));
     }
 
     @Test
