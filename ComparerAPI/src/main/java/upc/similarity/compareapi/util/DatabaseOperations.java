@@ -133,6 +133,8 @@ public class DatabaseOperations {
         Model model = null;
         try {
             model =  databaseModel.getModel(organization, withFrequency);
+        } catch (NotFoundException e) {
+            saveNotFoundException(organization, responseId, e);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organization, responseId, "Error while loading the model from the database");
         }
@@ -211,8 +213,6 @@ public class DatabaseOperations {
             databaseModel.updateClustersAndDependencies(organization, model, useDepsAuxiliaryTable);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organization, responseId, errorMessage);
-        } catch (IOException e) {
-            saveInternalException(organization, responseId, new InternalErrorException(errorMessage));
         }
     }
 
@@ -240,9 +240,9 @@ public class DatabaseOperations {
         }
     }
 
-    public void updateDependencyStatus(String organizationId, String responseId, String fromid, String toid, String newStatus, boolean useAuxiliaryTable) throws InternalErrorException {
+    public void updateDependencyStatus(String organizationId, String responseId, String fromid, String toid, String newStatus, int newClusterId, boolean useAuxiliaryTable) throws InternalErrorException {
         try {
-            databaseModel.updateDependencyStatus(organizationId, fromid, toid, newStatus, useAuxiliaryTable);
+            databaseModel.updateDependencyStatus(organizationId, fromid, toid, newStatus, newClusterId, useAuxiliaryTable);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organizationId, responseId, "Error while updating a dependency from the database");
         }

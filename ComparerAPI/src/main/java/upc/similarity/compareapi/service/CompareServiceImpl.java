@@ -73,12 +73,7 @@ public class CompareServiceImpl implements CompareService {
 
         getAccessToUpdate(organization, responseId);
 
-        Model model = null;
-        try {
-            model = databaseOperations.loadModel(organization, responseId,true);
-        } catch (NotFoundException e) {
-            databaseOperations.saveNotFoundException(organization, responseId, e);
-        }
+        Model model = databaseOperations.loadModel(organization, responseId,true);
 
         List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements,organization,responseId);
         addRequirementsToModel(notDuplicatedRequirements, model);
@@ -97,12 +92,8 @@ public class CompareServiceImpl implements CompareService {
         databaseOperations.generateResponse(organization,responseId);
 
         getAccessToUpdate(organization, responseId);
-        Model model = null;
-        try {
-            model = databaseOperations.loadModel(organization, responseId,true);
-        } catch (NotFoundException e) {
-            databaseOperations.saveNotFoundException(organization, responseId, e);
-        }
+        Model model = databaseOperations.loadModel(organization, responseId,true);
+
 
         List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements,organization,responseId);
         List<String> requirementsIds = new ArrayList<>();
@@ -135,12 +126,7 @@ public class CompareServiceImpl implements CompareService {
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId);
 
-        Model model = null;
-        try {
-            model = databaseOperations.loadModel(organization, responseId, true);
-        } catch (NotFoundException e) {
-            databaseOperations.saveNotFoundException(organization, responseId, e);
-        }
+        Model model = databaseOperations.loadModel(organization, responseId, true);
 
         List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements,organization,responseId);
 
@@ -174,14 +160,11 @@ public class CompareServiceImpl implements CompareService {
 
         databaseOperations.generateResponse(organization,responseId);
 
-        Model model = null;
+        Model model = databaseOperations.loadModel(organization, responseId, false);
         try {
-            model = databaseOperations.loadModel(organization, responseId, false);
             for (String req: projectRequirements.getReqsToCompare()) {
                 if (projectRequirements.getProjectReqs().contains(req)) throw new BadRequestException("The requirement with id " + req + " is already inside the project");
             }
-        } catch (NotFoundException e) {
-            databaseOperations.saveNotFoundException(organization, responseId, e);
         } catch (BadRequestException e) {
             databaseOperations.saveBadRequestException(organization, responseId, e);
         }
@@ -199,12 +182,7 @@ public class CompareServiceImpl implements CompareService {
 
         databaseOperations.generateResponse(organization,responseId);
 
-        Model model = null;
-        try {
-            model = databaseOperations.loadModel(organization, responseId, false);
-        } catch (NotFoundException e) {
-            databaseOperations.saveNotFoundException(organization, responseId, e);
-        }
+        Model model = databaseOperations.loadModel(organization, responseId, false);
 
         project(projectRequirements, model, model.getThreshold(), responseId, organization);
 
@@ -329,12 +307,7 @@ public class CompareServiceImpl implements CompareService {
 
         getAccessToUpdate(organization, responseId);
 
-        Model model = null;
-        try {
-            model = databaseOperations.loadModel(organization, responseId, true);
-        } catch (NotFoundException e) {
-            databaseOperations.saveNotFoundException(organization, responseId, e);
-        }
+        Model model = databaseOperations.loadModel(organization, responseId, true);
 
         try {
             if (!model.hasClusters()) throw new BadRequestException("The model does not have clusters");

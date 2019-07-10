@@ -10,9 +10,9 @@ public class Model {
     private double threshold;
     private boolean compare;
     private boolean cluster;
-    private Integer lastClusterId;
+    private int lastClusterId;
     private Map<Integer, List<String>> clusters;
-    private List<Dependency> dependencies; //accepted and rejected dependencies (proposed dependencies are not included)
+    private List<Dependency> dependencies;
 
     public Model(){}
 
@@ -25,7 +25,7 @@ public class Model {
         this.lastClusterId = -1;
     }
 
-    public Model(Map<String, Map<String, Double>> docs, Map<String, Integer> corpusFrequency, double threshold, boolean compare, Integer lastClusterId, Map<Integer, List<String>> clusters, List<Dependency> dependencies) {
+    public Model(Map<String, Map<String, Double>> docs, Map<String, Integer> corpusFrequency, double threshold, boolean compare, int lastClusterId, Map<Integer, List<String>> clusters, List<Dependency> dependencies) {
         this.docs = docs;
         this.corpusFrequency = corpusFrequency;
         this.threshold = threshold;
@@ -60,7 +60,7 @@ public class Model {
         return cluster;
     }
 
-    public Integer getLastClusterId() {
+    public int getLastClusterId() {
         return lastClusterId;
     }
 
@@ -96,7 +96,7 @@ public class Model {
         this.cluster = cluster;
     }
 
-    public void setLastClusterId(Integer lastClusterId) {
+    public void setLastClusterId(int lastClusterId) {
         this.lastClusterId = lastClusterId;
     }
 

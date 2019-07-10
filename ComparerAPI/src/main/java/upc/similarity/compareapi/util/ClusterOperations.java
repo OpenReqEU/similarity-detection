@@ -324,14 +324,13 @@ public class ClusterOperations {
                 //empty
             }
             if (!exists || status.equals("proposed")) {
-                int lastClusterId = mergeClusters(clusters, reqCluster, fromid, toid, model.getLastClusterId());
-                model.setLastClusterId(lastClusterId);
+                mergeClusters(clusters, reqCluster, fromid, toid, model.getLastClusterId());
                 int newId = reqCluster.get(fromid);
                 if (!exists) {
                     databaseOperations.saveDependency(organization, responseId, new Dependency(fromid, toid, "accepted", dependency.getDependencyScore(), newId), true);
                     databaseOperations.saveDependency(organization, responseId, new Dependency(toid, fromid, "accepted", dependency.getDependencyScore(), newId), true);
                 } else {
-                    databaseOperations.updateDependencyStatus(organization, responseId, fromid, toid, "accepted", true);
+                    databaseOperations.updateDependencyStatus(organization, responseId, fromid, toid, "accepted", newId, true);
                 }
                 if (oldId1 != newId && oldId1 != -1) databaseOperations.updateClusterDependencies(organization, responseId, oldId1, newId, true);
                 if (oldId2 != newId && oldId2 != -1) databaseOperations.updateClusterDependencies(organization, responseId, oldId2, newId, true);
@@ -354,7 +353,7 @@ public class ClusterOperations {
                 int clusterId = aux.getClusterId();
                 if (status.equals("accepted")) {
                     List<String> clusterRequirements = clusters.get(clusterId);
-                    databaseOperations.updateDependencyStatus(organization, responseId, fromid, toid, "rejected", true);
+                    databaseOperations.updateDependencyStatus(organization, responseId, fromid, toid, "rejected", -1,true);
                     List<Dependency> dependencies = databaseOperations.getClusterDependencies(organization, responseId, clusterId, true);
                     HashMap<String,List<String>> reqDeps = createReqDeps(clusterRequirements,dependencies);
                     List<String> requirementIds = new ArrayList<>();
@@ -362,7 +361,6 @@ public class ClusterOperations {
                     requirementIds.add(toid);
                     Clusters auxClusters = bfsClusters(reqDeps, clusterRequirements, requirementIds, new HashSet<>());
                     HashMap<Integer,List<String>> candidateClusters = auxClusters.candidateClusters;
-                    HashMap<String,Integer> reqCluster = auxClusters.reqCluster;
                     if (candidateClusters.size() > 1) {
                         boolean firstOne = true;
                         Iterator it = candidateClusters.entrySet().iterator();
@@ -383,7 +381,7 @@ public class ClusterOperations {
                     }
                 }
                 if (status.equals("accepted") || status.equals("proposed")) {
-                    databaseOperations.updateDependencyStatus(organization, responseId, fromid, toid, "rejected", true);
+                    databaseOperations.updateDependencyStatus(organization, responseId, fromid, toid, "rejected", -1, true);
                 }
             } catch (NotFoundException e) {
                 databaseOperations.saveDependency(organization, responseId, new Dependency(fromid, toid, "rejected", score, -1), true);
@@ -399,7 +397,7 @@ public class ClusterOperations {
 
     private class Clusters {
         HashMap<Integer,List<String>> candidateClusters;
-        HashMap<String,Integer> reqCluster;
+        HashMap<String,Integer> reqCluster; //TODO is truly necessary?
         Clusters(HashMap<Integer,List<String>> candidateClusters, HashMap<String,Integer> reqCluster) {
             this.candidateClusters = candidateClusters;
             this.reqCluster = reqCluster;
@@ -423,6 +421,7 @@ public class ClusterOperations {
 
     private Clusters bfsClusters(HashMap<String,List<String>> reqDeps, List<String> clusterRequirements, List<String> requirementIds, HashSet<String> avoidReqs) {
         HashMap<Integer,List<String>> candidateClusters = new HashMap<>();
+        HashSet<String> processedReqs = new HashSet<>();
         HashMap<String,Integer> reqCluster = new HashMap<>();
         PriorityQueue<String> priorityQueue = new PriorityQueue<>();
         int countIds = 0;
@@ -439,8 +438,12 @@ public class ClusterOperations {
         }
         while(priorityQueue.size() > 0 && candidateClusters.size() > 1) {
             String requirement = priorityQueue.poll();
-            for (String req2: reqDeps.get(requirement)) {
-                if (!avoidReqs.contains(req2)) mergeClusters(candidateClusters, reqCluster, requirement, req2, countIds);
+            if (!processedReqs.contains(requirement) && !avoidReqs.contains(requirement)) {
+                for (String req2 : reqDeps.get(requirement)) {
+                        countIds = mergeClusters(candidateClusters, reqCluster, requirement, req2, countIds);
+                        priorityQueue.add(req2);
+                }
+                processedReqs.add(requirement);
             }
         }
         return new Clusters(candidateClusters, reqCluster);

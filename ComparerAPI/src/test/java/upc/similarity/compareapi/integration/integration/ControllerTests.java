@@ -15,13 +15,19 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.entity.Dependency;
+import upc.similarity.compareapi.entity.Model;
+import upc.similarity.compareapi.util.DatabaseOperations;
+import upc.similarity.compareapi.util.TestMethods;
 import upc.similarity.compareapi.util.Tfidf;
 import static org.junit.Assert.assertEquals;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -219,6 +225,7 @@ public class ControllerTests {
         SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
         List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
         assertEquals(read_file_array(path+"treatDependencies/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
+        assertEquals(read_file_json(path+"treatDependencies/output_model.json"), extractModel("UPC",false, false));
     }
 
     @Test
@@ -303,6 +310,72 @@ public class ControllerTests {
         }
 
         return jsonDeps;
+    }
+
+    private String extractModel(String organization, boolean withDocs, boolean withFrequency) throws Exception {
+        Model model = DatabaseOperations.getInstance().loadModel(organization, null, withFrequency);
+        JSONArray reqsArray = new JSONArray();
+        if (withDocs) {
+            Iterator it = model.getDocs().entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry pair = (Map.Entry) it.next();
+                String id = (String) pair.getKey();
+                HashMap<String, Double> words = (HashMap<String, Double>) pair.getValue();
+                Iterator it2 = words.entrySet().iterator();
+                JSONArray wordsArray = new JSONArray();
+                while (it2.hasNext()) {
+                    Map.Entry pair2 = (Map.Entry) it2.next();
+                    String word = (String) pair2.getKey();
+                    double value = (double) pair2.getValue();
+                    JSONObject auxWord = new JSONObject();
+                    auxWord.put("word", word);
+                    auxWord.put("tfIdf", value);
+                    wordsArray.put(auxWord);
+                    it2.remove();
+                }
+                it.remove();
+                JSONObject auxReq = new JSONObject();
+                auxReq.put("id", id);
+                auxReq.put("words", wordsArray);
+                reqsArray.put(auxReq);
+            }
+        }
+        JSONArray wordsFreq = new JSONArray();
+        if (withFrequency) {
+            Iterator it = model.getCorpusFrequency().entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry pair = (Map.Entry) it.next();
+                String word = (String) pair.getKey();
+                int value = (int) pair.getValue();
+                JSONObject auxWord = new JSONObject();
+                auxWord.put("word", word);
+                auxWord.put("corpusTf", value);
+                wordsFreq.put(auxWord);
+                it.remove();
+            }
+        }
+        JSONArray clusters = new JSONArray();
+        Iterator it = model.getClusters().entrySet().iterator();
+        while(it.hasNext()) {
+            Map.Entry pair = (Map.Entry) it.next();
+            int clusterId = (int) pair.getKey();
+            List<String> clusterRequirements = (List<String>) pair.getValue();
+            JSONArray requirementsArray = new JSONArray();
+            for (String requirement: clusterRequirements) requirementsArray.put(requirement);
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("clusterId", clusterId);
+            jsonObject.put("clusterRequirements", requirementsArray);
+            clusters.put(jsonObject);
+        }
+        JSONObject result = new JSONObject();
+        result.put("corpus", reqsArray);
+        result.put("corpusFrequency", wordsFreq);
+        result.put("clusters", clusters);
+        result.put("threshold", model.getThreshold());
+        result.put("compare", model.isCompare());
+        result.put("isCluster", model.hasClusters());
+        result.put("lastClusterId", model.getLastClusterId());
+        return result.toString();
     }
 
 

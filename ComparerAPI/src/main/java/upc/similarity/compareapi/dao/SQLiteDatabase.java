@@ -20,7 +20,7 @@ public class SQLiteDatabase implements DatabaseModel {
     //TODO is needed a lock for the mainDb!
 
     private static String dbMainName = "main";
-    private static String dbPath = "../data/";
+    private static String dbPath = "data/";
     private static String driversName = "jdbc:sqlite:";
 
     public static void setDbPath(String dbPath) {
@@ -66,7 +66,7 @@ public class SQLiteDatabase implements DatabaseModel {
         file.createNewFile(); //TODO check its result
     }
 
-    private void insertNewOrganization(String organization, double threshold,  boolean compare, boolean hasClusters, int lastClusterId) throws SQLException, IOException {
+    private void insertNewOrganization(String organization) throws SQLException, IOException {
 
         if (!existsOrganization(organization)) {
             createOrganizationFiles(organization);
@@ -74,7 +74,7 @@ public class SQLiteDatabase implements DatabaseModel {
             try (Connection conn = getConnection(organization)) {
                 createOrganizationTables(conn);
             }
-            insertOrganization(organization, threshold, compare, hasClusters, lastClusterId);
+            insertOrganization(organization);
         }
     }
 
@@ -162,12 +162,13 @@ public class SQLiteDatabase implements DatabaseModel {
     @Override
     public void saveModel(String organization, Model model, boolean useDepsAuxiliaryTable) throws IOException, SQLException {
 
-        insertNewOrganization(organization, model.getThreshold(), model.isCompare(), model.hasClusters(), model.getLastClusterId());
+        insertNewOrganization(organization);
 
         try (Connection conn = getConnection(organization)) {
             conn.setAutoCommit(false);
             clearOrganizationTables(conn);
             clearClusterTables(conn);
+            saveOrganizationInfo(organization, model.getThreshold(), model.isCompare(), model.hasClusters(), model.getLastClusterId(), conn);
             saveDocs(model.getDocs(), conn);
             saveCorpusFrequency(model.getCorpusFrequency(), conn);
             if (model.hasClusters()) {
@@ -179,14 +180,13 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void updateClustersAndDependencies(String organization, Model model, boolean useDepsAuxiliaryTable) throws IOException, SQLException {
-
-        insertNewOrganization(organization, model.getThreshold(), model.isCompare(), model.hasClusters(), model.getLastClusterId());
+    public void updateClustersAndDependencies(String organization, Model model, boolean useDepsAuxiliaryTable) throws SQLException {
 
         try (Connection conn = getConnection(organization)) {
             conn.setAutoCommit(false);
             clearClusterTables(conn);
             if (model.hasClusters()) {
+                updateOrganizationClustersInfo(organization,model.getLastClusterId(),conn);
                 saveClusters(model.getClusters(), conn);
                 saveDependencies(model.getDependencies(), conn, useDepsAuxiliaryTable);
             }
@@ -195,7 +195,9 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public Model getModel(String organization, boolean withFrequency) throws SQLException, NotFoundException {
+    public Model getModel(String organization, boolean withFrequency) throws NotFoundException, SQLException {
+
+        if (!existsOrganization(organization)) throw new NotFoundException("The organization with id " + organization + " does not exist");
 
         Map<String, Map<String, Double>> docs = null;
         Map<String, Integer> corpusFrequency = null;
@@ -209,7 +211,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
         try (Connection conn = getConnection(organization)) {
             conn.setAutoCommit(false);
-            Organization aux = getOrganization(organization);
+            Organization aux = getOrganizationInfo(organization,conn);
             threshold = aux.threshold;
             compare = aux.compare;
             hasClusters = aux.hasClusters;
@@ -523,16 +525,17 @@ public class SQLiteDatabase implements DatabaseModel {
     }*/
 
     @Override
-    public void updateDependencyStatus(String organizationId, String fromid, String toid, String newStatus, boolean useAuxiliaryTable) throws SQLException {
-        String sql = "UPDATE dependencies SET status = ? WHERE ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
-        if (useAuxiliaryTable) sql = "UPDATE aux_dependencies SET status = ? WHERE ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
+    public void updateDependencyStatus(String organizationId, String fromid, String toid, String newStatus, int newClusterId, boolean useAuxiliaryTable) throws SQLException {
+        String sql = "UPDATE dependencies SET status = ?, clusterId = ? WHERE ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
+        if (useAuxiliaryTable) sql = "UPDATE aux_dependencies SET status = ?, clusterId = ? WHERE ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
         try (Connection conn = getConnection(organizationId);
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, newStatus);
-            ps.setString(2, fromid);
-            ps.setString(3, toid);
+            ps.setInt(2, newClusterId);
+            ps.setString(3, fromid);
             ps.setString(4, toid);
-            ps.setString(5, fromid);
+            ps.setString(5, toid);
+            ps.setString(6, fromid);
             ps.executeUpdate();
         }
     }
@@ -689,11 +692,10 @@ public class SQLiteDatabase implements DatabaseModel {
         int lastClusterId;
     }
 
-    private Organization getOrganization(String organizationId) throws NotFoundException, SQLException {
+    private Organization getOrganizationInfo(String organizationId, Connection conn) throws SQLException {
 
         Organization result = new Organization();
-        try (Connection conn = getConnection(dbMainName);
-             PreparedStatement ps = conn.prepareStatement("SELECT threshold, compare, hasClusters, lastClusterId FROM organizations WHERE id = ?")) {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT threshold, compare, hasClusters, lastClusterId FROM info WHERE id = ?")) {
                 ps.setString(1, organizationId);
 
                 try (ResultSet rs = ps.executeQuery()) {
@@ -702,7 +704,7 @@ public class SQLiteDatabase implements DatabaseModel {
                         result.compare = rs.getBoolean(2);
                         result.hasClusters = rs.getBoolean(3);
                         result.lastClusterId = rs.getInt(4);
-                    } else throw new NotFoundException("The organization " + organizationId + " does not exist");
+                    }
                 }
         }
         return result;
@@ -771,21 +773,29 @@ public class SQLiteDatabase implements DatabaseModel {
 
     private void createOrganizationTables(Connection conn) throws SQLException {
 
-        String sql1 = "CREATE TABLE docs (\n"
+        String sql1 = "CREATE TABLE info (\n"
+                + " id varchar PRIMARY KEY, \n"
+                + " threshold double, \n"
+                + " compare integer, \n"
+                + " hasClusters integer, \n"
+                + " lastClusterId integer"
+                + ");";
+
+        String sql2 = "CREATE TABLE docs (\n"
                 + " id varchar PRIMARY KEY, \n"
                 + " definition text \n"
                 + ");";
 
-        String sql2 = "CREATE TABLE corpus (\n"
+        String sql3 = "CREATE TABLE corpus (\n"
                 + " definition text \n"
                 + ");";
 
-        String sql3 = "CREATE TABLE clusters (\n"
+        String sql4 = "CREATE TABLE clusters (\n"
                 + " id integer PRIMARY KEY, \n"
                 + " definition text"
                 + ");";
 
-        String sql4 = "CREATE TABLE dependencies (\n"
+        String sql5 = "CREATE TABLE dependencies (\n"
                 + "	fromid varchar, \n"
                 + " toid varchar, \n"
                 + " status varchar, \n"
@@ -799,17 +809,20 @@ public class SQLiteDatabase implements DatabaseModel {
             stmt.execute(sql2);
             stmt.execute(sql3);
             stmt.execute(sql4);
+            stmt.execute(sql5);
         }
     }
 
     private void clearOrganizationTables(Connection conn) throws SQLException {
 
-        String sql1 = "DELETE FROM docs";
-        String sql2 = "DELETE FROM corpus";
+        String sql1 = "DELETE FROM info";
+        String sql2 = "DELETE FROM docs";
+        String sql3 = "DELETE FROM corpus";
 
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql1);
             stmt.execute(sql2);
+            stmt.execute(sql3);
         }
 
     }
@@ -826,12 +839,23 @@ public class SQLiteDatabase implements DatabaseModel {
 
     }
 
-    private void insertOrganization(String organization, double threshold, boolean compare, boolean hasClusters, int lastClusterId) throws SQLException {
+    private void insertOrganization(String organization) throws SQLException {
 
-        String sql = "INSERT INTO organizations(id, threshold, compare, hasClusters, lastClusterId) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO organizations(id) VALUES (?)";
 
         try (Connection conn = getConnection(dbMainName);
              PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1,organization);
+            ps.execute();
+        }
+
+    }
+
+    private void saveOrganizationInfo(String organization, double threshold, boolean compare, boolean hasClusters, int lastClusterId, Connection conn) throws SQLException {
+
+        String sql = "INSERT INTO info(id, threshold, compare, hasClusters, lastClusterId) VALUES (?,?,?,?,?)";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1,organization);
             ps.setDouble(2, threshold);
             int value = 0;
@@ -843,7 +867,17 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.setInt(5, lastClusterId);
             ps.execute();
         }
+    }
 
+    private void updateOrganizationClustersInfo(String organizationId, int lastClusterId, Connection conn) throws SQLException {
+
+        String sql = "UPDATE info SET lastClusterId = ? WHERE id = ?";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)){
+            ps.setInt(1, lastClusterId);
+            ps.setString(2,organizationId);
+            ps.executeUpdate();
+        }
     }
 
     private void saveDocs(Map<String, Map<String, Double>> docs, Connection conn) throws SQLException {

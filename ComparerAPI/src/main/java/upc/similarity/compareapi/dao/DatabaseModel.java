@@ -15,9 +15,9 @@ public interface DatabaseModel {
 
     void saveModel(String organizationId, Model model, boolean useDepsAuxiliaryTable) throws IOException, SQLException;
 
-    void updateClustersAndDependencies(String organization, Model model, boolean useDepsAuxiliaryTable) throws IOException, SQLException;
+    void updateClustersAndDependencies(String organization, Model model, boolean useDepsAuxiliaryTable) throws SQLException;
 
-    Model getModel(String organizationId, boolean withFrequency) throws SQLException, NotFoundException;
+    Model getModel(String organizationId, boolean withFrequency) throws NotFoundException, SQLException;
 
     void saveResponse(String organizationId, String responseId) throws SQLException;
 
@@ -49,7 +49,7 @@ public interface DatabaseModel {
 
     //boolean existsDependency(String fromid, String toid, String organizationId) throws SQLException;
 
-    void updateDependencyStatus(String organizationId, String fromid, String toid, String newStatus, boolean useAuxiliaryTable) throws SQLException;
+    void updateDependencyStatus(String organizationId, String fromid, String toid, String newStatus, int newClusterId, boolean useAuxiliaryTable) throws SQLException;
 
     void updateClusterDependencies(String organizationId, int oldClusterId, int newClusterId, boolean useAuxiliaryTable) throws SQLException;
 
