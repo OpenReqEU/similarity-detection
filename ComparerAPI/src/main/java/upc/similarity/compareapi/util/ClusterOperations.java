@@ -173,7 +173,7 @@ public class ClusterOperations {
         return array;
     }
 
-    public void deleteReqsFromClusters(String organization, String responseId, List<Requirement> deletedRequirements, Model model, CronAuxiliary cronAuxiliary) throws InternalErrorException {
+    /*public void deleteReqsFromClusters(String organization, String responseId, List<Requirement> deletedRequirements, Model model, CronAuxiliary cronAuxiliary) throws InternalErrorException {
         HashMap<Integer,List<String>> clusterDeletedReqs = new HashMap<>();
         HashSet<String> deletedReqs = new HashSet<>();
         for (Requirement requirement: deletedRequirements) {
@@ -212,6 +212,10 @@ public class ClusterOperations {
         }
 
 
+    }*/
+
+    public void addRequirementsToClusters() {
+        
     }
 
     public void updateProposedDependencies(String organization, String responseId, Model model, Set<Integer> clustersChanged, boolean useAuxiliaryTable) throws InternalErrorException {
@@ -254,7 +258,7 @@ public class ClusterOperations {
         return proposedDependencies;
     }
 
-    private void deleteReqsFromCluster(String organization, String responseId, int clusterId, List<String> requirementsId, Model model) throws InternalErrorException {
+    /*private void deleteReqsFromCluster(String organization, String responseId, int clusterId, List<String> requirementsId, Model model) throws InternalErrorException {
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         Map<Integer,List<String>> clusters = model.getClusters();
@@ -295,7 +299,7 @@ public class ClusterOperations {
         tfidf.deleteReqsAndRecomputeModel(requirementsId,model);
         model.setLastClusterId(lastClusterId);
         //TODO update proposed dependencies
-    }
+    }*/
 
     public HashMap<String, Integer> computeReqClusterMap(Map<Integer,List<String>> clusters, Set<String> requirements) {
         HashMap<String,Integer> reqCluster = new HashMap<>();

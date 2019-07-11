@@ -8,6 +8,7 @@ import upc.similarity.compareapi.exception.NotFoundException;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Set;
 
 public interface DatabaseModel {
 
@@ -60,6 +61,8 @@ public interface DatabaseModel {
     void updateClusterDependencies(String organizationId, String requirementId, int newClusterId, boolean useAuxiliaryTable) throws SQLException;
 
     void deleteReqDependencies(String organizationId, String reqId, boolean useAuxiliaryTable) throws SQLException;
+
+    List<Dependency> getNotInDependencies(String organizationId, Set<String> dependencies, boolean useAuxiliaryTable) throws SQLException;
 
     void clearOrganizationResponses(String organizationId) throws SQLException, NotFoundException;
 

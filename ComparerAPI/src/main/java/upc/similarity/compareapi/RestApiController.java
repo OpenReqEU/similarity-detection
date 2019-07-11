@@ -8,10 +8,7 @@ import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.entity.input.Clusters;
 import upc.similarity.compareapi.entity.input.ReqProject;
-import upc.similarity.compareapi.exception.BadRequestException;
-import upc.similarity.compareapi.exception.InternalErrorException;
-import upc.similarity.compareapi.exception.NotFinishedException;
-import upc.similarity.compareapi.exception.NotFoundException;
+import upc.similarity.compareapi.exception.*;
 import upc.similarity.compareapi.service.CompareService;
 
 import java.util.List;
@@ -32,10 +29,8 @@ public class RestApiController {
         try {
             compareService.buildModel(responseId,compare,threshold,organization,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (BadRequestException e) {
-            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
     }
 
@@ -46,12 +41,8 @@ public class RestApiController {
         try {
             compareService.addRequirements(responseId,organization,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (BadRequestException e) {
-            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
     }
 
@@ -62,12 +53,8 @@ public class RestApiController {
         try {
             compareService.deleteRequirements(responseId,organization,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (BadRequestException e) {
-            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
     }
 
@@ -77,10 +64,8 @@ public class RestApiController {
                                        @RequestParam("req2") String req2) {
         try {
             return new ResponseEntity<>(compareService.simReqReq(organization,req1,req2),HttpStatus.OK);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
     }
 
@@ -91,12 +76,8 @@ public class RestApiController {
         try {
             compareService.simReqOrganization(responseId,organization,requirements);
             return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
-        } catch (BadRequestException e) {
-            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
     }
 
@@ -107,12 +88,8 @@ public class RestApiController {
         try {
             compareService.simReqProject(responseId,organization,projectRequirements);
             return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
-        } catch (BadRequestException e) {
-            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
     }
 
@@ -123,10 +100,8 @@ public class RestApiController {
         try {
             compareService.simProject(responseId,organization,projectRequirements);
             return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
     }
 
@@ -139,12 +114,8 @@ public class RestApiController {
         try {
             compareService.buildModelAndCompute(responseId,compare,organization,threshold,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (BadRequestException e) {
-            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
     }
 
@@ -157,10 +128,8 @@ public class RestApiController {
         try {
             compareService.buildClusters(responseId,compare,threshold,organization,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (BadRequestException e) {
-            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
     }
 
@@ -173,10 +142,8 @@ public class RestApiController {
         try {
             compareService.buildClustersAndCompute(responseId,compare,organization,threshold,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (BadRequestException e) {
-            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
     }
 
@@ -186,10 +153,8 @@ public class RestApiController {
                                          @RequestBody List<String> requirements) {
         try {
             return new ResponseEntity<>(compareService.simReqClusters(organization,requirements,maxValue),HttpStatus.OK);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
     }
 
@@ -199,12 +164,8 @@ public class RestApiController {
         try {
             compareService.treatAcceptedAndRejectedDependencies(organization, dependencies);
             return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
-        } catch (BadRequestException e) {
-            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
     }
 
@@ -213,12 +174,8 @@ public class RestApiController {
                                         @RequestParam("responseId") String responseId) {
         try {
             return new ResponseEntity<>(compareService.getResponsePage(organization,responseId),HttpStatus.OK);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
-        } catch (NotFinishedException e) {
-            return new ResponseEntity<>(e,HttpStatus.LOCKED);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
     }
 
@@ -227,10 +184,8 @@ public class RestApiController {
         try {
             compareService.clearOrganizationResponses(organization);
             return new ResponseEntity<>(null, HttpStatus.OK);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e, HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
     }
 
@@ -239,10 +194,8 @@ public class RestApiController {
         try {
             compareService.clearOrganization(organization);
             return new ResponseEntity<>(null, HttpStatus.OK);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e, HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
     }
 
@@ -251,8 +204,8 @@ public class RestApiController {
         try {
             compareService.clearDatabase();
             return new ResponseEntity<>(null, HttpStatus.OK);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e, HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
     }
 
@@ -263,12 +216,8 @@ public class RestApiController {
         try {
             compareService.cronMethod(responseId,organization,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (BadRequestException e) {
-            return new ResponseEntity<>(e,HttpStatus.BAD_REQUEST);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(e,HttpStatus.NOT_FOUND);
-        } catch (InternalErrorException e) {
-            return new ResponseEntity<>(e,HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
     }
 

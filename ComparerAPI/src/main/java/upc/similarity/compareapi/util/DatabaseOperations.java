@@ -14,9 +14,9 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class DatabaseOperations {
-    //TODO catch right connectionErrorExceptions
 
     private static DatabaseOperations instance = new DatabaseOperations();
     private DatabaseModel databaseModel = getValue();
@@ -203,6 +203,16 @@ public class DatabaseOperations {
             result = databaseModel.getDependency(fromid, toid, organizationId, useAuxiliaryTable);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organizationId, responseId, "Error while loading a dependency from the database");
+        }
+        return result;
+    }
+
+    public List<Dependency> getNotInDependencies(String organizationId, String responseId, Set<String> dependencies, boolean useAuxiliaryTable) throws InternalErrorException {
+        List<Dependency> result = null;
+        try {
+            result = databaseModel.getNotInDependencies(organizationId, dependencies, useAuxiliaryTable);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while checking rejected dependencies from the database");
         }
         return result;
     }

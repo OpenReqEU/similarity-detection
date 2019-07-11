@@ -1,8 +1,8 @@
 package upc.similarity.compareapi.exception;
 
-public class BadRequestException extends Exception {
+public class BadRequestException extends ComponentException {
 
     public BadRequestException(String message) {
-        super(message);
+        super(message,400,"Bad request");
     }
 }

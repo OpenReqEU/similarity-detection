@@ -6,7 +6,6 @@ import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import upc.similarity.compareapi.config.Control;
 import upc.similarity.compareapi.entity.Model;
-import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.exception.InternalErrorException;
 
 import java.io.IOException;
@@ -14,6 +13,8 @@ import java.io.StringReader;
 import java.util.*;
 
 public class Tfidf {
+
+    //TODO improve exception handling
 
     private static Tfidf instance = new Tfidf();
     private static boolean cutOffDummy = false;
@@ -27,6 +28,35 @@ public class Tfidf {
     private double computeCutOffParameter(long totalSize) {
         if (cutOffDummy) return -1;
         else return (totalSize > 100) ? 10 : (-9 + 3.51*Math.log(totalSize));
+    }
+
+    public Map<String,Double> computeTfIdf(String organization, String responseId, String requirement, Model model) throws InternalErrorException {
+        Map<String, Map<String, Double>> docs = model.getDocs();
+        Map<String, Integer> corpusFrequency = model.getCorpusFrequency();
+        double cutOffParameter = computeCutOffParameter(docs.size());
+
+        List<String> preprocessRequirement = new ArrayList<>();
+        try {
+            preprocessRequirement = englishAnalyze(requirement);
+        } catch (IOException e) {
+            DatabaseOperations.getInstance().saveInternalException(organization, responseId, new InternalErrorException("Error loading preprocess pipeline"));
+        }
+
+        Map<String, Integer> tfRequirement = new HashMap<>();
+        for (String s : preprocessRequirement) {
+            if (tfRequirement.containsKey(s)) tfRequirement.put(s, tfRequirement.get(s) + 1);
+            else tfRequirement.put(s, 1);
+        }
+
+        HashMap<String, Double> tfIdf = new HashMap<>();
+        for (String s : preprocessRequirement) {
+            Double idf = idf(docs.size(), corpusFrequency.get(s));
+            Integer tf = tfRequirement.get(s);
+            double tfidf = idf * tf;
+            if (tfidf>=cutOffParameter) tfIdf.put(s, tfidf);
+        }
+
+        return tfIdf;
     }
 
     public int deleteReqs(List<String> requirements, Model model) {
