@@ -10,6 +10,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -121,20 +122,22 @@ public class ControllerTests {
     }
 
     @Test
-    public void addClustersAndComputeOrphans() throws Exception {
+    public void addClustersAndCompute() throws Exception {
+        MockMultipartFile multipartFile = new MockMultipartFile("file", "test.txt",
+                "text/plain", "Spring Framework".getBytes());
         stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
-        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/AddClustersAndCompute").param("organization", "UPC").param("url", callback)
+        MvcResult result = this.mockMvc.perform(multipart("/upc/similarity-detection/BuildClustersAndCompute").file(multipartFile).param("organization", "TEEEEST").param("url", callback)
                 .param("compare", "true").param("threshold", "0.12")
-                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"orphans/input.json")))
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE))
                 .andExpect(status().isOk()).andReturn();
         TestConfig testConfig = TestConfig.getInstance();
         while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
         testConfig.setComputationFinished(false);
-        assertEquals(createJsonResult(200, aux_getResponseId(result), "AddClustersAndComputeOrphans"), testConfig.getResult().toString());
+        assertEquals(createJsonResult(200, aux_getResponseId(result), "BuildClustersAndCompute"), testConfig.getResult().toString());
     }
 
     @Test
@@ -144,7 +147,7 @@ public class ControllerTests {
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
-        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/AddClusters").param("organization", "UPC").param("url", callback)
+        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/BuildClusters").param("organization", "UPC").param("url", callback)
                 .param("compare", "true")
                 .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"orphans/input.json")))
                 .andExpect(status().isOk()).andReturn();
@@ -177,9 +180,9 @@ public class ControllerTests {
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(read_file(path + "simReqClusters/output.json"))));
-        this.mockMvc.perform(post("/upc/similarity-detection/ReqClusters").param("organization", "UPC").param("url", callback)
-                .param("compare", "true").param("threshold", "0.12").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"simReqClusters/input_reqs.json")))
-                .andExpect(status().isOk()).andExpect(status().isOk()).andExpect(content().string(read_file(path + "simReqClusters/output.json")));
+        this.mockMvc.perform(post("/upc/similarity-detection/ReqClusters").param("organization", "TEEEEST")
+                .param("requirementId", "UPC-1").param("maxNumber", "10"))
+                .andExpect(status().isOk()).andExpect(status().isOk()).andExpect(content().string("{\"dependencies\":[{\"toid\":\"UPC-2\",\"dependency_score\":\"0.8787\",\"fromid\":\"UPC-1\",\"status\":\"proposed\"}]}"));
     }
 
     @Test

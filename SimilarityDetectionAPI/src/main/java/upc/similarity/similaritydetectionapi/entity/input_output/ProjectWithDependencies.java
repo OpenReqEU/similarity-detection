@@ -23,6 +23,11 @@ public class ProjectWithDependencies implements Serializable {
         this.dependencies = new ArrayList<>();
     }
 
+    public ProjectWithDependencies(List<Requirement> requirements, List<Dependency> dependencies) {
+        this.requirements = requirements;
+        this.dependencies = dependencies;
+    }
+
     public List<Requirement> getRequirements() {
         return requirements;
     }
@@ -32,6 +37,6 @@ public class ProjectWithDependencies implements Serializable {
     }
 
     public boolean inputOk() {
-        return (!this.requirements.isEmpty() && !this.dependencies.isEmpty());
+        return (!this.requirements.isEmpty() || !this.dependencies.isEmpty());
     }
 }

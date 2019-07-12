@@ -18,6 +18,10 @@ public class Requirements implements Serializable {
         requirements = new ArrayList<>();
     }
 
+    public Requirements(List<Requirement> requirements) {
+        this.requirements = requirements;
+    }
+
     public List<Requirement> getRequirements() {
         return requirements;
     }

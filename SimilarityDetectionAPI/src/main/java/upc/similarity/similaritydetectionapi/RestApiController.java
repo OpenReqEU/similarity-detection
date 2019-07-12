@@ -1,17 +1,18 @@
 package upc.similarity.similaritydetectionapi;
 
 import io.swagger.annotations.*;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import upc.similarity.similaritydetectionapi.config.Control;
 import upc.similarity.similaritydetectionapi.config.TestConfig;
-import upc.similarity.similaritydetectionapi.entity.input_output.ProjectWithDependencies;
-import upc.similarity.similaritydetectionapi.entity.input_output.Projects;
-import upc.similarity.similaritydetectionapi.entity.input_output.Requirements;
+import upc.similarity.similaritydetectionapi.entity.Requirement;
+import upc.similarity.similaritydetectionapi.entity.input_output.*;
 import upc.similarity.similaritydetectionapi.exception.*;
 import upc.similarity.similaritydetectionapi.service.SimilarityService;
 
@@ -205,20 +206,19 @@ public class RestApiController {
     }
 
     @CrossOrigin
-    @PostMapping(value = "/AddClusters", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Generates clusters from the input requirements and dependencies", notes = "<p>This method computes the clusters using the existing duplicates. " +
-            "All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements " +
-            "are pre-processed and stored in the database. The entry duplicates relations are defined by the dependencies with type equal to similar or duplicate. It returns a requirements " +
-            "array with all the cluster centroids.\n</p>", tags = "Clusters")
+    @PostMapping(value = "/BuildClusters", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Generates the clusters from the input requirements and dependencies", notes = "<p>This method computes the clusters using the existing duplicates. The entry duplicates relations are " +
+            "defined by the dependencies with type equal to similar or duplicate and type equal to accepted. All the requirements that do not have duplicates relationships with other requirements" +
+            " are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the database.</p>", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity buildClusters(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                         @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
-                                        @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/PostResult") @RequestParam("url") String url,
+                                        @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
                                         @ApiParam(value="OpenReqJson with requirements and dependencies", required = true) @RequestBody ProjectWithDependencies input) {
         try {
-            urlOk(url);
+            if (url != null) urlOk(url);
             return new ResponseEntity<>(similarityService.buildClusters(url,organization,compare,input),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
@@ -226,33 +226,73 @@ public class RestApiController {
     }
 
     @CrossOrigin
-    @PostMapping(value = "/AddClustersAndCompute", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Computes the similarity between the clusters centroids", notes = "<p>This method computes the clusters using the existing duplicates. All the requirements that " +
-            "do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the" +
-            " database. Then, we compare each orphan (cluster with only one requirement) with all the other centroids and return the similarity score for all the comparisons that are bigger " +
-            "than the established threshold.</p>", tags = "Clusters")
+    @PostMapping(value = "/BuildClustersAndCompute", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Generates the clusters from the input requirements and dependencies and computes the similarity score between them", notes = "<p>This method computes the clusters using" +
+            " the existing duplicates. The entry duplicates relations are defined by the dependencies with type equal to similar or duplicate and type equal to accepted. All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. " +
+            "All the requirements are pre-processed and stored in the database. Then, we compare each orphan (cluster with only one requirement) with all the requirements of each cluster" +
+            " and return the highest similarity score for all the comparisons that are bigger than the established threshold.</p>", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
-    public ResponseEntity buildClustersAndComputeOrphans(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+    public ResponseEntity buildClustersAndCompute(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                                          @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
                                                          @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
-                                                         @ApiParam(value="The url where the result of the operation will be returned", required = true, example = "http://localhost:9406/upload/PostResult") @RequestParam("url") String url,
-                                                         @ApiParam(value="OpenReqJson with requirements and dependencies", required = true) @RequestBody ProjectWithDependencies input) {
+                                                         @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
+                                                         @ApiParam(value="OpenReqJson with requirements and dependencies", required = true) @RequestParam("file") MultipartFile file) {
         try {
-            urlOk(url);
-            return new ResponseEntity<>(similarityService.buildClustersAndComputeOrphans(url,organization,compare,threshold,input),HttpStatus.OK);
+            if (url != null) urlOk(url);
+            List<Requirement> requirements = new ArrayList<>();
+            requirements.add(new Requirement());
+            ProjectWithDependencies aux = new ProjectWithDependencies(requirements,new ArrayList<>());
+            ResultId resultId = new ResultId("12345_67");
+            if (organization.equals("TEEEEST")) resultId = similarityService.buildClustersAndComputeOrphans(url, "UPC", true, 0.1, aux);
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("id", resultId.getId());
+            return new ResponseEntity<>(jsonObject.toString(),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }
     }
 
     @CrossOrigin
-    @PostMapping(value = "/ReqClusters", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Similarity comparison between a set of requirements and all the organization cluster centroids", notes = "<p>Given a list of requirements, the endpoint pre-processes them. Then, it considers each requirement as " +
-            "a centroid of a one-requirement-cluster. Then, it computes the similarity score of the requirements in the list with all the centroids except with itself (even with the centroids of the one-requirement-clusters, and taking into " +
-            "account that the set of one-requirement-clusters also includes the requirements in the list). It returns a dependencies array with all the similarity comparisons that are above the " +
-            "threshold specified. This operation is synchronous. </p>", tags = "Clusters")
+    @PostMapping(value = "/BatchProcess", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Updates the organization clusters with the input requirements and dependencies", notes = "<p>Given a set of updates done in the requirements (see next list), updates the clusters accordingly.</p>" +
+            "<p><ul>" +
+            "<li>New requirements: The input requirements that do not pertain to the organization's model are considered to be new requirements. The method stores the pre-processing of the new requirements and puts the new requirements as clusters of 1 requirement.</li>" +
+            "<li>New or changed dependencies:  All the input similarity dependencies with status equal to accepted are considered of this group. The method uses the accepted dependencies to update the organization clusters.</li>" +
+            "<li>Deleted requirements: The input requirements with status equal to deleted are considered deleted requirements. The method deletes them from the model and updates the clusters accordingly.</li>" +
+            "<li>Removed dependencies: The input dependencies with status equal to rejected or removed are considered removed dependencies. The method updates them as rejected and changes the clusters accordingly.</li>" +
+            "<li>Updated requirements: All requirements with a title or text different from the one stored in the database are considered updated requirements. The method updates their pre-process in the database and updates the cluster to which it belonged.</li>" +
+            "</ul></p>", tags = "Clusters")
+    @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
+            @ApiResponse(code=400, message = "Bad request"),
+            @ApiResponse(code=500, message = "Internal error")})
+    public ResponseEntity batchProcess(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+                                       @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
+                                       @ApiParam(value="OpenReqJson with requirements and dependencies", required = true) @RequestBody ProjectWithDependencies input) {
+
+        return new ResponseEntity<>(null,HttpStatus.OK);
+    }
+
+    @CrossOrigin
+    @PostMapping(value = "/TreatAcceptedAndRejectedDependencies", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Updates the organization clusters with the input dependencies", notes = "<p>Given a set of accepted and rejected dependencies, updates the clusters and dependencies accordingly. This method is synchronous.</p>", tags = "Clusters")
+    @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
+            @ApiResponse(code=400, message = "Bad request"),
+            @ApiResponse(code=500, message = "Internal error")})
+    public ResponseEntity treatAcceptedAndRejectedDependencies(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+                                       @ApiParam(value="OpenReqJson with dependencies", required = true) @RequestBody Dependencies input) {
+
+        return new ResponseEntity<>(null,HttpStatus.OK);
+    }
+
+    @CrossOrigin
+    @PostMapping(value = "/ReqClusters", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Similarity comparison between a set of requirements and all the organization clusters", notes = "<p>The requirements received should already exist and" +
+            " should have been already preprocessed, we only get the id of the req as a parameter. It returns a dependencies array with the highest similarity comparison between " +
+            "each input requirement and all the requirements of each cluster (it returns both accepted and proposed dependencies, but not the rejected ones). The comparisons are done" +
+            " with all the requirements in the database. If the number of maximum dependencies to be returned is received as parameter (maxNumber), we only return the maxNumber " +
+            "dependencies with highest score. This method is synchronous.</p>", tags = "Clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})

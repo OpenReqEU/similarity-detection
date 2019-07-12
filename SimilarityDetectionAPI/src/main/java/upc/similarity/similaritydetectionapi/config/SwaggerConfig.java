@@ -44,11 +44,13 @@ public class SwaggerConfig {
             "<li>Project: Compares all possible pairs of requirements from a set of requirements.</li>" +
             "<li>AddReqsAndCompute: Generates a model with the input requirements and computes the similarity score between all the possible pairs of requirements.</li>" +
             "</ul>"+
-            "<li><strong>Clusters</strong>: These methods are responsible for pre-processing the input requirements and dependencies, generating a model that saves the requirements information and the clusters architecture and assigning it to an organization.</li>" +
+            "<li><strong>Clusters</strong>: These methods are responsible for pre-processing the input requirements and dependencies, generating a model that saves the requirements information and the clusters architecture and assigning it to an organization. <u>The clusters are considered as graphs connected by similarity dependencies accepted by the user where the nodes are the requirements of the model</u>. We denominate orphans to the clusters with only one requirement. </li>" +
             "<ul>" +
-            "<li>AddClusters: Pre-processes the input requirements, generates a model with the requirements information and the clusters architecture and assings it to an specified organization.</li>" +
-            "<li>AddClustersAndCompute: Pre-processes the input requirements, generates a model with the requirements information and the clusters architecture and assings it to an specified organization. Also it compares all the one-requirement cluster centroids with the rest of centroids.</li>" +
-            "<li>ReqClusters: Pre-processes the input requirements and adds them to an organization's model. Also it compares the input requirements with all the cluster centroids of the organization's model.</li>" +
+            "<li>AddClusters: Pre-processes the input requirements, generates a model with the requirements information, the clusters architecture and the input similarity dependencies and assings it to an specified organization.</li>" +
+            "<li>AddClustersAndCompute: Pre-processes the input requirements, generates a model with the requirements information, the clusters architecture and the input similarity dependencies and assings it to an specified organization. All the resulting orphans are compared with all the requirements of each cluster and the maximum score is returned for each one as long as it is above the specified threshold.</li>" +
+            "<li>ReqClusters: Given a list of requirements ids, returns the maximum similarity score between each requirement and all the requirements that make up each of the existing clusters in the organization model.</li>" +
+            "<li>BatchProcess: Given a set of updates done in the requirements, updates the clusters and dependencies accordingly.</li>"+
+            "<li>TreatAcceptedAndRejectedDependencies: Given a set of accepted and rejected dependencies, updates the clusters and dependencies accordingly.</li>"+
             "</ul>"+
             "<li><strong>Auxiliary methods</strong>:</li>" +
             "<ul>" +
@@ -57,7 +59,7 @@ public class SwaggerConfig {
             "<li>DeleteDatabase: Deletes all data from the database</li>" +
             "</ul>"+
             "</ul>" +
-            "<p>All operations except ReqClusters, GetResponse, DeleteOrganizationResponses and DeleteDatabase are asynchronous. It is necessary to write a server URL as parameter in all of them. The outcome of the operation will be returned to that url. All these operations follow the same pattern:</p>" +
+            "<p>All operations except ReqClusters, TreatAcceptedAndRejectedDependencies, GetResponse, DeleteOrganizationResponses and DeleteDatabase are asynchronous. It is necessary to write a server URL as parameter in all of them. The outcome of the operation will be returned to that url. All these operations follow the same pattern:</p>" +
             "<ol><li>The client calls the operation with all necessary parameters</li>" +
             "<li>The service receives the request and checks the main conditions</li>" +
             "<li>The service returns if the client request has been accepted or not and closes the connection" +
