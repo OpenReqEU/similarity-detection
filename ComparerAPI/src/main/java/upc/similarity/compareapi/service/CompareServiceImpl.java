@@ -663,20 +663,22 @@ public class CompareServiceImpl implements CompareService {
     public void getAccessToUpdate(String organization, String responseId) throws InternalErrorException {
         int maxIterations = Constants.getInstance().getMaxSyncIterations();
         if (!organizationLocks.containsKey(organization)) {
-            organizationLocks.putIfAbsent(organization, new AtomicBoolean(false));
+            AtomicBoolean aux = organizationLocks.putIfAbsent(organization, new AtomicBoolean(false));
+            //aux not used
         }
         boolean correct = false;
         int count = 0;
         while (!correct && count <= maxIterations) {
             AtomicBoolean atomicBoolean = organizationLocks.get(organization);
             if (atomicBoolean == null) DatabaseOperations.getInstance().saveInternalException(organization, responseId, new InternalErrorException("Synchronization error"));
-            correct = atomicBoolean.compareAndSet(false,true);
+            else correct = atomicBoolean.compareAndSet(false,true);
             if (!correct) {
                 ++count;
                 try {
                     Thread.sleep(random.nextInt(50));
                 } catch (InterruptedException e) {
                     DatabaseOperations.getInstance().saveInternalException(organization, responseId, new InternalErrorException("Synchronization error"));
+                    Thread.currentThread().interrupt();
                 }
             }
         }
@@ -690,7 +692,7 @@ public class CompareServiceImpl implements CompareService {
     public void releaseAccessToUpdate(String organization, String responseId) throws InternalErrorException {
         AtomicBoolean atomicBoolean = organizationLocks.get(organization);
         if (atomicBoolean == null) DatabaseOperations.getInstance().saveInternalException(organization, responseId, new InternalErrorException("Synchronization error"));
-        atomicBoolean.set(false);
+        else atomicBoolean.set(false);
     }
 
     public void removeOrganizationLock(String organization) {

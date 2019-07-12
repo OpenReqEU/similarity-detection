@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Stream;
 
 public class SQLiteDatabase implements DatabaseModel {
 
@@ -51,19 +52,21 @@ public class SQLiteDatabase implements DatabaseModel {
 
     private void deleteAllDataFiles() throws IOException {
         Path dirPath = Paths.get(dbPath);
-        Files.walk(dirPath)
-                .map(Path::toFile)
-                .forEach(file -> {
-                            if (!file.isDirectory() && file.getName().contains(".db")) {
-                                file.delete(); //TODO check its result
+        try (Stream<Path> walk = Files.walk(dirPath)) {
+
+            walk.map(Path::toFile)
+                    .forEach(file -> {
+                                if (!file.isDirectory() && file.getName().contains(".db")) {
+                                    boolean aux = file.delete(); //TODO check its result
+                                }
                             }
-                        }
-                );
+                    );
+        }
     }
 
     private void createOrganizationFiles(String organization) throws IOException {
         File file = new File(dbPath + buildFileName(organization));
-        file.createNewFile(); //TODO check its result
+        boolean aux = file.createNewFile(); //TODO check its result
     }
 
     private void insertNewOrganization(String organization) throws SQLException, IOException {

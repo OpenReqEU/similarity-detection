@@ -17,7 +17,7 @@ import static org.junit.Assert.*;
 @SpringBootTest()
 public class SyncTests {
 
-    
+
     int port = 9405;
 
     @Test
