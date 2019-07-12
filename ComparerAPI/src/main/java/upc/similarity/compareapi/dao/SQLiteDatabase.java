@@ -54,7 +54,7 @@ public class SQLiteDatabase implements DatabaseModel {
     private void deleteAllDataFiles() throws IOException, InternalErrorException {
         Path dirPath = Paths.get(dbPath);
         class Control {
-            public volatile boolean error = false;
+            private volatile boolean error = false;
         }
         final Control control = new Control();
         try (Stream<Path> walk = Files.walk(dirPath)) {

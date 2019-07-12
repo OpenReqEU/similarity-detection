@@ -80,8 +80,8 @@ public class DatabaseOperations {
         }
     }
 
-    public void saveInternalException(String organization, String responseId, InternalErrorException e) throws InternalErrorException {
-        Control.getInstance().showErrorMessage(e.getMessage());
+    public void saveInternalException(String console, String organization, String responseId, InternalErrorException e) throws InternalErrorException {
+        Control.getInstance().showErrorMessage(console);
         try {
             if (organization != null && responseId != null) {
                 databaseModel.saveException(organization, responseId, createJsonException(500, Constants.getInstance().getInternalErrorMessage(), e.getMessage()));
@@ -147,8 +147,8 @@ public class DatabaseOperations {
             databaseModel.saveModel(organization, model);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organization, responseId, errorMessage);
-        } catch (IOException e) {
-            saveInternalException(organization, responseId, new InternalErrorException(errorMessage));
+        } catch (IOException | InternalErrorException e) {
+            saveInternalException(e.getMessage(), organization, responseId, new InternalErrorException(errorMessage));
         }
     }
 
@@ -184,8 +184,8 @@ public class DatabaseOperations {
             databaseModel.clearDatabase();
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), null, null, errorMessage);
-        } catch (IOException e) {
-            saveInternalException(null, null, new InternalErrorException(errorMessage));
+        } catch (InternalErrorException | IOException e) {
+            saveInternalException(e.getMessage(),null, null, new InternalErrorException(errorMessage));
         }
     }
 
