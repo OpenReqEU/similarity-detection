@@ -1,0 +1,6 @@
+{"dependencies":[
+        {"dependency_type":"similar","status":"accepted","fromid":"UPC-1","toid":"UPC-2"},
+        {"dependency_type":"similar","status":"accepted","fromid":"UPC-1","toid":"UPC-3"},
+        {"dependency_type":"similar","status":"accepted","fromid":"UPC-5","toid":"UPC-4"}
+    ]
+}

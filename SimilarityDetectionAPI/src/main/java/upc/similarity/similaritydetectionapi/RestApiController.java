@@ -44,10 +44,10 @@ public class RestApiController {
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity buildModel(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
-                                        @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
+                                     @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
                                      @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
-                                        @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
-                                        @ApiParam(value="OpenReqJson with requirements", required = true) @RequestBody Requirements input) {
+                                     @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
+                                     @ApiParam(value="OpenReqJson with requirements", required = true) @RequestBody Requirements input) {
         try {
             if(url != null) urlOk(url);
             return new ResponseEntity<>(similarityService.buildModel(url,organization,compare,threshold,input),HttpStatus.OK);
@@ -62,7 +62,7 @@ public class RestApiController {
             "The generated model is assigned to the specified organization and stored in an internal database. Each organization" +
             " only can have one model at a time. If at the time of generating a new model the corresponding organization already has" +
             " an existing model, it is replaced by the new one.</p><br><p>Also, it returns an array of dependencies between all possible pairs of " +
-            " requirements from the requirements received as input.</p>", tags = "Compare")
+            " requirements from the requirements received as input.</p>", tags = "Model")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})

@@ -142,7 +142,7 @@ public class SimilarityServiceImpl implements SimilarityService {
 
         //New thread
         Thread thread = new Thread(() -> {
-            ResultJson result = new ResultJson(id.getId(),"SimReqOrganization");
+            ResultJson result = new ResultJson(id.getId(),"ReqOrganization");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
                 componentAdapter.simReqOrganization(id.getId(),organization,input.getRequirements());
@@ -299,7 +299,7 @@ public class SimilarityServiceImpl implements SimilarityService {
 
         //New thread
         Thread thread = new Thread(() -> {
-            ResultJson result = new ResultJson(id.getId(),"BuildClusters");
+            ResultJson result = new ResultJson(id.getId(),"BatchProcess");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
                 componentAdapter.cronMethod(id.getId(), organization, input.getRequirements(), input.getDependencies());

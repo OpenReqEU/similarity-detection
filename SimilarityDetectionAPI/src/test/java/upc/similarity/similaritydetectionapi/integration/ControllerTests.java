@@ -47,6 +47,11 @@ public class ControllerTests {
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(9405);
 
+
+    /*
+    Main operations
+     */
+
     @Test
     public void buildModel() throws Exception {
         stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
@@ -55,13 +60,45 @@ public class ControllerTests {
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
         MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/BuildModel").param("organization", "UPC").param("url", callback)
-                .param("compare", "true").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"addReqs/input_addReqs.json")))
+                .param("compare", "true").param("threshold", "0")
+                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"addReqs/input_addReqs.json")))
                 .andExpect(status().isOk()).andReturn();
         TestConfig testConfig = TestConfig.getInstance();
         while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
         testConfig.setComputationFinished(false);
         assertEquals(createJsonResult(200, aux_getResponseId(result), "BuildModel"), testConfig.getResult().toString());
 
+    }
+
+    @Test
+    public void buildModelNotRequirements() throws Exception {
+        this.mockMvc.perform(post("/upc/similarity-detection/BuildModel").param("organization", "UPC").param("url", callback)
+                .param("compare", "true").param("threshold", "0")
+                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"addReqs/input_requirements_empty.json")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void buildModelAndCompute() throws Exception {
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("")));
+        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/BuildModelAndCompute").param("organization", "UPC").param("url", callback)
+                .param("compare", "true").param("threshold", "0.12").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"addReqs/input_addReqsAndCompute.json")))
+                .andExpect(status().isOk()).andReturn();
+        TestConfig testConfig = TestConfig.getInstance();
+        while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
+        testConfig.setComputationFinished(false);
+        assertEquals(createJsonResult(200, aux_getResponseId(result), "AddReqsAndCompute"), testConfig.getResult().toString());
+    }
+
+    @Test
+    public void buildModelAndComputeNotRequirements() throws Exception {
+        this.mockMvc.perform(post("/upc/similarity-detection/BuildModelAndCompute").param("organization", "UPC").param("url", callback)
+                .param("compare", "true").param("threshold", "0.12").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"addReqs/input_requirements_empty.json")))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -72,7 +109,7 @@ public class ControllerTests {
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
         MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/AddRequirements").param("organization", "UPC").param("url", callback)
-                .param("compare", "true").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"addReqs/input_addReqs.json")))
+                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"addReqs/input_addReqs.json")))
                 .andExpect(status().isOk()).andReturn();
         TestConfig testConfig = TestConfig.getInstance();
         while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
@@ -99,30 +136,105 @@ public class ControllerTests {
     }
 
     @Test
-    public void addRequirementsNotRequirements() throws Exception {
-        this.mockMvc.perform(post("/upc/similarity-detection/BuildModel").param("organization", "UPC").param("url", callback)
-                .param("compare", "true").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"addReqs/input_requirements_empty.json")))
-                .andExpect(status().isBadRequest());
+    public void reqReq() throws Exception {
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(read_file(path + "reqReq/output.json"))));
+        this.mockMvc.perform(post("/upc/similarity-detection/ReqReq").param("organization", "UPC")
+                .param("req1", "UPC-1").param("req2", "UPC-2")).andDo(print())
+                .andExpect(status().isOk()).andExpect(status().isOk()).andExpect(content().string(read_file(path + "reqReq/output.json")));
     }
 
     @Test
-    public void addRequirementsAndCompute() throws Exception {
+    public void simReqOrganization() throws Exception {
         stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
-        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/AddReqsAndCompute").param("organization", "UPC").param("url", callback)
-                .param("compare", "true").param("threshold", "0.12").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"addReqs/input_addReqsAndCompute.json")))
+        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/ReqOrganization").param("organization", "UPC").param("url", callback)
+                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"simReqOrganization/input_reqs.json")))
                 .andExpect(status().isOk()).andReturn();
         TestConfig testConfig = TestConfig.getInstance();
         while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
         testConfig.setComputationFinished(false);
-        assertEquals(createJsonResult(200, aux_getResponseId(result), "AddReqsAndCompute"), testConfig.getResult().toString());
+        assertEquals(createJsonResult(200, aux_getResponseId(result), "ReqOrganization"), testConfig.getResult().toString());
     }
 
     @Test
-    public void addClustersAndCompute() throws Exception {
+    public void reqProject() throws Exception {
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("")));
+        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/ReqProject").param("organization", "UPC").param("url", callback)
+                .param("project", "UPC-P1").param("req", "UPC-1")
+                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"reqProject/input_ReqProject.json")))
+                .andExpect(status().isOk()).andReturn();
+        TestConfig testConfig = TestConfig.getInstance();
+        while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
+        testConfig.setComputationFinished(false);
+        assertEquals(createJsonResult(200, aux_getResponseId(result), "ReqProject"), testConfig.getResult().toString());
+    }
+
+    @Test
+    public void reqProjectNotExist() throws Exception {
+        this.mockMvc.perform(post("/upc/similarity-detection/ReqProject").param("organization", "UPC").param("url", callback)
+                .param("project", "UPC-P2").param("req", "UPC-1")
+                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"reqProject/input_ReqProject.json")))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void project() throws Exception {
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("")));
+        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/Project").param("organization", "UPC").param("url", callback)
+                .param("project", "UPC-P1").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"project/input_Project.json")))
+                .andExpect(status().isOk()).andReturn();
+        TestConfig testConfig = TestConfig.getInstance();
+        while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
+        testConfig.setComputationFinished(false);
+        assertEquals(createJsonResult(200, aux_getResponseId(result), "Project"), testConfig.getResult().toString());
+    }
+
+    @Test
+    public void projectNotExist() throws Exception {
+        this.mockMvc.perform(post("/upc/similarity-detection/Project").param("organization", "UPC").param("url", callback)
+                .param("project", "UPC-P2").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"project/input_Project.json")))
+                .andExpect(status().isNotFound());
+    }
+
+
+    /*
+    Cluster operations
+     */
+
+    @Test
+    public void buildClusters() throws Exception {
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("")));
+        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/BuildClusters").param("organization", "UPC").param("url", callback)
+                .param("compare", "true").param("threshold", "0")
+                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"orphans/input.json")))
+                .andExpect(status().isOk()).andReturn();
+        TestConfig testConfig = TestConfig.getInstance();
+        while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
+        testConfig.setComputationFinished(false);
+        assertEquals(createJsonResult(200, aux_getResponseId(result), "BuildClusters"), testConfig.getResult().toString());
+    }
+
+    @Test
+    public void buildClustersAndCompute() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", "test.txt",
                 "text/plain", "Spring Framework".getBytes());
         stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
@@ -141,116 +253,49 @@ public class ControllerTests {
     }
 
     @Test
-    public void addClusters() throws Exception {
-        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("")));
-        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/BuildClusters").param("organization", "UPC").param("url", callback)
-                .param("compare", "true")
-                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"orphans/input.json")))
-                .andExpect(status().isOk()).andReturn();
-        TestConfig testConfig = TestConfig.getInstance();
-        while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
-        testConfig.setComputationFinished(false);
-        assertEquals(createJsonResult(200, aux_getResponseId(result), "AddClusters"), testConfig.getResult().toString());
-    }
-
-    @Test
-    public void simReqOrganization() throws Exception {
-        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("")));
-        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/ReqOrganization").param("organization", "UPC").param("url", callback)
-                .param("compare", "true").param("threshold", "0.12").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"simReqOrganization/input_reqs.json")))
-                .andExpect(status().isOk()).andReturn();
-        TestConfig testConfig = TestConfig.getInstance();
-        while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
-        testConfig.setComputationFinished(false);
-        assertEquals(createJsonResult(200, aux_getResponseId(result), "SimReqOrganization"), testConfig.getResult().toString());
-    }
-
-    @Test
     public void simReqClusters() throws Exception {
         stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(read_file(path + "simReqClusters/output.json"))));
-        this.mockMvc.perform(post("/upc/similarity-detection/ReqClusters").param("organization", "TEEEEST")
+        this.mockMvc.perform(post("/upc/similarity-detection/ReqClusters").param("organization", "UPC")
                 .param("requirementId", "UPC-1").param("maxNumber", "10"))
-                .andExpect(status().isOk()).andExpect(status().isOk()).andExpect(content().string("{\"dependencies\":[{\"toid\":\"UPC-2\",\"dependency_score\":\"0.8787\",\"fromid\":\"UPC-1\",\"status\":\"proposed\"}]}"));
+                .andExpect(status().isOk()).andExpect(status().isOk()).andExpect(content().string(read_file(path + "simReqClusters/output.json")));
     }
 
     @Test
-    public void addRequirementsAndComputeNotRequirements() throws Exception {
-        this.mockMvc.perform(post("/upc/similarity-detection/AddReqsAndCompute").param("organization", "UPC").param("url", callback)
-                .param("compare", "true").param("threshold", "0.12").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"addReqs/input_requirements_empty.json")))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    public void project() throws Exception {
+    public void treatDependencies() throws Exception {
         stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
-        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/Project").param("organization", "UPC").param("url", callback)
-                .param("project", "UPC-P1").param("threshold", "0.12").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"project/input_Project.json")))
-                .andExpect(status().isOk()).andReturn();
-        TestConfig testConfig = TestConfig.getInstance();
-        while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
-        testConfig.setComputationFinished(false);
-        assertEquals(createJsonResult(200, aux_getResponseId(result), "Project"), testConfig.getResult().toString());
+        this.mockMvc.perform(post("/upc/similarity-detection/TreatAcceptedAndRejectedDependencies").param("organization", "UPC")
+                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"treatDependencies/input.json")))
+                .andExpect(status().isOk()).andExpect(status().isOk());
     }
 
     @Test
-    public void projectNotExist() throws Exception {
-        this.mockMvc.perform(post("/upc/similarity-detection/Project").param("organization", "UPC").param("url", callback)
-                .param("project", "UPC-P2").param("threshold", "0.12").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"project/input_Project.json")))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    public void reqProject() throws Exception {
+    public void cronMethod() throws Exception {
         stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
-        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/ReqProject").param("organization", "UPC").param("url", callback)
-                .param("project", "UPC-P1").param("threshold", "0.12").param("req", "UPC-1")
-                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"reqProject/input_ReqProject.json")))
+        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/BatchProcess").param("organization", "UPC").param("url", callback)
+                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"cronMethod/input.json")))
                 .andExpect(status().isOk()).andReturn();
         TestConfig testConfig = TestConfig.getInstance();
         while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
         testConfig.setComputationFinished(false);
-        assertEquals(createJsonResult(200, aux_getResponseId(result), "ReqProject"), testConfig.getResult().toString());
+        assertEquals(createJsonResult(200, aux_getResponseId(result), "BatchProcess"), testConfig.getResult().toString());
     }
 
-    @Test
-    public void reqProjectNotExist() throws Exception {
-        this.mockMvc.perform(post("/upc/similarity-detection/ReqProject").param("organization", "UPC").param("url", callback)
-                .param("project", "UPC-P2").param("threshold", "0.12").param("req", "UPC-1")
-                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"reqProject/input_ReqProject.json")))
-                .andExpect(status().isNotFound());
-    }
 
-    @Test
-    public void reqReq() throws Exception {
-        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(read_file(path + "reqReq/output.json"))));
-        this.mockMvc.perform(post("/upc/similarity-detection/ReqReq").param("organization", "UPC")
-                .param("req1", "UPC-1").param("req2", "UPC-2")).andDo(print())
-                .andExpect(status().isOk()).andExpect(status().isOk()).andExpect(content().string(read_file(path + "reqReq/output.json")));
-    }
+    /*
+    Auxiliary operations
+     */
 
     @Test
     public void getResponse() throws Exception {
@@ -276,20 +321,30 @@ public class ControllerTests {
     }
 
     @Test
-    public void deleteDatabase() throws Exception {
+    public void clearOrganization() throws Exception {
         stubFor(com.github.tomakehurst.wiremock.client.WireMock.delete(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
-        this.mockMvc.perform(delete("/upc/similarity-detection/DeleteDatabase").param("organization", "UPC")).andDo(print())
+        this.mockMvc.perform(delete("/upc/similarity-detection/ClearOrganization").param("organization", "UPC")).andDo(print())
+                .andExpect(status().isOk()).andExpect(status().isOk());
+    }
+
+    @Test
+    public void clearDatabase() throws Exception {
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.delete(urlPathMatching("/upc/Compare/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("")));
+        this.mockMvc.perform(delete("/upc/similarity-detection/ClearDatabase")).andDo(print())
                 .andExpect(status().isOk()).andExpect(status().isOk());
     }
 
 
-
     /*
-    Auxiliary operations
+    Private operations
      */
 
     private String createJsonResult(int code, String id, String operation) {
