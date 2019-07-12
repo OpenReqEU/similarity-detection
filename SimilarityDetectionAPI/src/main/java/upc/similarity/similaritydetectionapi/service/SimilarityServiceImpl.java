@@ -9,7 +9,6 @@ import org.apache.http.impl.client.HttpClients;
 import org.springframework.stereotype.Service;
 import upc.similarity.similaritydetectionapi.AdaptersController;
 import upc.similarity.similaritydetectionapi.adapter.ComponentAdapter;
-import upc.similarity.similaritydetectionapi.adapter.CompareAdapter;
 import upc.similarity.similaritydetectionapi.config.Control;
 import upc.similarity.similaritydetectionapi.entity.Project;
 import upc.similarity.similaritydetectionapi.entity.input_output.*;
@@ -22,6 +21,8 @@ import java.util.*;
 @Service("similarityService")
 public class SimilarityServiceImpl implements SimilarityService {
 
+    //TODO check input in all methods
+
     private static Component component = Component.TfIdfCompare;
     private static String thresholdNotOk = "The threshold must be a number between 0 and 1 both included";
     private Random rand = new Random();
@@ -32,17 +33,18 @@ public class SimilarityServiceImpl implements SimilarityService {
      */
 
     @Override
-    public ResultId buildModel(String url, String organization, boolean compare, Requirements input) throws BadRequestException {
+    public ResultId buildModel(String url, String organization, boolean compare, double threshold, Requirements input) throws BadRequestException {
 
-        checkInput(input, 0);
+        checkInput(input);
+        checkThreshold(threshold);
         ResultId id = getId();
 
         //New thread
         Thread thread = new Thread(() -> {
             ResultJson result = new ResultJson(id.getId(),"BuildModel");
             try {
-                CompareAdapter compareAdapter = new CompareAdapter();
-                compareAdapter.buildModel(id.getId(),organization,compare,input.getRequirements());
+                ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
+                componentAdapter.buildModel(id.getId(),organization,compare,threshold,input.getRequirements());
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -57,17 +59,17 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId addRequirements(String url, String organization, boolean compare, Requirements input) throws BadRequestException {
+    public ResultId addRequirements(String url, String organization, Requirements input) throws BadRequestException {
 
-        checkInput(input, 0);
+        checkInput(input);
         ResultId id = getId();
 
         //New thread
         Thread thread = new Thread(() -> {
             ResultJson result = new ResultJson(id.getId(),"AddRequirements");
             try {
-                CompareAdapter compareAdapter = new CompareAdapter();
-                compareAdapter.addRequirements(id.getId(),organization,compare,input.getRequirements());
+                ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
+                componentAdapter.addRequirements(id.getId(),organization,input.getRequirements());
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -84,15 +86,15 @@ public class SimilarityServiceImpl implements SimilarityService {
     @Override
     public ResultId deleteRequirements(String url, String organization, Requirements input) throws BadRequestException {
 
-        checkInput(input, 0);
+        checkInput(input);
         ResultId id = getId();
 
         //New thread
         Thread thread = new Thread(() -> {
             ResultJson result = new ResultJson(id.getId(),"DeleteRequirements");
             try {
-                CompareAdapter compareAdapter = new CompareAdapter();
-                compareAdapter.deleteRequirements(id.getId(),organization,input.getRequirements());
+                ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
+                componentAdapter.deleteRequirements(id.getId(),organization,input.getRequirements());
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -109,15 +111,16 @@ public class SimilarityServiceImpl implements SimilarityService {
     @Override
     public ResultId buildModelAndCompute(String url, String organization, boolean compare, double threshold, Requirements input) throws BadRequestException {
 
-        checkInput(input, threshold);
+        checkInput(input);
+        checkThreshold(threshold);
         ResultId id = getId();
 
         //New thread
         Thread thread = new Thread(() -> {
             ResultJson result = new ResultJson(id.getId(),"AddReqsAndCompute");
             try {
-                CompareAdapter compareAdapter = new CompareAdapter();
-                compareAdapter.buildModelAndCompute(id.getId(),organization,compare,threshold,input.getRequirements());
+                ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
+                componentAdapter.buildModelAndCompute(id.getId(),organization,compare,threshold,input.getRequirements());
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -132,78 +135,17 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId buildClustersAndComputeOrphans(String url, String organization, boolean compare, double threshold, ProjectWithDependencies input) throws BadRequestException {
+    public ResultId simReqOrganization(String url, String organization, Requirements input) throws BadRequestException {
 
-        checkThreshold(threshold);
-        if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements or dependencies");
-        ResultId id = getId();
-
-        //New thread
-        Thread thread = new Thread(() -> {
-            ResultJson result = new ResultJson(id.getId(),"BuildClustersAndCompute");
-            try {
-                CompareAdapter compareAdapter = new CompareAdapter();
-                compareAdapter.buildClustersAndComputeOrphans(id.getId(),organization,compare,threshold,input.getRequirements(),input.getDependencies());
-                result.setCode(200);
-            } catch (ComponentException e) {
-                result.setException(e.getStatus(),e.getError(),e.getMessage());
-            }
-            finally {
-                updateClient(result,url);
-            }
-        });
-
-        thread.start();
-        return id;
-    }
-
-    @Override
-    public ResultId buildClusters(String url, String organization, boolean compare, ProjectWithDependencies input) throws BadRequestException {
-
-        if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements or dependencies");
-        ResultId id = getId();
-
-        //New thread
-        Thread thread = new Thread(() -> {
-            ResultJson result = new ResultJson(id.getId(),"AddClusters");
-            try {
-                CompareAdapter compareAdapter = new CompareAdapter();
-                compareAdapter.buildClusters(id.getId(),organization,compare,input.getRequirements(),input.getDependencies());
-                result.setCode(200);
-            } catch (ComponentException e) {
-                result.setException(e.getStatus(),e.getError(),e.getMessage());
-            }
-            finally {
-                updateClient(result,url);
-            }
-        });
-
-        thread.start();
-        return id;
-    }
-
-    @Override
-    public String simReqClusters(String organization, boolean compare, double threshold, Requirements input) throws ComponentException {
-
-        checkInput(input, threshold);
-        ResultId id = getId();
-
-        CompareAdapter compareAdapter = new CompareAdapter();
-        return compareAdapter.simReqClusters(id.getId(),organization,compare,threshold,input.getRequirements());
-    }
-
-    @Override
-    public ResultId simReqOrganization(String url, String organization, boolean compare, double threshold, Requirements input) throws BadRequestException {
-
-        checkInput(input, threshold);
+        checkInput(input);
         ResultId id = getId();
 
         //New thread
         Thread thread = new Thread(() -> {
             ResultJson result = new ResultJson(id.getId(),"SimReqOrganization");
             try {
-                CompareAdapter compareAdapter = new CompareAdapter();
-                compareAdapter.simReqOrganization(id.getId(),organization,compare,threshold,input.getRequirements());
+                ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
+                componentAdapter.simReqOrganization(id.getId(),organization,input.getRequirements());
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -227,9 +169,8 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simReqProject(String url, String organization, double threshold, int maxNumber, List<String> req, String projectId, Projects input) throws BadRequestException, NotFoundException {
+    public ResultId simReqProject(String url, String organization, List<String> req, String projectId, Projects input) throws NotFoundException {
 
-        checkThreshold(threshold);
         Project project = searchProject(projectId,input.getProjects());
 
         ResultId id = getId();
@@ -239,7 +180,7 @@ public class SimilarityServiceImpl implements SimilarityService {
             ResultJson result = new ResultJson(id.getId(),"ReqProject");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                componentAdapter.simReqProject(id.getId(),organization,req,threshold,project.getSpecifiedRequirements());
+                componentAdapter.simReqProject(id.getId(),organization,req,project.getSpecifiedRequirements());
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -254,9 +195,8 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simProject(String url, String organization, double threshold, int maxNumber, String projectId, Projects input) throws BadRequestException, NotFoundException {
+    public ResultId simProject(String url, String organization, String projectId, Projects input) throws NotFoundException {
 
-        checkThreshold(threshold);
         Project project = searchProject(projectId,input.getProjects());
         ResultId id = getId();
 
@@ -265,7 +205,7 @@ public class SimilarityServiceImpl implements SimilarityService {
             ResultJson result = new ResultJson(id.getId(),"Project");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                componentAdapter.simProject(id.getId(),organization,threshold,project.getSpecifiedRequirements());
+                componentAdapter.simProject(id.getId(),organization,project.getSpecifiedRequirements());
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -278,6 +218,109 @@ public class SimilarityServiceImpl implements SimilarityService {
         thread.start();
         return id;
     }
+
+
+
+    /*
+    Cluster operations
+     */
+
+    @Override
+    public ResultId buildClusters(String url, String organization, boolean compare, double threshold, ProjectWithDependencies input) throws BadRequestException {
+
+        if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements or dependencies");
+        ResultId id = getId();
+
+        //New thread
+        Thread thread = new Thread(() -> {
+            ResultJson result = new ResultJson(id.getId(),"BuildClusters");
+            try {
+                ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
+                componentAdapter.buildClusters(id.getId(),organization,compare,threshold,input.getRequirements(),input.getDependencies());
+                result.setCode(200);
+            } catch (ComponentException e) {
+                result.setException(e.getStatus(),e.getError(),e.getMessage());
+            }
+            finally {
+                updateClient(result,url);
+            }
+        });
+
+        thread.start();
+        return id;
+    }
+
+
+    @Override
+    public ResultId buildClustersAndCompute(String url, String organization, boolean compare, double threshold, ProjectWithDependencies input) throws BadRequestException {
+
+        checkThreshold(threshold);
+        if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements or dependencies");
+        ResultId id = getId();
+
+        //New thread
+        Thread thread = new Thread(() -> {
+            ResultJson result = new ResultJson(id.getId(),"BuildClustersAndCompute");
+            try {
+                ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
+                componentAdapter.buildClustersAndCompute(id.getId(),organization,compare,threshold,input.getRequirements(),input.getDependencies());
+                result.setCode(200);
+            } catch (ComponentException e) {
+                result.setException(e.getStatus(),e.getError(),e.getMessage());
+            }
+            finally {
+                updateClient(result,url);
+            }
+        });
+
+        thread.start();
+        return id;
+    }
+
+    @Override
+    public String simReqClusters(String organization, int maxNumber, List<String> input) throws ComponentException {
+
+        ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
+        return componentAdapter.simReqClusters(organization,maxNumber,input);
+    }
+
+    @Override
+    public void treatDependencies(String organization, Dependencies dependencies) throws ComponentException {
+
+        ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
+        componentAdapter.treatDependencies(organization, dependencies.getDependencies());
+    }
+
+    @Override
+    public ResultId cronMethod(String url, String organization, ProjectWithDependencies input) throws ComponentException {
+
+        if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements or dependencies");
+        ResultId id = getId();
+
+        //New thread
+        Thread thread = new Thread(() -> {
+            ResultJson result = new ResultJson(id.getId(),"BuildClusters");
+            try {
+                ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
+                componentAdapter.cronMethod(id.getId(), organization, input.getRequirements(), input.getDependencies());
+                result.setCode(200);
+            } catch (ComponentException e) {
+                result.setException(e.getStatus(),e.getError(),e.getMessage());
+            }
+            finally {
+                updateClient(result,url);
+            }
+        });
+
+        thread.start();
+        return id;
+    }
+
+
+
+    /*
+    Auxiliary operations
+     */
 
     @Override
     public String getResponsePage(String organization, String responseId) throws ComponentException {
@@ -292,7 +335,13 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public void deleteDatabase() throws ComponentException {
+    public void clearOrganization(String organization) throws ComponentException {
+        ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
+        componentAdapter.deleteOrganization(organization);
+    }
+
+    @Override
+    public void clearDatabase() throws ComponentException {
         ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
         componentAdapter.deleteDatabase();
     }
@@ -301,7 +350,7 @@ public class SimilarityServiceImpl implements SimilarityService {
 
 
     /*
-    Auxiliary operations
+    Private operations
      */
 
 
@@ -328,25 +377,27 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     private void updateClient(ResultJson json, String url) {
-        Control control = Control.getInstance();
-        HttpClient httpclient = HttpClients.createDefault();
-        HttpPost httppost = new HttpPost(url);
-        httppost.setEntity(new StringEntity(json.toJSON(), ContentType.APPLICATION_JSON));
+        if (url != null) {
+            Control control = Control.getInstance();
+            HttpClient httpclient = HttpClients.createDefault();
+            HttpPost httppost = new HttpPost(url);
+            httppost.setEntity(new StringEntity(json.toJSON(), ContentType.APPLICATION_JSON));
 
-        int httpStatus;
-        try {
-            HttpResponse response = httpclient.execute(httppost);
-            httpStatus = response.getStatusLine().getStatusCode();
-            if ((httpStatus >= 200) && (httpStatus < 300)) control.showInfoMessage("The connection with the external server was successful");
-            else control.showErrorMessage("An error occurred when connecting with the external server");
-        } catch (IOException e) {
-            control.showErrorMessage("An error occurred when connecting with the external server. File error");
+            int httpStatus;
+            try {
+                HttpResponse response = httpclient.execute(httppost);
+                httpStatus = response.getStatusLine().getStatusCode();
+                if ((httpStatus >= 200) && (httpStatus < 300))
+                    control.showInfoMessage("The connection with the external server was successful");
+                else control.showErrorMessage("An error occurred when connecting with the external server");
+            } catch (IOException e) {
+                control.showErrorMessage("An error occurred when connecting with the external server. File error");
+            }
         }
     }
 
-    private void checkInput(Requirements input, double threshold) throws BadRequestException {
+    private void checkInput(Requirements input) throws BadRequestException {
         if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements");
-        checkThreshold(threshold);
     }
 
     private void checkThreshold(double threshold) throws BadRequestException {

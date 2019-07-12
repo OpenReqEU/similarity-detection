@@ -33,8 +33,8 @@ public class SwaggerConfig {
             "<li><strong>Model</strong>: These methods are responsible for pre-processing the input requirements, generating a model that saves the requirements information and assigning it to an organization. Generating these models is mandatory before making any comparison.</li>" +
             "<ul>" +
             "<li>BuildModel: Pre-processes the input requirements, generates a model and assings it to an specified organization.</li>" +
-            "<li>AddRequirements: Pre-processes the input requirements and adds them to an existing model. Also it updates the clusters if the model has them.</li>" +
-            "<li>DeleteRequirements: Deletes the input requirements from an existing model. Also it updates the clusters if the model has them.</li>" +
+            "<li>AddRequirements: Pre-processes the input requirements and adds them to an existing model.</li>" +
+            "<li>DeleteRequirements: Deletes the input requirements from an existing model.</li>" +
             "</ul>"+
             "<li><strong>Compare</strong>: These methods are in charge of comparing and returning the corresponding similarity dependencies between the specified requirements of an organization’s model.</li>" +
             "<ul>" +

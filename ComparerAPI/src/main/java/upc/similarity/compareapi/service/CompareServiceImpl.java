@@ -347,7 +347,7 @@ public class CompareServiceImpl implements CompareService {
 
             for (Dependency dependency : input.getDependencies()) {
                 String status = dependency.getStatus();
-                if (status != null) {
+                if (dependency.getDependencyType() != null && dependency.getStatus() != null && dependency.getDependencyType().equals("similar")) {
                     if (status.equals("accepted")) {
                         acceptedDependencies.add(dependency);
                         String fromId = dependency.getFromid();
@@ -398,28 +398,30 @@ public class CompareServiceImpl implements CompareService {
             List<Dependency> acceptedDependencies = new ArrayList<>();
             List<Dependency> rejectedDependencies = new ArrayList<>();
             for (Dependency dependency : dependencies) {
-                String status = dependency.getStatus();
-                String fromid = dependency.getFromid();
-                String toid = dependency.getToid();
-                if (!docs.containsKey(fromid))
-                    throw new NotFoundException("The requirement with id " + fromid + " does not exists in the organization's model");
-                if (!docs.containsKey(toid))
-                    throw new NotFoundException("The requirement with id " + toid + " does not exists in the organization's model");
-                if (status.equals("accepted")) {
-                    if (!repeatedAccepted.contains(fromid + toid)) {
-                        repeatedAccepted.add(fromid + toid);
-                        repeatedAccepted.add(toid + fromid);
-                        acceptedDependencies.add(dependency);
-                    } else
-                        throw new BadRequestException("There are two input accepted dependencies with the same two requirements: " + fromid + " and " + toid);
-                }
-                if (status.equals("rejected")) {
-                    if (!repeatedRejected.contains(fromid + toid)) {
-                        repeatedRejected.add(fromid + toid);
-                        repeatedRejected.add(toid + fromid);
-                        rejectedDependencies.add(dependency);
-                    } else
-                        throw new BadRequestException("There are two input rejected dependencies with the same two requirements: " + fromid + " and " + toid);
+                if (dependency.getDependencyType() != null && dependency.getStatus() != null && dependency.getDependencyType().equals("similar")) {
+                    String status = dependency.getStatus();
+                    String fromid = dependency.getFromid();
+                    String toid = dependency.getToid();
+                    if (!docs.containsKey(fromid))
+                        throw new NotFoundException("The requirement with id " + fromid + " does not exists in the organization's model");
+                    if (!docs.containsKey(toid))
+                        throw new NotFoundException("The requirement with id " + toid + " does not exists in the organization's model");
+                    if (status.equals("accepted")) {
+                        if (!repeatedAccepted.contains(fromid + toid)) {
+                            repeatedAccepted.add(fromid + toid);
+                            repeatedAccepted.add(toid + fromid);
+                            acceptedDependencies.add(dependency);
+                        } else
+                            throw new BadRequestException("There are two input accepted dependencies with the same two requirements: " + fromid + " and " + toid);
+                    }
+                    if (status.equals("rejected")) {
+                        if (!repeatedRejected.contains(fromid + toid)) {
+                            repeatedRejected.add(fromid + toid);
+                            repeatedRejected.add(toid + fromid);
+                            rejectedDependencies.add(dependency);
+                        } else
+                            throw new BadRequestException("There are two input rejected dependencies with the same two requirements: " + fromid + " and " + toid);
+                    }
                 }
             }
 

@@ -12,36 +12,40 @@ public class CompareAdapter extends ComponentAdapter{
 
     private static final String URL = "http://localhost:9405/upc/Compare/";
 
-    public void buildModel(String filename, String organization, boolean compare, List<Requirement> requirements) throws ComponentException {
+    @Override
+    public void buildModel(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException {
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
 
-        connectionComponentPost(URL + "BuildModel?compare=" + compare + "&organization=" + organization + "&filename=" + filename, requirementsJson);
+        connectionComponentPost(URL + "BuildModel?compare=" + compare + "&organization=" + organization + "&responseId=" + responseId + "&threshold" + threshold, requirementsJson);
     }
 
-    public void addRequirements(String filename, String organization, boolean compare, List<Requirement> requirements) throws ComponentException {
+    @Override
+    public void addRequirements(String responseId, String organization, List<Requirement> requirements) throws ComponentException {
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
 
-        connectionComponentPost(URL + "AddRequirements?compare=" + compare + "&organization=" + organization + "&filename=" + filename, requirementsJson);
+        connectionComponentPost(URL + "AddRequirements?organization=" + organization + "&responseId=" + responseId, requirementsJson);
     }
 
-    public void deleteRequirements(String filename, String organization, List<Requirement> requirements) throws ComponentException {
+    @Override
+    public void deleteRequirements(String responseId, String organization, List<Requirement> requirements) throws ComponentException {
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
 
-        connectionComponentPost(URL + "DeleteRequirements?organization=" + organization + "&filename=" + filename, requirementsJson);
+        connectionComponentPost(URL + "DeleteRequirements?organization=" + organization + "&responseId=" + responseId, requirementsJson);
     }
 
-
-    public void buildModelAndCompute(String filename, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException {
+    @Override
+    public void buildModelAndCompute(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException {
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
 
-        connectionComponentPost(URL + "BuildModelAndCompute?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, requirementsJson);
+        connectionComponentPost(URL + "BuildModelAndCompute?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, requirementsJson);
     }
 
-    public void buildClustersAndComputeOrphans(String filename, String organization, boolean compare, double threshold, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException {
+    @Override
+    public void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException {
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
         JSONArray dependenciesJson = listDependenciesToJson(dependencies);
@@ -50,10 +54,11 @@ public class CompareAdapter extends ComponentAdapter{
         jsonToSend.put("requirements", requirementsJson);
         jsonToSend.put("dependencies", dependenciesJson);
 
-        connectionComponentPost(URL + "BuildClustersAndCompute?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, jsonToSend);
+        connectionComponentPost(URL + "BuildClustersAndCompute?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, jsonToSend);
     }
 
-    public void buildClusters(String filename, String organization, boolean compare, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException {
+    @Override
+    public void buildClusters(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException {
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
         JSONArray dependenciesJson = listDependenciesToJson(dependencies);
@@ -62,33 +67,55 @@ public class CompareAdapter extends ComponentAdapter{
         jsonToSend.put("requirements", requirementsJson);
         jsonToSend.put("dependencies", dependenciesJson);
 
-        connectionComponentPost(URL + "BuildClusters?filename=" + filename + "&compare=" + compare + "&organization=" + organization, jsonToSend);
+        connectionComponentPost(URL + "BuildClusters?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, jsonToSend);
     }
 
     @Override
-    public void simReqOrganization(String filename, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException {
+    public void simReqOrganization(String responseId, String organization, List<Requirement> requirements) throws ComponentException {
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
 
-        connectionComponentPost(URL + "SimReqOrganization?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, requirementsJson);
+        connectionComponentPost(URL + "SimReqOrganization?responseId=" + responseId + "&organization=" + organization, requirementsJson);
     }
 
+    @Override
+    public String simReqClusters(String organization, int maxValue, List<String> requirements) throws ComponentException {
 
-    public String simReqClusters(String filename, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException {
+        JSONArray requirementsJson = new JSONArray();
+        for (String id: requirements) requirementsJson.put(id);
+
+        return connectionComponentPost(URL + "SimReqClusters?maxValue=" + maxValue + "&organization=" + organization, requirementsJson);
+    }
+
+    @Override
+    public void treatDependencies(String organization, List<Dependency> dependencies) throws ComponentException {
+
+        JSONArray dependenciesJson = listDependenciesToJson(dependencies);
+
+        connectionComponentPost(URL + "TreatAcceptedAndRejectedDependencies?organization=" + organization, dependenciesJson);
+    }
+
+    @Override
+    public void cronMethod(String responseId, String organization,  List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException {
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
+        JSONArray dependenciesJson = listDependenciesToJson(dependencies);
 
-        return connectionComponentPost(URL + "SimReqClusters?filename=" + filename + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, requirementsJson);
+        JSONObject jsonToSend = new JSONObject();
+        jsonToSend.put("requirements", requirementsJson);
+        jsonToSend.put("dependencies", dependenciesJson);
+
+        connectionComponentPost(URL + "BuildClusters?responseId=" + responseId + "&organization=" + organization, jsonToSend);
     }
 
     @Override
-    public String simReqReq(String filename, String organization, String req1, String req2) throws ComponentException {
+    public String simReqReq(String responseId, String organization, String req1, String req2) throws ComponentException {
 
-        return connectionComponentPost(URL + "SimReqReq?organization=" + organization + "&req1=" + req1 + "&req2=" + req2 + "&filename=" + filename, null);
+        return connectionComponentPost(URL + "SimReqReq?organization=" + organization + "&req1=" + req1 + "&req2=" + req2 + "&responseId=" + responseId, null);
     }
 
     @Override
-    public void simReqProject(String filename, String organization, List<String> req, double threshold, List<String> requirements) throws ComponentException {
+    public void simReqProject(String responseId, String organization, List<String> req, List<String> requirements) throws ComponentException {
 
         JSONArray requirementsToCompare = new JSONArray();
         for (String aux: req) requirementsToCompare.put(aux);
@@ -99,16 +126,16 @@ public class CompareAdapter extends ComponentAdapter{
         jsonToSend.put("reqs_to_compare",requirementsToCompare);
         jsonToSend.put("project_reqs",projectRequirements);
 
-        connectionComponentPost(URL + "SimReqProject?organization=" + organization + "&filename=" + filename + "&threshold=" + threshold, jsonToSend);
+        connectionComponentPost(URL + "SimReqProject?organization=" + organization + "&responseId=" + responseId, jsonToSend);
     }
 
     @Override
-    public void simProject(String filename, String organization, double threshold, List<String> reqs) throws ComponentException {
+    public void simProject(String responseId, String organization, List<String> reqs) throws ComponentException {
 
         JSONArray jsonToSend = new JSONArray();
         for (String aux: reqs) jsonToSend.put(aux);
 
-        connectionComponentPost(URL + "SimProject?organization=" + organization + "&filename=" + filename + "&threshold=" + threshold, jsonToSend);
+        connectionComponentPost(URL + "SimProject?organization=" + organization + "&responseId=" + responseId, jsonToSend);
     }
 
     @Override
@@ -121,6 +148,12 @@ public class CompareAdapter extends ComponentAdapter{
     public void deleteOrganizationResponses(String organization) throws ComponentException {
 
         connectionComponentDelete(URL + "ClearOrganizationResponses?organization=" + organization);
+    }
+
+    @Override
+    public void deleteOrganization(String organization) throws ComponentException {
+
+        connectionComponentDelete(URL + "ClearOrganization?organization=" + organization);
     }
 
     @Override

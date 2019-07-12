@@ -25,22 +25,53 @@ public abstract class ComponentAdapter {
     Main operations
      */
 
-    public abstract String simReqReq(String filename, String organization, String req1, String req2) throws ComponentException;
+    public abstract void buildModel(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException;
 
-    public abstract void simReqProject(String filename, String organization, List<String> req, double threshold, List<String> reqs) throws ComponentException;
+    public abstract void buildModelAndCompute(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException;
 
-    public abstract void simReqOrganization(String filename, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException;
+    public abstract void addRequirements(String responseId, String organization, List<Requirement> requirements) throws ComponentException;
 
-    public abstract void simProject(String filename, String organization, double threshold, List<String> reqs) throws ComponentException;
+    public abstract void deleteRequirements(String responseId, String organization, List<Requirement> requirements) throws ComponentException;
+
+    public abstract String simReqReq(String responseId, String organization, String req1, String req2) throws ComponentException;
+
+    public abstract void simReqOrganization(String responseId, String organization, List<Requirement> requirements) throws ComponentException;
+
+    public abstract void simReqProject(String responseId, String organization, List<String> req, List<String> reqs) throws ComponentException;
+
+    public abstract void simProject(String responseId, String organization, List<String> reqs) throws ComponentException;
+
+
+    /*
+    Cluster operations
+     */
+
+    public abstract void buildClusters(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException;
+
+    public abstract void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException;
+
+    public abstract String simReqClusters(String organization, int maxValue, List<String> requirements) throws ComponentException;
+
+    public abstract void treatDependencies(String organization, List<Dependency> dependencies) throws ComponentException;
+
+    public abstract void cronMethod(String responseId, String organization,  List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException;
+
+
+    /*
+    Auxiliary operations
+     */
 
     public abstract String getResponsePage(String organization, String responseId) throws ComponentException;
 
     public abstract void deleteOrganizationResponses(String organization) throws ComponentException;
 
+    public abstract void deleteOrganization(String organization) throws ComponentException;
+
     public abstract void deleteDatabase() throws ComponentException;
 
+
     /*
-    Auxiliary operations
+    Private operations
      */
 
     protected String connectionComponentPost(String url, Object json) throws ComponentException {

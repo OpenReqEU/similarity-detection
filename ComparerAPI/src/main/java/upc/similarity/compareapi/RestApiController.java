@@ -24,7 +24,7 @@ public class RestApiController {
     public ResponseEntity buildModel(@RequestParam("organization") String organization,
                                      @RequestParam("compare") boolean compare,
                                      @RequestParam("threshold") double threshold,
-                                     @RequestParam("filename") String responseId,
+                                     @RequestParam("responseId") String responseId,
                                      @RequestBody List<Requirement> input) {
         try {
             compareService.buildModel(responseId,compare,threshold,organization,input);
@@ -36,7 +36,7 @@ public class RestApiController {
 
     @PostMapping(value = "/AddRequirements")
     public ResponseEntity addRequirements(@RequestParam("organization") String organization,
-                                     @RequestParam("filename") String responseId,
+                                     @RequestParam("responseId") String responseId,
                                      @RequestBody List<Requirement> input) {
         try {
             compareService.addRequirements(responseId,organization,input);
@@ -48,7 +48,7 @@ public class RestApiController {
 
     @PostMapping(value = "/DeleteRequirements")
     public ResponseEntity deleteRequirements(@RequestParam("organization") String organization,
-                                     @RequestParam("filename") String responseId,
+                                     @RequestParam("responseId") String responseId,
                                      @RequestBody List<Requirement> input) {
         try {
             compareService.deleteRequirements(responseId,organization,input);
@@ -70,8 +70,8 @@ public class RestApiController {
     }
 
     @PostMapping(value = "/SimReqOrganization")
-    public ResponseEntity simReqProject(@RequestParam("organization") String organization,
-                                        @RequestParam("filename") String responseId,
+    public ResponseEntity simReqOrganization(@RequestParam("organization") String organization,
+                                        @RequestParam("responseId") String responseId,
                                         @RequestBody List<Requirement> requirements) {
         try {
             compareService.simReqOrganization(responseId,organization,requirements);
@@ -83,7 +83,7 @@ public class RestApiController {
 
     @PostMapping(value = "/SimReqProject")
     public ResponseEntity simReqProject(@RequestParam("organization") String organization,
-                                           @RequestParam("filename") String responseId,
+                                           @RequestParam("responseId") String responseId,
                                            @RequestBody ReqProject projectRequirements) {
         try {
             compareService.simReqProject(responseId,organization,projectRequirements);
@@ -95,7 +95,7 @@ public class RestApiController {
 
     @PostMapping(value = "/SimProject")
     public ResponseEntity simProject(@RequestParam("organization") String organization,
-                                        @RequestParam("filename") String responseId,
+                                        @RequestParam("responseId") String responseId,
                                         @RequestBody List<String> projectRequirements) {
         try {
             compareService.simProject(responseId,organization,projectRequirements);
@@ -108,7 +108,7 @@ public class RestApiController {
     @PostMapping(value = "/BuildModelAndCompute")
     public ResponseEntity buildModelAndCompute(@RequestParam("organization") String organization,
                                                @RequestParam("compare") boolean compare,
-                                               @RequestParam("filename") String responseId,
+                                               @RequestParam("responseId") String responseId,
                                                @RequestParam("threshold") double threshold,
                                                @RequestBody List<Requirement> input) {
         try {
@@ -123,7 +123,7 @@ public class RestApiController {
     public ResponseEntity buildClusters(@RequestParam("organization") String organization,
                                         @RequestParam("compare") boolean compare,
                                         @RequestParam("threshold") double threshold,
-                                        @RequestParam("filename") String responseId,
+                                        @RequestParam("responseId") String responseId,
                                         @RequestBody Clusters input) {
         try {
             compareService.buildClusters(responseId,compare,threshold,organization,input);
@@ -136,7 +136,7 @@ public class RestApiController {
     @PostMapping(value = "/BuildClustersAndCompute")
     public ResponseEntity buildClustersAndCompute(@RequestParam("organization") String organization,
                                                   @RequestParam("compare") boolean compare,
-                                                  @RequestParam("filename") String responseId,
+                                                  @RequestParam("responseId") String responseId,
                                                   @RequestParam("threshold") double threshold,
                                                   @RequestBody Clusters input) {
         try {
@@ -211,7 +211,7 @@ public class RestApiController {
 
     @PostMapping(value = "/CronMethod")
     public ResponseEntity cronMethod(@RequestParam("organization") String organization,
-                                        @RequestParam("filename") String responseId,
+                                        @RequestParam("responseId") String responseId,
                                         @RequestBody Clusters input) {
         try {
             compareService.cronMethod(responseId,organization,input);

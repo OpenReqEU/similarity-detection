@@ -105,6 +105,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
     @Override
     public void clearOrganization(String organizationId) throws NotFoundException, SQLException {
+        //TODO delete organization
         if (!existsOrganization(organizationId)) throw new NotFoundException("The organization " + organizationId + " does not exist");
         try(Connection conn = getConnection(organizationId)) {
             clearOrganizationTables(conn);
