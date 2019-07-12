@@ -14,10 +14,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.Assert.*;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment= SpringBootTest.WebEnvironment.DEFINED_PORT)
+@SpringBootTest()
 public class SyncTests {
 
-    @LocalServerPort
+    
     int port = 9405;
 
     @Test
