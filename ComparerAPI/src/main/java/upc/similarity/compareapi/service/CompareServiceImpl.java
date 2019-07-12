@@ -328,7 +328,6 @@ public class CompareServiceImpl implements CompareService {
 
             if (!model.hasClusters()) databaseOperations.saveBadRequestException(organization, responseId, new BadRequestException("The model does not have clusters"));
 
-            Map<Integer, List<String>> clusters = model.getClusters();
             Map<String,Map<String,Double>> docs = model.getDocs();
 
             List<Requirement> addedRequirements = new ArrayList<>();
@@ -338,11 +337,10 @@ public class CompareServiceImpl implements CompareService {
 
             for (Requirement requirement : input.getRequirements()) {
                 String id = requirement.getId();
-                String status = requirement.getStatus();
-                if (status != null) {
-                    if (docs.containsKey(id) && requirementUpdated(organization,responseId,requirement,model)) updatedRequirements.add(requirement);
-                    else addedRequirements.add(requirement);
+                if (docs.containsKey(id)) {
+                    if (requirementUpdated(organization,responseId,requirement,model)) updatedRequirements.add(requirement);
                 }
+                else addedRequirements.add(requirement);
             }
 
             HashSet<String> inputDependencies = new HashSet<>();
@@ -356,20 +354,23 @@ public class CompareServiceImpl implements CompareService {
                         String toId = dependency.getToid();
                         inputDependencies.add(fromId+toId);
                         inputDependencies.add(toId+fromId);
+                    } else if (status.equals("rejected")) {
+                        deletedDependencies.add(dependency);
                     }
                 }
             }
             databaseOperations.createDepsAuxiliaryTable(organization, null);
 
-            deletedDependencies = databaseOperations.getNotInDependencies(organization,responseId,inputDependencies,true);
+            deletedDependencies.addAll(databaseOperations.getNotInDependencies(organization,responseId,inputDependencies,true));
 
             HashSet<Integer> clustersChanged = new HashSet<>();
+            Map<String,Integer> reqCluster = computeReqClusterMap(model.getClusters(), model.getDocs().keySet());
+            clusterOperations.addRequirementsToClusters(organization, responseId, addedRequirements, model, clustersChanged, reqCluster);
             addRequirementsToModel(addedRequirements, model);
-            clusterOperations.addRequirementsToClusters();
-            clusterOperations.addAcceptedDependencies(organization, responseId, acceptedDependencies, model, clustersChanged);
-            clusterOperations.addDeletedDependencies(organization, responseId, deletedDependencies, model, clustersChanged);
+            clusterOperations.addAcceptedDependencies(organization, responseId, acceptedDependencies, model, clustersChanged, reqCluster);
+            clusterOperations.addDeletedDependencies(organization, responseId, deletedDependencies, model, clustersChanged, reqCluster);
+            clusterOperations.addRequirementsToClusters(organization, responseId, updatedRequirements, model, clustersChanged, reqCluster);
             addRequirementsToModel(updatedRequirements, model);
-            clusterOperations.addRequirementsToClusters();
             clusterOperations.updateProposedDependencies(organization, responseId, model, clustersChanged, true);
             databaseOperations.updateModelClustersAndDependencies(organization, responseId, model, true);
 
@@ -425,10 +426,10 @@ public class CompareServiceImpl implements CompareService {
             databaseOperations.createDepsAuxiliaryTable(organization, null);
 
             HashSet<Integer> clustersChanged = new HashSet<>();
-
+            Map<String,Integer> reqCluster = computeReqClusterMap(model.getClusters(), model.getDocs().keySet());
             ClusterOperations clusterOperations = ClusterOperations.getInstance();
-            clusterOperations.addAcceptedDependencies(organization, null, acceptedDependencies, model, clustersChanged);
-            clusterOperations.addDeletedDependencies(organization, null, rejectedDependencies, model, clustersChanged);
+            clusterOperations.addAcceptedDependencies(organization, null, acceptedDependencies, model, clustersChanged, reqCluster);
+            clusterOperations.addDeletedDependencies(organization, null, rejectedDependencies, model, clustersChanged, reqCluster);
             clusterOperations.updateProposedDependencies(organization, null, model, clustersChanged, true);
             databaseOperations.updateModelClustersAndDependencies(organization, null, model, true);
         } finally {
@@ -470,11 +471,28 @@ public class CompareServiceImpl implements CompareService {
     auxiliary operations
      */
 
+    private HashMap<String, Integer> computeReqClusterMap(Map<Integer,List<String>> clusters, Set<String> requirements) {
+        HashMap<String,Integer> reqCluster = new HashMap<>();
+        for (String requirement: requirements) {
+            reqCluster.put(requirement, -1);
+        }
+        Iterator it = clusters.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry) it.next();
+            int id = (int) pair.getKey();
+            List<String> clusterRequirements = (List<String>) pair.getValue();
+            for (String req: clusterRequirements) {
+                reqCluster.put(req, id);
+            }
+        }
+        return reqCluster;
+    }
+
     private boolean requirementUpdated(String organization, String responseId, Requirement requirement, Model model) throws InternalErrorException {
         String requirementText = buildRequirement(model.isCompare(), requirement);
         Map<String,Double> oldRequirement = model.getDocs().get(requirement.getId());
         Map<String,Double> newRequirement = Tfidf.getInstance().computeTfIdf(organization, responseId, requirementText, model);
-        return oldRequirement.equals(newRequirement);
+        return !oldRequirement.equals(newRequirement);
     }
 
     private void reqProject(List<String> reqsToCompare, List<String> projectRequirements, Model model, double threshold, String organization, String responseId) throws InternalErrorException {

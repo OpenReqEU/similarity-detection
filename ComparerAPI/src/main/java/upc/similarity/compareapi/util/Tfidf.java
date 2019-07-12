@@ -50,7 +50,8 @@ public class Tfidf {
 
         HashMap<String, Double> tfIdf = new HashMap<>();
         for (String s : preprocessRequirement) {
-            Double idf = idf(docs.size(), corpusFrequency.get(s));
+            double idf = 0;
+            if (corpusFrequency.containsKey(s)) idf = idf(docs.size(), corpusFrequency.get(s));
             Integer tf = tfRequirement.get(s);
             double tfidf = idf * tf;
             if (tfidf>=cutOffParameter) tfIdf.put(s, tfidf);

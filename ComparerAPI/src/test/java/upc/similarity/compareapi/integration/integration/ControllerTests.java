@@ -245,6 +245,38 @@ public class ControllerTests {
     }
 
     @Test
+    public void cronMethod() throws Exception {
+        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "1.1")
+                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"cronMethod/input_model.json")))
+                .andExpect(status().isOk());
+        ++id;
+        this.mockMvc.perform(post(url + "CronMethod").param("organization", "UPC").param("filename", id+"")
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"cronMethod/input_cron.json")))
+                .andExpect(status().isOk());
+        ++id;
+        SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
+        List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
+        assertEquals(read_file_array(path+"cronMethod/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
+        assertEquals(read_file_json(path+"cronMethod/output_model.json"), extractModel("UPC",false, false));
+    }
+
+    @Test
+    public void cronMethodWithProposed() throws Exception {
+        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "0")
+                .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"cronMethod/input_model.json")))
+                .andExpect(status().isOk());
+        ++id;
+        this.mockMvc.perform(post(url + "CronMethod").param("organization", "UPC").param("filename", id+"")
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"cronMethod/input_cron.json")))
+                .andExpect(status().isOk());
+        ++id;
+        SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
+        List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
+        assertEquals(read_file_array(path+"cronMethod/output_dependencies_proposed.json"),listDependenciesToJson(dependencies).toString());
+        assertEquals(read_file_json(path+"cronMethod/output_model_proposed.json"), extractModel("UPC",false, false));
+    }
+
+    @Test
     public void clearOrganizationResponses() throws Exception {
         this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
                 .param("compare", "true").param("filename", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"deleteResponses/input_model.json")))
