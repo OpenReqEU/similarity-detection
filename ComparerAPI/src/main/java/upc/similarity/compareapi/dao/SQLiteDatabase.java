@@ -4,6 +4,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
+import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.exception.NotFinishedException;
 import upc.similarity.compareapi.exception.NotFoundException;
 
@@ -50,26 +51,30 @@ public class SQLiteDatabase implements DatabaseModel {
         }
     }
 
-    private void deleteAllDataFiles() throws IOException {
+    private void deleteAllDataFiles() throws IOException, InternalErrorException {
         Path dirPath = Paths.get(dbPath);
+        class Control {
+            public volatile boolean error = false;
+        }
+        final Control control = new Control();
         try (Stream<Path> walk = Files.walk(dirPath)) {
-
             walk.map(Path::toFile)
                     .forEach(file -> {
                                 if (!file.isDirectory() && file.getName().contains(".db")) {
-                                    boolean aux = file.delete(); //TODO check its result
+                                    if(!file.delete()) control.error = true;
                                 }
                             }
                     );
         }
+        if (control.error) throw new InternalErrorException("Error while deleting a file");
     }
 
-    private void createOrganizationFiles(String organization) throws IOException {
+    private void createOrganizationFiles(String organization) throws IOException, InternalErrorException {
         File file = new File(dbPath + buildFileName(organization));
-        boolean aux = file.createNewFile(); //TODO check its result
+        if(!file.createNewFile()) throw new InternalErrorException("Error while creating a new file");
     }
 
-    private void insertNewOrganization(String organization) throws SQLException, IOException {
+    private void insertNewOrganization(String organization) throws SQLException, IOException, InternalErrorException {
 
         if (!existsOrganization(organization)) {
             createOrganizationFiles(organization);
@@ -116,11 +121,11 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void clearDatabase() throws IOException, SQLException {
+    public void clearDatabase() throws IOException, InternalErrorException, SQLException {
         resetMainDatabase();
     }
 
-    private synchronized void resetMainDatabase() throws IOException, SQLException {
+    private synchronized void resetMainDatabase() throws IOException, InternalErrorException, SQLException {
 
         deleteAllDataFiles();
         createOrganizationFiles(dbMainName);
@@ -164,7 +169,7 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void saveModel(String organization, Model model) throws IOException, SQLException {
+    public void saveModel(String organization, Model model) throws IOException, InternalErrorException, SQLException {
 
         insertNewOrganization(organization);
 
