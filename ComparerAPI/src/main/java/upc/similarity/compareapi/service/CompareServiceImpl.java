@@ -661,6 +661,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     public void getAccessToUpdate(String organization, String responseId) throws InternalErrorException {
+        String errorMessage = "Synchronization error";
         int maxIterations = Constants.getInstance().getMaxSyncIterations();
         if (!organizationLocks.containsKey(organization)) {
             AtomicBoolean aux = organizationLocks.putIfAbsent(organization, new AtomicBoolean(false));
@@ -670,28 +671,28 @@ public class CompareServiceImpl implements CompareService {
         int count = 0;
         while (!correct && count <= maxIterations) {
             AtomicBoolean atomicBoolean = organizationLocks.get(organization);
-            if (atomicBoolean == null) DatabaseOperations.getInstance().saveInternalException(organization, responseId, new InternalErrorException("Synchronization error"));
+            if (atomicBoolean == null) DatabaseOperations.getInstance().saveInternalException("Synchronization 1rst conditional",organization, responseId, new InternalErrorException(errorMessage));
             else correct = atomicBoolean.compareAndSet(false,true);
             if (!correct) {
                 ++count;
                 try {
                     Thread.sleep(random.nextInt(50));
                 } catch (InterruptedException e) {
-                    DatabaseOperations.getInstance().saveInternalException(organization, responseId, new InternalErrorException("Synchronization error"));
+                    DatabaseOperations.getInstance().saveInternalException("Synchronization 2nd conditional",organization, responseId, new InternalErrorException(errorMessage));
                     Thread.currentThread().interrupt();
                 }
             }
         }
 
         if (count == (maxIterations + 1)) {
-            DatabaseOperations.getInstance().saveInternalException(organization, responseId, new InternalErrorException("The database is busy"));
+            DatabaseOperations.getInstance().saveInternalException("Synchronization out of time",organization, responseId, new InternalErrorException("The database is busy"));
         }
 
     }
 
     public void releaseAccessToUpdate(String organization, String responseId) throws InternalErrorException {
         AtomicBoolean atomicBoolean = organizationLocks.get(organization);
-        if (atomicBoolean == null) DatabaseOperations.getInstance().saveInternalException(organization, responseId, new InternalErrorException("Synchronization error"));
+        if (atomicBoolean == null) DatabaseOperations.getInstance().saveInternalException("Synchronization 3rd conditional",organization, responseId, new InternalErrorException("Synchronization error"));
         else atomicBoolean.set(false);
     }
 

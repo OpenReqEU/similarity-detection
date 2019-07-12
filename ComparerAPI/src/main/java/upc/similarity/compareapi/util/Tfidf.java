@@ -39,7 +39,7 @@ public class Tfidf {
         try {
             preprocessRequirement = englishAnalyze(requirement);
         } catch (IOException e) {
-            DatabaseOperations.getInstance().saveInternalException(organization, responseId, new InternalErrorException("Error loading preprocess pipeline"));
+            DatabaseOperations.getInstance().saveInternalException(e.getMessage(),organization, responseId, new InternalErrorException("Error loading preprocess pipeline"));
         }
 
         Map<String, Integer> tfRequirement = new HashMap<>();
