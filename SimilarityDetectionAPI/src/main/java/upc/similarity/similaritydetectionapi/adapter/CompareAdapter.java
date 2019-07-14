@@ -17,7 +17,7 @@ public class CompareAdapter extends ComponentAdapter{
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
 
-        connectionComponentPost(URL + "BuildModel?compare=" + compare + "&organization=" + organization + "&responseId=" + responseId + "&threshold" + threshold, requirementsJson);
+        connectionComponentPost(URL + "BuildModel?compare=" + compare + "&organization=" + organization + "&responseId=" + responseId + "&threshold=" + threshold, requirementsJson);
     }
 
     @Override
