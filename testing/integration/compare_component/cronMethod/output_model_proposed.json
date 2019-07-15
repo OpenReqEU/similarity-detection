@@ -9,16 +9,16 @@
 		"clusterRequirements": ["UPC-1"],
 		"clusterId": 2
 	}, {
-		"clusterRequirements": ["UPC-2", "UPC-9", "UPC-6"],
+		"clusterRequirements": ["UPC-4"],
 		"clusterId": 5
 	}, {
-		"clusterRequirements": ["UPC-4"],
+		"clusterRequirements": ["UPC-3"],
 		"clusterId": 6
 	}, {
-		"clusterRequirements": ["UPC-3"],
+		"clusterRequirements": ["UPC-5"],
 		"clusterId": 7
 	}, {
-		"clusterRequirements": ["UPC-5"],
+		"clusterRequirements": ["UPC-2", "UPC-9", "UPC-6"],
 		"clusterId": 8
 	}]
 }

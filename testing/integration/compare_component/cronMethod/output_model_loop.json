@@ -1,24 +1,24 @@
 {
 	"compare": true,
-	"lastClusterId": 8,
+	"lastClusterId": 7,
 	"corpus": [],
 	"corpusFrequency": [],
 	"threshold": 1.1,
 	"isCluster": true,
 	"clusters": [{
 		"clusterRequirements": ["UPC-1"],
-		"clusterId": 2
+		"clusterId": 0
 	}, {
-		"clusterRequirements": ["UPC-4"],
-		"clusterId": 5
+		"clusterRequirements": ["UPC-4", "UPC-5"],
+		"clusterId": 3
 	}, {
 		"clusterRequirements": ["UPC-3"],
+		"clusterId": 4
+	}, {
+		"clusterRequirements": ["UPC-6"],
 		"clusterId": 6
 	}, {
-		"clusterRequirements": ["UPC-5"],
+		"clusterRequirements": ["UPC-2", "UPC-9"],
 		"clusterId": 7
-	}, {
-		"clusterRequirements": ["UPC-2", "UPC-9", "UPC-6"],
-		"clusterId": 8
 	}]
 }

@@ -3,6 +3,7 @@ package upc.similarity.compareapi.dao;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import upc.similarity.compareapi.config.Constants;
+import upc.similarity.compareapi.config.Control;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
 import upc.similarity.compareapi.exception.InternalErrorException;
@@ -21,8 +22,6 @@ import java.util.stream.Stream;
 
 public class SQLiteDatabase implements DatabaseModel {
 
-    //TODO is needed a lock for the mainDb!
-
     private AtomicBoolean mainDbLock = new AtomicBoolean(false);
     private Random random = new Random();
     private static String dbMainName = "main";
@@ -40,14 +39,15 @@ public class SQLiteDatabase implements DatabaseModel {
                 try {
                     Thread.sleep(random.nextInt(50));
                 } catch (InterruptedException e) {
-                    throw new InternalErrorException(e.getMessage());
+                    Control.getInstance().showErrorMessage(e.getMessage());
+                    Thread.currentThread().interrupt();
                 }
             }
         }
         if (count == (maxIterations + 1)) throw new InternalErrorException("Synchronization error in the main database");
     }
 
-    public void releaseAccessToMainDb() throws InternalErrorException {
+    public void releaseAccessToMainDb() {
         mainDbLock.set(false);
     }
 

@@ -6,6 +6,7 @@ import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.config.Control;
 import upc.similarity.compareapi.entity.*;
 import upc.similarity.compareapi.entity.auxiliary.ClusterAndDeps;
+import upc.similarity.compareapi.entity.auxiliary.OrderedObject;
 import upc.similarity.compareapi.entity.input.Clusters;
 import upc.similarity.compareapi.entity.input.ReqProject;
 import upc.similarity.compareapi.entity.output.Dependencies;
@@ -214,10 +215,12 @@ public class CompareServiceImpl implements CompareService {
 
         model = new Model(model.getDocs(), model.getCorpusFrequency(), model.getThreshold(), model.isCompare(), iniClusters.getLastClusterId(), iniClusters.getClusters(), iniClusters.getDependencies());
         model.getDependencies().addAll(iniClusters.getDependencies());
-        model.getDependencies().addAll(clusterOperations.computeProposedDependencies(organization, responseId,  model.getDocs().keySet(), model.getClusters().keySet(), model, false));
         getAccessToUpdate(organization, responseId);
         try {
             databaseOperations.saveModel(organization, responseId, model);
+            databaseOperations.createDepsAuxiliaryTable(organization, null);
+            clusterOperations.computeProposedDependencies(organization, responseId,  model.getDocs().keySet(), model.getClusters().keySet(), model, true);
+            databaseOperations.updateModelClustersAndDependencies(organization, null, model, true);
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
@@ -241,10 +244,12 @@ public class CompareServiceImpl implements CompareService {
 
         model = new Model(model.getDocs(), model.getCorpusFrequency(), model.getThreshold(), model.isCompare(), iniClusters.getLastClusterId(), iniClusters.getClusters(), iniClusters.getDependencies());
         model.getDependencies().addAll(iniClusters.getDependencies());
-        model.getDependencies().addAll(clusterOperations.computeProposedDependencies(organization, responseId,  model.getDocs().keySet(), model.getClusters().keySet(), model, false));
         getAccessToUpdate(organization, responseId);
         try {
             databaseOperations.saveModel(organization, responseId, model);
+            databaseOperations.createDepsAuxiliaryTable(organization, null);
+            clusterOperations.computeProposedDependencies(organization, responseId,  model.getDocs().keySet(), model.getClusters().keySet(), model, true);
+            databaseOperations.updateModelClustersAndDependencies(organization, null, model, true);
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
@@ -319,6 +324,43 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
+    public void treatAcceptedAndRejectedDependencies(String organization, List<Dependency> dependencies) throws NotFoundException, BadRequestException, InternalErrorException {
+        control.showInfoMessage("TreatAcceptedAndRejectedDependencies: Start computing");
+
+        DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
+        getAccessToUpdate(organization, null);
+        try {
+            Model model = databaseOperations.loadModel(organization, null, false);
+            if (!model.hasClusters()) throw new BadRequestException("The model does not have clusters");
+
+            dependencies.sort(Comparator.comparing(Dependency::computeTime));
+            HashSet<Integer> clustersChanged = new HashSet<>();
+            Map<String,Integer> reqCluster = computeReqClusterMap(model.getClusters(), model.getDocs().keySet());
+            ClusterOperations clusterOperations = ClusterOperations.getInstance();
+            databaseOperations.createDepsAuxiliaryTable(organization, null);
+
+            for (Dependency dependency: dependencies) {
+                if (dependency.getDependencyType() != null && dependency.getStatus() != null && dependency.getDependencyType().equals("similar")) {
+                    String status = dependency.getStatus();
+                    List<Dependency> aux = new ArrayList<>();
+                    aux.add(dependency);
+                    if (status.equals("accepted")) {
+                        clusterOperations.addAcceptedDependencies(organization, null, aux, model, clustersChanged, reqCluster);
+                    } else if (status.equals("rejected")) {
+                        clusterOperations.addDeletedDependencies(organization, null, aux, model, clustersChanged, reqCluster);
+                    }
+                }
+            }
+            clusterOperations.updateProposedDependencies(organization, null, model, clustersChanged, true);
+            databaseOperations.updateModelClustersAndDependencies(organization, null, model, true);
+        } finally {
+            releaseAccessToUpdate(organization, null);
+        }
+
+        control.showInfoMessage("TreatAcceptedAndRejectedDependencies: Finish computing");
+    }
+
+    @Override
     public void cronMethod(String responseId, String organization, Clusters input) throws BadRequestException, InternalErrorException, NotFoundException {
         control.showInfoMessage("CronMethod: Start computing");
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
@@ -335,48 +377,57 @@ public class CompareServiceImpl implements CompareService {
 
             Map<String,Map<String,Double>> docs = model.getDocs();
 
-            List<Requirement> addedRequirements = new ArrayList<>();
-            List<Requirement> updatedRequirements = new ArrayList<>();
-            List<Dependency> acceptedDependencies = new ArrayList<>();
-            List<Dependency> rejectedDependencies = new ArrayList<>();
+            List<OrderedObject> objects = new ArrayList<>();
             List<Dependency> deletedDependencies = new ArrayList<>();
+
+            Set<String> notRepeatedReqs = new HashSet<>();
 
             for (Requirement requirement : input.getRequirements()) {
                 String id = requirement.getId();
-                if (docs.containsKey(id)) {
-                    if (requirementUpdated(organization,responseId,requirement,model)) updatedRequirements.add(requirement);
+                if (id != null && !notRepeatedReqs.contains(id)) {
+                    notRepeatedReqs.add(id);
+                    if (docs.containsKey(id)) {
+                        if (requirementUpdated(organization, responseId, requirement, model)) objects.add(new OrderedObject(null, requirement, requirement.getTime()));
+                    } else objects.add(new OrderedObject(null, requirement, requirement.getTime()));
                 }
-                else addedRequirements.add(requirement);
             }
 
             HashSet<String> inputDependencies = new HashSet<>();
 
             for (Dependency dependency : input.getDependencies()) {
                 String status = dependency.getStatus();
-                if (dependency.getDependencyType() != null && dependency.getStatus() != null && dependency.getDependencyType().equals("similar")) {
-                    if (status.equals("accepted")) {
-                        acceptedDependencies.add(dependency);
-                        String fromId = dependency.getFromid();
-                        String toId = dependency.getToid();
-                        inputDependencies.add(fromId+toId);
-                        inputDependencies.add(toId+fromId);
-                    } else if (status.equals("rejected")) {
-                        deletedDependencies.add(dependency);
-                    }
+                if (dependency.getDependencyType() != null && dependency.getStatus() != null && dependency.getFromid() != null && dependency.getToid() != null && dependency.getDependencyType().equals("similar")) {
+                    String fromId = dependency.getFromid();
+                    String toId = dependency.getToid();
+                    inputDependencies.add(fromId+toId);
+                    inputDependencies.add(toId+fromId);
+                    if (status.equals("accepted") || status.equals("rejected")) objects.add(new OrderedObject(dependency, null, dependency.computeTime()));
                 }
             }
             databaseOperations.createDepsAuxiliaryTable(organization, null);
 
-            deletedDependencies.addAll(databaseOperations.getNotInDependencies(organization,responseId,inputDependencies,true));
-
+            deletedDependencies = databaseOperations.getNotInDependencies(organization,responseId,inputDependencies,true);
+            objects.sort(Comparator.comparing(OrderedObject::getTime));
             HashSet<Integer> clustersChanged = new HashSet<>();
             Map<String,Integer> reqCluster = computeReqClusterMap(model.getClusters(), model.getDocs().keySet());
-            clusterOperations.addRequirementsToClusters(organization, responseId, addedRequirements, model, clustersChanged, reqCluster);
-            addRequirementsToModel(addedRequirements, model);
-            clusterOperations.addAcceptedDependencies(organization, responseId, acceptedDependencies, model, clustersChanged, reqCluster);
+
+            for (OrderedObject orderedObject: objects) {
+                if (orderedObject.isDependency()) {
+                    List<Dependency> aux = new ArrayList<>();
+                    Dependency dependency = orderedObject.getDependency();
+                    aux.add(dependency);
+                    if (dependency.getStatus().equals("accepted")) clusterOperations.addAcceptedDependencies(organization, responseId, aux, model, clustersChanged, reqCluster);
+                    else clusterOperations.addDeletedDependencies(organization, responseId, aux, model, clustersChanged, reqCluster);
+                } else {
+                    List<Requirement> aux = new ArrayList<>();
+                    Requirement requirement = orderedObject.getRequirement();
+                    aux.add(requirement);
+                    clusterOperations.addRequirementsToClusters(organization, responseId, aux, model, clustersChanged, reqCluster);
+                    addRequirementsToModel(aux, model);
+                }
+            }
             clusterOperations.addDeletedDependencies(organization, responseId, deletedDependencies, model, clustersChanged, reqCluster);
-            clusterOperations.addRequirementsToClusters(organization, responseId, updatedRequirements, model, clustersChanged, reqCluster);
-            addRequirementsToModel(updatedRequirements, model);
+
             clusterOperations.updateProposedDependencies(organization, responseId, model, clustersChanged, true);
             databaseOperations.updateModelClustersAndDependencies(organization, responseId, model, true);
 
@@ -386,65 +437,6 @@ public class CompareServiceImpl implements CompareService {
 
         databaseOperations.generateEmptyResponse(organization, responseId);
         control.showInfoMessage("CronMethod: Finish computing");
-    }
-
-    @Override
-    public void treatAcceptedAndRejectedDependencies(String organization, List<Dependency> dependencies) throws NotFoundException, BadRequestException, InternalErrorException {
-        control.showInfoMessage("TreatAcceptedAndRejectedDependencies: Start computing");
-
-        DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
-        getAccessToUpdate(organization, null);
-        try {
-            Model model = databaseOperations.loadModel(organization, null, false);
-            if (!model.hasClusters()) throw new BadRequestException("The model does not have clusters");
-            Map<String, Map<String, Double>> docs = model.getDocs();
-
-            HashSet<String> repeatedAccepted = new HashSet<>();
-            HashSet<String> repeatedRejected = new HashSet<>();
-            List<Dependency> acceptedDependencies = new ArrayList<>();
-            List<Dependency> rejectedDependencies = new ArrayList<>();
-            for (Dependency dependency : dependencies) {
-                if (dependency.getDependencyType() != null && dependency.getStatus() != null && dependency.getDependencyType().equals("similar")) {
-                    String status = dependency.getStatus();
-                    String fromid = dependency.getFromid();
-                    String toid = dependency.getToid();
-                    if (!docs.containsKey(fromid))
-                        throw new NotFoundException("The requirement with id " + fromid + " does not exists in the organization's model");
-                    if (!docs.containsKey(toid))
-                        throw new NotFoundException("The requirement with id " + toid + " does not exists in the organization's model");
-                    if (status.equals("accepted")) {
-                        if (!repeatedAccepted.contains(fromid + toid)) {
-                            repeatedAccepted.add(fromid + toid);
-                            repeatedAccepted.add(toid + fromid);
-                            acceptedDependencies.add(dependency);
-                        } else
-                            throw new BadRequestException("There are two input accepted dependencies with the same two requirements: " + fromid + " and " + toid);
-                    }
-                    if (status.equals("rejected")) {
-                        if (!repeatedRejected.contains(fromid + toid)) {
-                            repeatedRejected.add(fromid + toid);
-                            repeatedRejected.add(toid + fromid);
-                            rejectedDependencies.add(dependency);
-                        } else
-                            throw new BadRequestException("There are two input rejected dependencies with the same two requirements: " + fromid + " and " + toid);
-                    }
-                }
-            }
-
-            databaseOperations.createDepsAuxiliaryTable(organization, null);
-
-            HashSet<Integer> clustersChanged = new HashSet<>();
-            Map<String,Integer> reqCluster = computeReqClusterMap(model.getClusters(), model.getDocs().keySet());
-            ClusterOperations clusterOperations = ClusterOperations.getInstance();
-            clusterOperations.addAcceptedDependencies(organization, null, acceptedDependencies, model, clustersChanged, reqCluster);
-            clusterOperations.addDeletedDependencies(organization, null, rejectedDependencies, model, clustersChanged, reqCluster);
-            clusterOperations.updateProposedDependencies(organization, null, model, clustersChanged, true);
-            databaseOperations.updateModelClustersAndDependencies(organization, null, model, true);
-        } finally {
-            releaseAccessToUpdate(organization, null);
-        }
-
-        control.showInfoMessage("TreatAcceptedAndRejectedDependencies: Finish computing");
     }
 
     @Override

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
 
+import static java.lang.Long.max;
+
 //Class used to represent requirements
 public class Requirement implements Serializable {
 
@@ -15,6 +17,8 @@ public class Requirement implements Serializable {
     private String text;
     @JsonProperty(value="created_at")
     private long createdAt;
+    @JsonProperty(value = "modified_at")
+    private long modified_at;
     @JsonProperty(value="status")
     private String status;
 
@@ -40,8 +44,16 @@ public class Requirement implements Serializable {
         return createdAt;
     }
 
+    public long getModified_at() {
+        return modified_at;
+    }
+
     public String getStatus() {
         return status;
+    }
+
+    public long getTime() {
+        return max(createdAt,modified_at);
     }
 
     /*
@@ -62,6 +74,10 @@ public class Requirement implements Serializable {
 
     public void setCreatedAt(long created_at) {
         this.createdAt = created_at;
+    }
+
+    public void setModified_at(long modified_at) {
+        this.modified_at = modified_at;
     }
 
     public void setStatus(String status) {

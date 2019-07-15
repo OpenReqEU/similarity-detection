@@ -178,7 +178,6 @@ public class ControllerTests {
 
     @Test
     public void addClusters() throws Exception {
-        //TODO check this strange thing
         this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "0")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"generateClusters/input.json")))
                 .andExpect(status().isOk());
@@ -230,6 +229,21 @@ public class ControllerTests {
     }
 
     @Test
+    public void treatDependenciesWithLoop() throws Exception {
+        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "1.1")
+                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"treatDependencies/input_model.json")))
+                .andExpect(status().isOk());
+        ++id;
+        this.mockMvc.perform(post(url + "TreatAcceptedAndRejectedDependencies").param("organization", "UPC")
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"treatDependencies/input_treat_loop.json")))
+                .andExpect(status().isOk());
+        SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
+        List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
+        assertEquals(read_file_array(path+"treatDependencies/output_dependencies_loop.json"),listDependenciesToJson(dependencies).toString());
+        assertEquals(read_file_json(path+"treatDependencies/output_model_loop.json"), extractModel("UPC",false, false));
+    }
+
+    @Test
     public void treatDependenciesWithProposed() throws Exception {
         this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "0")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"treatDependencies/input_model.json")))
@@ -258,6 +272,22 @@ public class ControllerTests {
         List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
         assertEquals(read_file_array(path+"cronMethod/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"cronMethod/output_model.json"), extractModel("UPC",false, false));
+    }
+
+    @Test
+    public void cronMethodLoop() throws Exception {
+        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "1.1")
+                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"cronMethod/input_model.json")))
+                .andExpect(status().isOk());
+        ++id;
+        this.mockMvc.perform(post(url + "CronMethod").param("organization", "UPC").param("responseId", id+"")
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"cronMethod/input_cron_loop.json")))
+                .andExpect(status().isOk());
+        ++id;
+        SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
+        List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
+        assertEquals(read_file_array(path+"cronMethod/output_dependencies_loop.json"),listDependenciesToJson(dependencies).toString());
+        assertEquals(read_file_json(path+"cronMethod/output_model_loop.json"), extractModel("UPC",false, false));
     }
 
     @Test

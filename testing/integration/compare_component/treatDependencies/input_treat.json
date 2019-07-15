@@ -1,12 +1,12 @@
 [
-    {"dependency_type":"similar","status":"accepted","fromid":"UPC-2","toid":"UPC-9"},
-    {"dependency_type":"similar","status":"rejected","fromid":"UPC-1","toid":"UPC-2"},
-    {"dependency_type":"similar","status":"accepted","fromid":"UPC-3","toid":"UPC-4"},
-    {"dependency_type":"similar","status":"accepted","fromid":"UPC-5","toid":"UPC-4"},
-    {"dependency_type":"similar","status":"rejected","fromid":"UPC-4","toid":"UPC-5"},
-    {"dependency_type":"similar","status":"accepted","fromid":"UPC-6","toid":"UPC-7"},
-    {"dependency_type":"similar","status":"rejected","fromid":"UPC-8","toid":"UPC-7"},
-    {"dependency_type":"similar","status":"rejected","fromid":"UPC-6","toid":"UPC-7"},
-    {"dependency_type":"similar","status":"rejected","fromid":"UPC-3","toid":"UPC-2"}
+    {"dependency_type":"similar","status":"accepted","fromid":"UPC-2","toid":"UPC-9","created_at":"12"},
+    {"dependency_type":"similar","status":"rejected","fromid":"UPC-1","toid":"UPC-2","created_at":"123"},
+    {"dependency_type":"similar","status":"accepted","fromid":"UPC-3","toid":"UPC-4","created_at":"12"},
+    {"dependency_type":"similar","status":"accepted","fromid":"UPC-5","toid":"UPC-4","created_at":"12"},
+    {"dependency_type":"similar","status":"rejected","fromid":"UPC-4","toid":"UPC-5","created_at":"123"},
+    {"dependency_type":"similar","status":"accepted","fromid":"UPC-6","toid":"UPC-7","created_at":"12"},
+    {"dependency_type":"similar","status":"rejected","fromid":"UPC-8","toid":"UPC-7","created_at":"123"},
+    {"dependency_type":"similar","status":"rejected","fromid":"UPC-6","toid":"UPC-7","created_at":"123"},
+    {"dependency_type":"similar","status":"rejected","fromid":"UPC-3","toid":"UPC-2","created_at":"123"}
 
 ]

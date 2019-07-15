@@ -8,7 +8,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-//Class used to represent dependencies between requirements
+import static java.lang.Long.max;
+
 public class Dependency implements Serializable {
 
     private static ObjectMapper mapper = new ObjectMapper();
@@ -25,6 +26,10 @@ public class Dependency implements Serializable {
     private String dependencyType;
     @JsonProperty(value="description")
     private List<String> description;
+    @JsonProperty(value="created_at", access = JsonProperty.Access.WRITE_ONLY)
+    private long createdAt;
+    @JsonProperty(value = "modified_at", access = JsonProperty.Access.WRITE_ONLY)
+    private long modified_at;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private int clusterId;
 
@@ -95,6 +100,18 @@ public class Dependency implements Serializable {
         return clusterId;
     }
 
+    public long getCreatedAt() {
+        return createdAt;
+    }
+
+    public long getModified_at() {
+        return modified_at;
+    }
+
+    public long computeTime() {
+        return max(createdAt,modified_at);
+    }
+
     /*
     Set
      */
@@ -125,6 +142,14 @@ public class Dependency implements Serializable {
 
     public void setClusterId(int clusterId) {
         this.clusterId = clusterId;
+    }
+
+    public void setCreatedAt(long createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public void setModified_at(long modified_at) {
+        this.modified_at = modified_at;
     }
 
     /*
