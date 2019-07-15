@@ -2,10 +2,12 @@ package upc.similarity.similaritydetectionapi.adapter;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.web.multipart.MultipartFile;
 import upc.similarity.similaritydetectionapi.entity.Dependency;
 import upc.similarity.similaritydetectionapi.entity.Requirement;
 import upc.similarity.similaritydetectionapi.exception.*;
 
+import java.io.IOException;
 import java.util.List;
 
 public class CompareAdapter extends ComponentAdapter{
@@ -45,16 +47,16 @@ public class CompareAdapter extends ComponentAdapter{
     }
 
     @Override
-    public void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException {
+    public void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, MultipartFile input) throws ComponentException {
 
-        JSONArray requirementsJson = listRequirementsToJson(requirements);
-        JSONArray dependenciesJson = listDependenciesToJson(dependencies);
+        String content = "";
+        try {
+            content = new String(input.getBytes(), "UTF-8");
+        } catch (IOException e) {
+            throw new InternalErrorException("Error loading input file");
+        }
 
-        JSONObject jsonToSend = new JSONObject();
-        jsonToSend.put("requirements", requirementsJson);
-        jsonToSend.put("dependencies", dependenciesJson);
-
-        connectionComponentPost(URL + "BuildClustersAndCompute?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, jsonToSend);
+        connectionComponentPost(URL + "BuildClustersAndCompute?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, content);
     }
 
     @Override

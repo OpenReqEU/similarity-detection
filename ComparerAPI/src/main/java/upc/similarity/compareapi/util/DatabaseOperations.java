@@ -42,29 +42,35 @@ public class DatabaseOperations {
         boolean result = false;
         try {
             result = databaseModel.existsOrganization(organizationId);
-        } catch ( SQLException sq) {
+        } catch (SQLException sq) {
             treatSQLException(sq.getMessage(),organizationId,responseId,"Error while checking existence of an organization in the database");
         }
         return result;
     }
 
     public void generateResponsePage(String responseId, String organization, JSONArray array, String arrayName) throws InternalErrorException {
+        String errorMessage = "Error while saving a new response page to the database";
         JSONObject json = new JSONObject();
         json.put("status",200);
         json.put(arrayName,array);
         try {
             databaseModel.saveResponsePage(organization, responseId,json.toString());
         } catch (NotFoundException | SQLException sq) {
-            treatSQLException(sq.getMessage(), organization, responseId, "Error while saving a new response page to the database");
+            treatSQLException(sq.getMessage(), organization, responseId, errorMessage);
+        } catch (InternalErrorException e) {
+            saveInternalException(e.getMessage(), organization, responseId, new InternalErrorException(errorMessage));
         }
     }
 
     public void generateEmptyResponse(String organization, String responseId) throws InternalErrorException {
+        String errorMessage = "Error while saving an empty response to the database";
         try {
             databaseModel.saveResponsePage(organization, responseId,new JSONObject().put("status",200).toString());
             databaseModel.finishComputation(organization,responseId);
         } catch (NotFoundException | SQLException sq) {
-            treatSQLException(sq.getMessage(),organization,responseId,"Error while saving an empty response to the database");
+            treatSQLException(sq.getMessage(),organization,responseId,errorMessage);
+        }catch (InternalErrorException e) {
+            saveInternalException(e.getMessage(), organization, responseId, new InternalErrorException(errorMessage));
         }
     }
 
@@ -106,18 +112,24 @@ public class DatabaseOperations {
     }
 
     public void finishComputation(String organization, String responseId) throws InternalErrorException {
+        String errorMessage = "Error while finishing computation";
         try {
             databaseModel.finishComputation(organization,responseId);
         } catch (SQLException sq) {
-            treatSQLException(sq.getMessage(), organization, responseId, "Error while finishing computation");
+            treatSQLException(sq.getMessage(), organization, responseId, errorMessage);
+        }catch (InternalErrorException e) {
+            saveInternalException(e.getMessage(), organization, responseId, new InternalErrorException(errorMessage));
         }
     }
 
     public void generateResponse(String organization, String responseId) throws InternalErrorException {
+        String errorMessage = "Error while saving new response to the database";
         try {
             databaseModel.saveResponse(organization,responseId);
         } catch (SQLException sq) {
-            treatSQLException(sq.getMessage(), organization, responseId, "Error while saving new response to the database");
+            treatSQLException(sq.getMessage(), organization, responseId, errorMessage);
+        } catch (InternalErrorException e) {
+            saveInternalException(e.getMessage(), organization, responseId, new InternalErrorException(errorMessage));
         }
     }
 
@@ -163,18 +175,24 @@ public class DatabaseOperations {
     }
 
     public void clearOrganizationResponses(String organization) throws NotFoundException, InternalErrorException {
+        String erroMessage = "Error while clearing the organization responses";
         try {
             databaseModel.clearOrganizationResponses(organization);
         } catch (SQLException sq) {
-            treatSQLException(sq.getMessage(), null, null, "Error while clearing the organization responses");
+            treatSQLException(sq.getMessage(), null, null, erroMessage);
+        }catch (InternalErrorException e) {
+            saveInternalException(e.getMessage(), organization, null, new InternalErrorException(erroMessage));
         }
     }
 
     public void clearOrganization(String organization) throws NotFoundException, InternalErrorException {
+        String errorMessage = "Error while clearing the organization data";
         try {
             databaseModel.clearOrganization(organization);
-        } catch (SQLException sq) {
-            treatSQLException(sq.getMessage(), null, null, "Error while clearing the organization data");
+        } catch (IOException | SQLException sq) {
+            treatSQLException(sq.getMessage(), null, null, errorMessage);
+        }catch (InternalErrorException e) {
+            saveInternalException(e.getMessage(), organization, null, new InternalErrorException(errorMessage));
         }
     }
 
@@ -313,47 +331,7 @@ public class DatabaseOperations {
         }
     }
 
-    /*public Dependency getDependency(String organizationId, String responseId, String fromid, String toid) throws InternalErrorException, NotFoundException {
-        Dependency result = null;
-        try {
-            result = databaseModel.getDependency(fromid, toid, organizationId);
-        } catch (SQLException sq) {
-            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while loading a dependency from the database");
-        }
-        return result;
-    }
 
-    public void saveDependency(String organizationId, String responseId, Dependency dependency) throws InternalErrorException {
-        try {
-            databaseModel.saveDependency(dependency);
-        } catch (SQLException sq) {
-            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while saving a dependency to the database");
-        }
-    }
-
-    public void updateClusterDependencies(String organizationId, String responseId, int oldClusterId, int newClusterId) throws InternalErrorException {
-        try {
-            databaseModel.updateClusterDependencies(organizationId, oldClusterId, newClusterId);
-        } catch (SQLException sq) {
-            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while updating a dependency in the database");
-        }
-    }
-
-    public void updateClusterDependencies(String organizationId, String responseId, String requirementId, String status, int newClusterId) throws InternalErrorException {
-        try {
-            databaseModel.updateClusterDependencies(organizationId, requirementId, status, newClusterId);
-        } catch (SQLException sq) {
-            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while updating a dependency in the database");
-        }
-    }
-
-    public void updateDependency(String organizationId, String responseId, String fromid, String toid, String status, int clusterId) throws NotFoundException, InternalErrorException {
-        try {
-            databaseModel.updateDependency(fromid, toid, organizationId, status, clusterId);
-        } catch (SQLException sq) {
-            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while updating a dependency to the database");
-        }
-    }*/
 
     /*
     Auxiliary operations

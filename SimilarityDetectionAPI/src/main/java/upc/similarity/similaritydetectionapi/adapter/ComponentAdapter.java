@@ -11,6 +11,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
+import org.springframework.web.multipart.MultipartFile;
 import upc.similarity.similaritydetectionapi.entity.Dependency;
 import upc.similarity.similaritydetectionapi.entity.Requirement;
 import upc.similarity.similaritydetectionapi.exception.*;
@@ -48,7 +49,7 @@ public abstract class ComponentAdapter {
 
     public abstract void buildClusters(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException;
 
-    public abstract void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException;
+    public abstract void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, MultipartFile input) throws ComponentException;
 
     public abstract String simReqClusters(String organization, int maxValue, List<String> requirements) throws ComponentException;
 

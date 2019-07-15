@@ -238,14 +238,7 @@ public class RestApiController {
                                                          @ApiParam(value="OpenReqJson with requirements and dependencies", required = true) @RequestParam("file") MultipartFile file) {
         try {
             if(url != null) urlOk(url);
-            List<Requirement> requirements = new ArrayList<>();
-            requirements.add(new Requirement());
-            ProjectWithDependencies aux = new ProjectWithDependencies(requirements,new ArrayList<>());
-            ResultId resultId = new ResultId("12345_67");
-            if (organization.equals("TEEEEST")) resultId = similarityService.buildClustersAndCompute(url, "UPC", true, 0.1, aux);
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("id", resultId.getId());
-            return new ResponseEntity<>(jsonObject.toString(),HttpStatus.OK);
+            return new ResponseEntity<>(similarityService.buildClustersAndCompute(url, organization, compare, threshold, file),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }

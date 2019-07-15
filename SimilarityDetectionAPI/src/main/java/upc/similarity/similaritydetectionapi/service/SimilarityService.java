@@ -1,5 +1,6 @@
 package upc.similarity.similaritydetectionapi.service;
 
+import org.springframework.web.multipart.MultipartFile;
 import upc.similarity.similaritydetectionapi.entity.input_output.*;
 import upc.similarity.similaritydetectionapi.exception.*;
 
@@ -35,7 +36,7 @@ public interface SimilarityService {
 
     public ResultId buildClusters(String url, String organization, boolean compare, double threshold, ProjectWithDependencies input) throws BadRequestException;
 
-    public ResultId buildClustersAndCompute(String url, String organization, boolean compare, double threshold, ProjectWithDependencies input) throws BadRequestException;
+    public ResultId buildClustersAndCompute(String url, String organization, boolean compare, double threshold, MultipartFile input) throws BadRequestException;
 
     public String simReqClusters(String organization, int maxValue, List<String> input) throws ComponentException;
 

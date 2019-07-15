@@ -2,6 +2,7 @@ package upc.similarity.compareapi.dao;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
 import upc.similarity.compareapi.exception.InternalErrorException;
@@ -15,15 +16,40 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 public class SQLiteDatabase implements DatabaseModel {
 
     //TODO is needed a lock for the mainDb!
 
+    private AtomicBoolean mainDbLock = new AtomicBoolean(false);
+    private Random random = new Random();
     private static String dbMainName = "main";
     private static String dbPath = "data/";
     private static String driversName = "jdbc:sqlite:";
+
+    private void getAccessToMainDb() throws InternalErrorException {
+        int maxIterations = Constants.getInstance().getMaxSyncIterations();
+        boolean correct = false;
+        int count = 0;
+        while (!correct && count <= maxIterations) {
+            correct = mainDbLock.compareAndSet(false,true);
+            if (!correct) {
+                ++count;
+                try {
+                    Thread.sleep(random.nextInt(50));
+                } catch (InterruptedException e) {
+                    throw new InternalErrorException(e.getMessage());
+                }
+            }
+        }
+        if (count == (maxIterations + 1)) throw new InternalErrorException("Synchronization error in the main database");
+    }
+
+    public void releaseAccessToMainDb() throws InternalErrorException {
+        mainDbLock.set(false);
+    }
 
     public static void setDbPath(String dbPath) {
         SQLiteDatabase.dbPath = dbPath;
@@ -51,7 +77,7 @@ public class SQLiteDatabase implements DatabaseModel {
         }
     }
 
-    private void deleteAllDataFiles() throws IOException, InternalErrorException {
+    private void deleteDataFiles(String text) throws IOException, InternalErrorException {
         Path dirPath = Paths.get(dbPath);
         class Control {
             private volatile boolean error = false;
@@ -60,7 +86,7 @@ public class SQLiteDatabase implements DatabaseModel {
         try (Stream<Path> walk = Files.walk(dirPath)) {
             walk.map(Path::toFile)
                     .forEach(file -> {
-                                if (!file.isDirectory() && file.getName().contains(".db")) {
+                                if (!file.isDirectory() && file.getName().contains(text)) {
                                     if(!file.delete()) control.error = true;
                                 }
                             }
@@ -98,7 +124,6 @@ public class SQLiteDatabase implements DatabaseModel {
     public boolean existsOrganization(String organizationId) throws SQLException {
 
         boolean result = true;
-
         try (Connection conn = getConnection(dbMainName);
              PreparedStatement ps = conn.prepareStatement("SELECT* FROM organizations WHERE id = ?")) {
             ps.setString(1, organizationId);
@@ -112,12 +137,10 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void clearOrganization(String organizationId) throws NotFoundException, SQLException {
-        //TODO delete organization
+    public void clearOrganization(String organizationId) throws NotFoundException, SQLException, InternalErrorException, IOException {
         if (!existsOrganization(organizationId)) throw new NotFoundException("The organization " + organizationId + " does not exist");
-        try(Connection conn = getConnection(organizationId)) {
-            clearOrganizationTables(conn);
-        }
+        deleteOrganization(organizationId);
+        deleteDataFiles(buildFileName(organizationId));
     }
 
     @Override
@@ -125,9 +148,11 @@ public class SQLiteDatabase implements DatabaseModel {
         resetMainDatabase();
     }
 
-    private synchronized void resetMainDatabase() throws IOException, InternalErrorException, SQLException {
+    private void resetMainDatabase() throws IOException, InternalErrorException, SQLException {
 
-        deleteAllDataFiles();
+        getAccessToMainDb();
+
+        deleteDataFiles(".db");
         createOrganizationFiles(dbMainName);
 
         String sql1 = "CREATE TABLE organizations (\n"
@@ -157,7 +182,6 @@ public class SQLiteDatabase implements DatabaseModel {
                 + " PRIMARY KEY(organizationId, responseId, page)"
                 + ");";
 
-
         try (Connection conn = getConnection(dbMainName);
              Statement stmt = conn.createStatement()) {
             conn.setAutoCommit(false);
@@ -166,6 +190,7 @@ public class SQLiteDatabase implements DatabaseModel {
             stmt.execute(sql3);
             conn.commit();
         }
+        releaseAccessToMainDb();
     }
 
     @Override
@@ -239,9 +264,10 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void saveResponse(String organizationId, String responseId) throws SQLException {
+    public void saveResponse(String organizationId, String responseId) throws SQLException, InternalErrorException {
         String sql = "INSERT INTO responses(organizationId, responseId, actualPage, maxPages, finished) VALUES (?,?,?,?,?)";
 
+        getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName);
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1,organizationId);
@@ -251,27 +277,32 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.setInt(5,0);
             ps.execute();
         }
+        releaseAccessToMainDb();
     }
 
     @Override
-    public void saveResponsePage(String organizationId, String responseId, String jsonResponse) throws SQLException, NotFoundException {
+    public void saveResponsePage(String organizationId, String responseId, String jsonResponse) throws SQLException, NotFoundException, InternalErrorException {
+        getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName)) {
             conn.setAutoCommit(false);
             int page = getTotalPages(organizationId, responseId, conn);
             insertResponsePage(organizationId,responseId,page,jsonResponse,conn);
             conn.commit();
         }
+        releaseAccessToMainDb();
     }
 
     @Override
-    public void saveException(String organizationId, String responseId, String jsonResponse) throws SQLException {
+    public void saveException(String organizationId, String responseId, String jsonResponse) throws SQLException, InternalErrorException {
 
+        getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName)) {
             conn.setAutoCommit(false);
             deleteAllResponsePages(organizationId, responseId, conn);
             insertResponsePage(organizationId, responseId, 0, jsonResponse, conn);
             conn.commit();
         }
+        releaseAccessToMainDb();
     }
 
     @Override
@@ -312,47 +343,6 @@ public class SQLiteDatabase implements DatabaseModel {
         }
         return result;
     }
-
-    /*@Override
-    public List<Dependency> getResponsePage(String organizationId, String responseId, int pageNumber) throws SQLException, NotFoundException {
-
-        String jsonResponse;
-        List<Dependency> dependencies = new ArrayList<>();
-
-        try (Connection conn = getConnection()) {
-
-            String sql = "SELECT jsonResponse FROM responsePages WHERE organizationId = ? AND responseId = ? AND page = ?";
-
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, organizationId);
-                ps.setString(2, responseId);
-                ps.setInt(3, pageNumber);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        jsonResponse = rs.getString("jsonResponse");
-                    } else throw new NotFoundException("The organization " + organizationId + " has not a response with id " + responseId + " and page " + pageNumber);
-                }
-            }
-            conn.commit();
-        }
-
-        JSONObject jsonObject = new JSONObject(jsonResponse);
-        try {
-            JSONArray jsonArray = jsonObject.getJSONArray("dependencies");
-            for (int i = 0; i < jsonArray.length(); ++i) {
-                JSONObject aux = jsonArray.getJSONObject(i);
-                String fromid = aux.getString("fromid");
-                String toid = aux.getString("toid");
-                String type = aux.getString("dependency_type");
-                dependencies.add(new Dependency(fromid,toid,type));
-            }
-        } catch (JSONException e) {
-            //empty
-        }
-
-        return dependencies;
-    }*/
 
     @Override
     public void createDepsAuxiliaryTable(String organizationId) throws SQLException {
@@ -556,32 +546,6 @@ public class SQLiteDatabase implements DatabaseModel {
         return result;
     }
 
-    /*@Override
-    public boolean existsDependency(String fromid, String toid, String organizationId) throws SQLException {
-
-        boolean result = false;
-
-        try (Connection conn = getConnection()) {
-
-            String sql = "SELECT (count(*) > 0) FROM dependencies WHERE organizationId = ? AND ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
-
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, organizationId);
-                ps.setString(2, fromid);
-                ps.setString(3, toid);
-                ps.setString(4, toid);
-                ps.setString(5, fromid);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) result = true;
-                }
-            }
-            conn.commit();
-        }
-
-        return result;
-    }*/
-
     @Override
     public void updateDependencyStatus(String organizationId, String fromid, String toid, String newStatus, int newClusterId, boolean useAuxiliaryTable) throws SQLException {
         String sql = "UPDATE dependencies SET status = ?, clusterId = ? WHERE ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
@@ -637,9 +601,10 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void finishComputation(String organizationId, String responseId) throws SQLException {
+    public void finishComputation(String organizationId, String responseId) throws SQLException, InternalErrorException {
         String sql = "UPDATE responses SET finished = ? WHERE organizationId = ? AND responseId = ?";
 
+        getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName);
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1,1);
@@ -647,12 +612,14 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.setString(3,responseId);
             ps.executeUpdate();
         }
+        releaseAccessToMainDb();
     }
 
     @Override
-    public void clearOrganizationResponses(String organizationId) throws SQLException, NotFoundException {
+    public void clearOrganizationResponses(String organizationId) throws SQLException, NotFoundException, InternalErrorException {
         String sql = "SELECT responseId, finished FROM responses WHERE organizationId = ?";
 
+        getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName)) {
             conn.setAutoCommit(false);
             if (!existsOrganization(organizationId)) throw new NotFoundException("The organization " + organizationId + " does not exist");
@@ -671,12 +638,24 @@ public class SQLiteDatabase implements DatabaseModel {
             }
             conn.commit();
         }
+        releaseAccessToMainDb();
     }
 
 
     /*
     Auxiliary operations
      */
+
+    private void deleteOrganization(String organizationId) throws SQLException, InternalErrorException {
+
+        getAccessToMainDb();
+        try (Connection conn = getConnection(dbMainName);
+             PreparedStatement ps = conn.prepareStatement("DELETE FROM warehouses WHERE id = ?")) {
+            ps.setString(1, organizationId);
+            ps.executeUpdate();
+        }
+        releaseAccessToMainDb();
+    }
 
     private int getTotalPages(String organizationId, String responseId, Connection conn) throws SQLException, NotFoundException {
 
@@ -901,15 +880,17 @@ public class SQLiteDatabase implements DatabaseModel {
 
     }
 
-    private void insertOrganization(String organization) throws SQLException {
+    private void insertOrganization(String organization) throws SQLException, InternalErrorException {
 
         String sql = "INSERT INTO organizations(id) VALUES (?)";
 
+        getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName);
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1,organization);
             ps.execute();
         }
+        releaseAccessToMainDb();
 
     }
 

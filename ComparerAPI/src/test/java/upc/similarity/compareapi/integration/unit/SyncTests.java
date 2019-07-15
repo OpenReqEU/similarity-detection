@@ -5,6 +5,8 @@ import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.test.context.junit4.SpringRunner;
+import upc.similarity.compareapi.dao.DatabaseModel;
+import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.service.CompareServiceImpl;
 
@@ -17,11 +19,8 @@ import static org.junit.Assert.*;
 @SpringBootTest()
 public class SyncTests {
 
-
-    int port = 9405;
-
     @Test
-    public void getAccessToUpdate() {
+    public void getAccessToUpdateOrganization() {
         try {
             CompareServiceImpl compareService = new CompareServiceImpl();
             class Control {

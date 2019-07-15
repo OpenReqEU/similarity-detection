@@ -1,4 +1,5 @@
 ComparerAPI/.idea/
+ComparerAPI/data/
 ComparerAPI/target/
 ComparerAPI/models.db
 SimilarityDetectionAPI/.idea/

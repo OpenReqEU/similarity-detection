@@ -443,8 +443,7 @@ public class CompareServiceImpl implements CompareService {
 
     @Override
     public String getResponsePage(String organization, String responseId) throws NotFoundException, InternalErrorException, NotFinishedException {
-        DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
-        return databaseOperations.getResponsePage(organization, responseId);
+        return DatabaseOperations.getInstance().getResponsePage(organization, responseId);
     }
 
     @Override
@@ -687,7 +686,6 @@ public class CompareServiceImpl implements CompareService {
         if (count == (maxIterations + 1)) {
             DatabaseOperations.getInstance().saveInternalException("Synchronization out of time",organization, responseId, new InternalErrorException("The database is busy"));
         }
-
     }
 
     public void releaseAccessToUpdate(String organization, String responseId) throws InternalErrorException {

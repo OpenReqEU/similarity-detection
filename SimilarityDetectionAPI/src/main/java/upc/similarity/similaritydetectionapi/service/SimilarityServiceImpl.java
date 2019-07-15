@@ -7,6 +7,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClients;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import upc.similarity.similaritydetectionapi.AdaptersController;
 import upc.similarity.similaritydetectionapi.adapter.ComponentAdapter;
 import upc.similarity.similaritydetectionapi.config.Control;
@@ -252,10 +253,10 @@ public class SimilarityServiceImpl implements SimilarityService {
 
 
     @Override
-    public ResultId buildClustersAndCompute(String url, String organization, boolean compare, double threshold, ProjectWithDependencies input) throws BadRequestException {
+    public ResultId buildClustersAndCompute(String url, String organization, boolean compare, double threshold, MultipartFile input) throws BadRequestException {
 
         checkThreshold(threshold);
-        if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements or dependencies");
+        //if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements or dependencies");
         ResultId id = getId();
 
         //New thread
@@ -263,7 +264,7 @@ public class SimilarityServiceImpl implements SimilarityService {
             ResultJson result = new ResultJson(id.getId(),"BuildClustersAndCompute");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                componentAdapter.buildClustersAndCompute(id.getId(),organization,compare,threshold,input.getRequirements(),input.getDependencies());
+                componentAdapter.buildClustersAndCompute(id.getId(),organization,compare,threshold,input);
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());
