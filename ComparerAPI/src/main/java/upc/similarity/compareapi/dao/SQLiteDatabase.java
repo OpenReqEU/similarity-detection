@@ -152,45 +152,48 @@ public class SQLiteDatabase implements DatabaseModel {
 
         getAccessToMainDb();
 
-        deleteDataFiles(".db");
-        createOrganizationFiles(dbMainName);
+        try {
+            deleteDataFiles(".db");
+            createOrganizationFiles(dbMainName);
 
-        String sql1 = "CREATE TABLE organizations (\n"
-                + "	id varchar PRIMARY KEY, \n"
-                + " threshold double, \n"
-                + " compare integer, \n"
-                + " hasClusters integer, \n"
-                + " lastClusterId integer"
-                + ");";
+            String sql1 = "CREATE TABLE organizations (\n"
+                    + "	id varchar PRIMARY KEY, \n"
+                    + " threshold double, \n"
+                    + " compare integer, \n"
+                    + " hasClusters integer, \n"
+                    + " lastClusterId integer"
+                    + ");";
 
-        String sql2 = "CREATE TABLE responses (\n"
-                + "	organizationId varchar, \n"
-                + " responseId varchar, \n"
-                + " actualPage integer, \n"
-                + " maxPages integer, \n"
-                + " finished integer, \n"
-                + " PRIMARY KEY(organizationId, responseId)"
-                + ");";
+            String sql2 = "CREATE TABLE responses (\n"
+                    + "	organizationId varchar, \n"
+                    + " responseId varchar, \n"
+                    + " actualPage integer, \n"
+                    + " maxPages integer, \n"
+                    + " finished integer, \n"
+                    + " PRIMARY KEY(organizationId, responseId)"
+                    + ");";
 
-        String sql3 = "CREATE TABLE responsePages (\n"
-                + "	organizationId varchar, \n"
-                + " responseId varchar, \n"
-                + " page integer, \n"
-                + " jsonResponse text, \n"
-                + " FOREIGN KEY(organizationId) REFERENCES responses(organizationId), \n"
-                + " FOREIGN KEY(responseId) REFERENCES responses(responseId), \n"
-                + " PRIMARY KEY(organizationId, responseId, page)"
-                + ");";
+            String sql3 = "CREATE TABLE responsePages (\n"
+                    + "	organizationId varchar, \n"
+                    + " responseId varchar, \n"
+                    + " page integer, \n"
+                    + " jsonResponse text, \n"
+                    + " FOREIGN KEY(organizationId) REFERENCES responses(organizationId), \n"
+                    + " FOREIGN KEY(responseId) REFERENCES responses(responseId), \n"
+                    + " PRIMARY KEY(organizationId, responseId, page)"
+                    + ");";
 
-        try (Connection conn = getConnection(dbMainName);
-             Statement stmt = conn.createStatement()) {
-            conn.setAutoCommit(false);
-            stmt.execute(sql1);
-            stmt.execute(sql2);
-            stmt.execute(sql3);
-            conn.commit();
+            try (Connection conn = getConnection(dbMainName);
+                 Statement stmt = conn.createStatement()) {
+                conn.setAutoCommit(false);
+                stmt.execute(sql1);
+                stmt.execute(sql2);
+                stmt.execute(sql3);
+                conn.commit();
+            }
+        } finally {
+            releaseAccessToMainDb();
         }
-        releaseAccessToMainDb();
     }
 
     @Override
@@ -276,8 +279,9 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.setInt(4,0);
             ps.setInt(5,0);
             ps.execute();
+        } finally {
+            releaseAccessToMainDb();
         }
-        releaseAccessToMainDb();
     }
 
     @Override
@@ -288,8 +292,9 @@ public class SQLiteDatabase implements DatabaseModel {
             int page = getTotalPages(organizationId, responseId, conn);
             insertResponsePage(organizationId,responseId,page,jsonResponse,conn);
             conn.commit();
+        } finally {
+            releaseAccessToMainDb();
         }
-        releaseAccessToMainDb();
     }
 
     @Override
@@ -301,8 +306,9 @@ public class SQLiteDatabase implements DatabaseModel {
             deleteAllResponsePages(organizationId, responseId, conn);
             insertResponsePage(organizationId, responseId, 0, jsonResponse, conn);
             conn.commit();
+        } finally {
+            releaseAccessToMainDb();
         }
-        releaseAccessToMainDb();
     }
 
     @Override
@@ -611,8 +617,9 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.setString(2,organizationId);
             ps.setString(3,responseId);
             ps.executeUpdate();
+        } finally {
+            releaseAccessToMainDb();
         }
-        releaseAccessToMainDb();
     }
 
     @Override
@@ -637,8 +644,9 @@ public class SQLiteDatabase implements DatabaseModel {
                 }
             }
             conn.commit();
+        } finally {
+            releaseAccessToMainDb();
         }
-        releaseAccessToMainDb();
     }
 
 
@@ -653,8 +661,9 @@ public class SQLiteDatabase implements DatabaseModel {
              PreparedStatement ps = conn.prepareStatement("DELETE FROM warehouses WHERE id = ?")) {
             ps.setString(1, organizationId);
             ps.executeUpdate();
+        } finally {
+            releaseAccessToMainDb();
         }
-        releaseAccessToMainDb();
     }
 
     private int getTotalPages(String organizationId, String responseId, Connection conn) throws SQLException, NotFoundException {
@@ -889,8 +898,9 @@ public class SQLiteDatabase implements DatabaseModel {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1,organization);
             ps.execute();
+        } finally {
+            releaseAccessToMainDb();
         }
-        releaseAccessToMainDb();
 
     }
 
