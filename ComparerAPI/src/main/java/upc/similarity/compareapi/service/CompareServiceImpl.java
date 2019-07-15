@@ -290,6 +290,7 @@ public class CompareServiceImpl implements CompareService {
     public Dependencies simReqClusters(String organization, List<String> requirements, int maxValue) throws NotFoundException, InternalErrorException {
         control.showInfoMessage("SimReqClusters: Start computing");
         List<Dependency> result = new ArrayList<>();
+        List<Dependency> proposedDeps = new ArrayList<>();
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         if (!databaseOperations.existsOrganization(null, organization)) throw new NotFoundException("The organization with id " + organization + " does not exist");
@@ -297,18 +298,22 @@ public class CompareServiceImpl implements CompareService {
         HashSet<String> repeated = new HashSet<>();
 
         for (String id: requirements) {
-            List<Dependency> proposedDependencies = databaseOperations.getReqDepedencies(organization, null, id, false);
-            for (Dependency dependency: proposedDependencies) {
+            List<Dependency> dependencies = databaseOperations.getReqDepedencies(organization, null, id, false);
+            for (Dependency dependency: dependencies) {
                 Dependency aux = new Dependency(dependency.getDependencyScore(),id,dependency.getToid(),dependency.getStatus(), constants.getDependencyType(), constants.getComponent());
                 if (!repeated.contains(aux.getFromid()+aux.getToid())) {
-                    result.add(aux);
+                    if (aux.getStatus().equals("accepted")) result.add(aux);
+                    else proposedDeps.add(aux);
                     repeated.add(aux.getFromid()+aux.getToid());
                     repeated.add(aux.getToid()+aux.getFromid());
                 }
             }
         }
 
-        //TODO sort dependencies and only return k values
+        proposedDeps.sort(Comparator.comparing(Dependency::getDependencyScore).reversed());
+        if (maxValue < 0 || maxValue > proposedDeps.size()) maxValue = proposedDeps.size();
+        result.addAll(proposedDeps.subList(0, maxValue));
+
         control.showInfoMessage("SimReqClusters: Finish computing");
         return new Dependencies(result);
     }
@@ -333,6 +338,7 @@ public class CompareServiceImpl implements CompareService {
             List<Requirement> addedRequirements = new ArrayList<>();
             List<Requirement> updatedRequirements = new ArrayList<>();
             List<Dependency> acceptedDependencies = new ArrayList<>();
+            List<Dependency> rejectedDependencies = new ArrayList<>();
             List<Dependency> deletedDependencies = new ArrayList<>();
 
             for (Requirement requirement : input.getRequirements()) {

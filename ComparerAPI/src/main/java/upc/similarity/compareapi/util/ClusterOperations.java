@@ -6,7 +6,6 @@ import upc.similarity.compareapi.entity.auxiliary.ClusterAndDeps;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
 import upc.similarity.compareapi.entity.Requirement;
-import upc.similarity.compareapi.entity.auxiliary.CronAuxiliary;
 import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.exception.NotFoundException;
 

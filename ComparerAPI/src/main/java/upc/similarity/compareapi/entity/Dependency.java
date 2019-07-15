@@ -67,7 +67,7 @@ public class Dependency implements Serializable {
     Get
      */
 
-    public double getDependencyScore() {
+    public Double getDependencyScore() {
         return dependencyScore;
     }
 
