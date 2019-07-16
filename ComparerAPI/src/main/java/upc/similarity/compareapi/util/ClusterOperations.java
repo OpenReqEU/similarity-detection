@@ -117,7 +117,6 @@ public class ClusterOperations {
         List<Dependency> proposedDependencies = new ArrayList<>();
         int cont = 0;
         int maxDeps = Constants.getInstance().getMaxDepsForPage();
-        long deps = 0;
         //TODO this is causing n*n efficiency, can be improved saving the result of the pairs and only compute half of the matrix (less memory efficiency)
         for (String req1: requirements) {
             for (int clusterId: clustersIds) {
@@ -135,10 +134,8 @@ public class ClusterOperations {
                 }
                 if (maxReq != null) {
                     ++cont;
-                    ++deps;
                     proposedDependencies.add(new Dependency(req1,maxReq,"proposed",maxScore,clusterId));
                     if (cont >= maxDeps) {
-                        control.showInfoMessage("Deps:" + deps);
                         cont = 0;
                         databaseOperations.saveDependencies(organization, responseId, proposedDependencies, useAuxiliaryTable);
                         proposedDependencies = new ArrayList<>();
