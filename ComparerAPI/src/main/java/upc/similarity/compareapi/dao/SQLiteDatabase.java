@@ -391,7 +391,9 @@ public class SQLiteDatabase implements DatabaseModel {
     @Override
     public void saveDependencies(String organizationId, List<Dependency> dependencies, boolean useAuxiliaryTable) throws SQLException {
         try (Connection conn = getConnection(organizationId)) {
+            conn.setAutoCommit(false);
             saveDependencies(dependencies, conn, useAuxiliaryTable);
+            conn.commit();
         }
     }
 
@@ -658,7 +660,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
         getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName);
-             PreparedStatement ps = conn.prepareStatement("DELETE FROM warehouses WHERE id = ?")) {
+             PreparedStatement ps = conn.prepareStatement("DELETE FROM organizations WHERE id = ?")) {
             ps.setString(1, organizationId);
             ps.executeUpdate();
         } finally {

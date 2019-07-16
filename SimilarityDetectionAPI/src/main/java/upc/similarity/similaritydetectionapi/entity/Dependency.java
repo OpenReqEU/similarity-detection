@@ -32,6 +32,12 @@ public class Dependency implements Serializable {
     @ApiModelProperty(example = "[Similarity-UPC]")
     @JsonProperty(value="description")
     private List<String> description;
+    @ApiModelProperty(example = "1354019441000")
+    @JsonProperty(value="created_at")
+    private long createdAt;
+    @ApiModelProperty(example = "1354019441000")
+    @JsonProperty(value = "modified_at")
+    private long modified_at;
 
     public Dependency() {
         description = new ArrayList<>();
@@ -75,6 +81,14 @@ public class Dependency implements Serializable {
         return description;
     }
 
+    public long getModified_at() {
+        return modified_at;
+    }
+
+    public long getCreatedAt() {
+        return createdAt;
+    }
+
     /*
     Set
      */
@@ -101,6 +115,14 @@ public class Dependency implements Serializable {
 
     public void setDescription(List<String> description) {
         this.description = description;
+    }
+
+    public void setModified_at(long modified_at) {
+        this.modified_at = modified_at;
+    }
+
+    public void setCreatedAt(long createdAt) {
+        this.createdAt = createdAt;
     }
 
     /*

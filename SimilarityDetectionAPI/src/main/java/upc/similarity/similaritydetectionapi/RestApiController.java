@@ -349,8 +349,8 @@ public class RestApiController {
     }
 
     @CrossOrigin
-    @DeleteMapping(value = "/ClearOrganization", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Clear organization data", notes = "<p>Clears all the data from an specified organization. If this method is called while a calculation is being carried out with the chosen organization, unforeseen results may occur.</p>", tags = "Auxiliary methods")
+    @DeleteMapping(value = "/DeleteOrganization", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Delete organization", notes = "<p>Deletes all data from an specified organization. If this method is called while a calculation is being carried out with the chosen organization, unforeseen results may occur.</p>", tags = "Auxiliary methods")
     @ApiResponses(value = {
             @ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=404, message = "Not found"),

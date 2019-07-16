@@ -107,7 +107,7 @@ public class CompareAdapter extends ComponentAdapter{
         jsonToSend.put("requirements", requirementsJson);
         jsonToSend.put("dependencies", dependenciesJson);
 
-        connectionComponentPost(URL + "BuildClusters?responseId=" + responseId + "&organization=" + organization, jsonToSend);
+        connectionComponentPost(URL + "CronMethod?responseId=" + responseId + "&organization=" + organization, jsonToSend);
     }
 
     @Override

@@ -327,7 +327,7 @@ public class ControllerTests {
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
-        this.mockMvc.perform(delete("/upc/similarity-detection/ClearOrganization").param("organization", "UPC")).andDo(print())
+        this.mockMvc.perform(delete("/upc/similarity-detection/DeleteOrganization").param("organization", "UPC")).andDo(print())
                 .andExpect(status().isOk()).andExpect(status().isOk());
     }
 
