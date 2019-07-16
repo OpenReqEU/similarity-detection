@@ -660,6 +660,7 @@ public class CompareServiceImpl implements CompareService {
     public void getAccessToUpdate(String organization, String responseId) throws InternalErrorException {
         String errorMessage = "Synchronization error";
         int maxIterations = Constants.getInstance().getMaxSyncIterations();
+        int sleepTime = Constants.getInstance().getSleepTime();
         if (!organizationLocks.containsKey(organization)) {
             AtomicBoolean aux = organizationLocks.putIfAbsent(organization, new AtomicBoolean(false));
             //aux not used
@@ -673,7 +674,7 @@ public class CompareServiceImpl implements CompareService {
             if (!correct) {
                 ++count;
                 try {
-                    Thread.sleep(random.nextInt(50));
+                    Thread.sleep(random.nextInt(sleepTime));
                 } catch (InterruptedException e) {
                     DatabaseOperations.getInstance().saveInternalException("Synchronization 2nd conditional",organization, responseId, new InternalErrorException(errorMessage));
                     Thread.currentThread().interrupt();

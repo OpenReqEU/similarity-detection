@@ -30,6 +30,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
     private void getAccessToMainDb() throws InternalErrorException {
         int maxIterations = Constants.getInstance().getMaxSyncIterations();
+        int sleepTime = Constants.getInstance().getSleepTime();
         boolean correct = false;
         int count = 0;
         while (!correct && count <= maxIterations) {
@@ -37,7 +38,7 @@ public class SQLiteDatabase implements DatabaseModel {
             if (!correct) {
                 ++count;
                 try {
-                    Thread.sleep(random.nextInt(50));
+                    Thread.sleep(random.nextInt(sleepTime));
                 } catch (InterruptedException e) {
                     Control.getInstance().showErrorMessage(e.getMessage());
                     Thread.currentThread().interrupt();
