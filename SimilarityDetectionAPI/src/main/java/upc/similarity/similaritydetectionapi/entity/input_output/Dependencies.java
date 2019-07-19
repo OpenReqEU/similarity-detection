@@ -7,7 +7,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Dependencies implements Serializable {
+public class Dependencies extends Input implements Serializable {
 
     @JsonProperty(value="dependencies")
     private List<Dependency> dependencies;
@@ -18,5 +18,11 @@ public class Dependencies implements Serializable {
 
     public List<Dependency> getDependencies() {
         return dependencies;
+    }
+
+    @Override
+    public boolean inputOk() {
+        message = "The input dependencies array is empty";
+        return !dependencies.isEmpty();
     }
 }

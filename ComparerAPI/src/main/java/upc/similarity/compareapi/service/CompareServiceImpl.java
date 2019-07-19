@@ -207,6 +207,8 @@ public class CompareServiceImpl implements CompareService {
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
+        if (!input.inputOk()) databaseOperations.saveBadRequestException(organization, responseId, new BadRequestException("The input requirements array is empty"));
+
         databaseOperations.generateResponse(organization,responseId);
         List<Requirement> requirements = deleteDuplicates(input.getRequirements(),organization,responseId);
         Model model = generateModel(compare, threshold, requirements);
@@ -235,6 +237,8 @@ public class CompareServiceImpl implements CompareService {
         control.showInfoMessage("BuildClustersAndCompute: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
+
+        if (!input.inputOk()) databaseOperations.saveBadRequestException(organization, responseId, new BadRequestException("The input requirements array is empty"));
 
         databaseOperations.generateResponse(organization,responseId);
         List<Requirement> requirements = deleteDuplicates(input.getRequirements(),organization,responseId);

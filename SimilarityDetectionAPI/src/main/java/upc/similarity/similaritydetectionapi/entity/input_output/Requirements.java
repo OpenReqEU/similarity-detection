@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @ApiModel(value = "Requirements", description = "OpenReqJson with requirements")
-public class Requirements implements Serializable {
+public class Requirements extends Input implements Serializable{
 
     @JsonProperty(value="requirements")
     private List<Requirement> requirements;
@@ -27,6 +27,7 @@ public class Requirements implements Serializable {
     }
 
     public boolean inputOk() {
+        this.message = "The input requirements array is empty";
         return !requirements.isEmpty();
     }
 }

@@ -25,9 +25,9 @@ public interface SimilarityService {
 
     public ResultId simReqOrganization(String url, String organization, Requirements input) throws InternalErrorException, BadRequestException;
 
-    public ResultId simReqProject(String url, String organization, List<String> req, String project, Projects input) throws NotFoundException;
+    public ResultId simReqProject(String url, String organization, List<String> req, String project, Projects input) throws NotFoundException, BadRequestException;
 
-    public ResultId simProject(String url, String organization, String project, Projects input) throws NotFoundException;
+    public ResultId simProject(String url, String organization, String project, Projects input) throws NotFoundException, BadRequestException;
 
 
     /*

@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @ApiModel(value = "ProjectWithDependencies", description = "OpenReqJson with requirements and dependencies")
-public class ProjectWithDependencies implements Serializable {
+public class ProjectWithDependencies extends Input implements Serializable {
 
     @JsonProperty(value="requirements")
     private List<Requirement> requirements;
@@ -37,6 +37,7 @@ public class ProjectWithDependencies implements Serializable {
     }
 
     public boolean inputOk() {
+        message = "The two input arrays are empty";
         return (!this.requirements.isEmpty() || !this.dependencies.isEmpty());
     }
 }

@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @ApiModel(value = "Projects", description = "OpenReqJson with projects")
-public class Projects implements Serializable {
+public class Projects extends Input implements Serializable {
 
     @JsonProperty(value="projects")
     private List<Project> projects;
@@ -23,6 +23,7 @@ public class Projects implements Serializable {
     }
 
     public boolean inputOk() {
+        message = "The input projects array is empty";
         return !projects.isEmpty();
     }
 }

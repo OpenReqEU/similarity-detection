@@ -28,4 +28,8 @@ public class Clusters implements Serializable {
     public List<Dependency> getDependencies() {
         return dependencies;
     }
+
+    public boolean inputOk() {
+        return !requirements.isEmpty();
+    }
 }

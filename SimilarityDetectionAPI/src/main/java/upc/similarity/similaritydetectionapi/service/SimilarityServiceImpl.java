@@ -170,8 +170,10 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simReqProject(String url, String organization, List<String> req, String projectId, Projects input) throws NotFoundException {
+    public ResultId simReqProject(String url, String organization, List<String> req, String projectId, Projects input) throws NotFoundException, BadRequestException {
 
+        checkInput(input);
+        if (req.isEmpty()) throw new BadRequestException("The input parameter req is empty");
         Project project = searchProject(projectId,input.getProjects());
 
         ResultId id = getId();
@@ -196,8 +198,9 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simProject(String url, String organization, String projectId, Projects input) throws NotFoundException {
+    public ResultId simProject(String url, String organization, String projectId, Projects input) throws NotFoundException, BadRequestException {
 
+        checkInput(input);
         Project project = searchProject(projectId,input.getProjects());
         ResultId id = getId();
 
@@ -286,6 +289,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     @Override
     public void treatDependencies(String organization, Dependencies dependencies) throws ComponentException {
 
+        checkInput(dependencies);
         ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
         componentAdapter.treatDependencies(organization, dependencies.getDependencies());
     }
@@ -293,7 +297,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     @Override
     public ResultId cronMethod(String url, String organization, ProjectWithDependencies input) throws ComponentException {
 
-        if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements or dependencies");
+        checkInput(input);
         ResultId id = getId();
 
         //New thread
@@ -395,8 +399,8 @@ public class SimilarityServiceImpl implements SimilarityService {
         }
     }
 
-    private void checkInput(Requirements input) throws BadRequestException {
-        if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements");
+    private void checkInput(Input input) throws BadRequestException {
+        if (!input.inputOk()) throw new BadRequestException(input.getMessage());
     }
 
     private void checkThreshold(double threshold) throws BadRequestException {

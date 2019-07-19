@@ -166,7 +166,7 @@ public class CompareAdapter extends ComponentAdapter{
 
     @Override
     protected void throwComponentException(Exception e, String message) throws InternalErrorException {
-        throw new InternalErrorException("Comparer Exception:" + message + ". " + e.getMessage());
+        throw new InternalErrorException(message);
     }
 
     protected void checkExceptions(int status, String resJSON) throws ComponentException {
