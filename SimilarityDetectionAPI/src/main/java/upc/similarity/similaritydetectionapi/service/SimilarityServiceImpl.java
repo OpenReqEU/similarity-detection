@@ -227,17 +227,16 @@ public class SimilarityServiceImpl implements SimilarityService {
      */
 
     @Override
-    public ResultId buildClusters(String url, String organization, boolean compare, double threshold, ProjectWithDependencies input) throws BadRequestException {
+    public ResultId buildClusters(String url, String organization, boolean compare, double threshold, MultipartFile input) throws BadRequestException {
 
-        if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements or dependencies");
+        checkThreshold(threshold);
         ResultId id = getId();
-
         //New thread
         Thread thread = new Thread(() -> {
             ResultJson result = new ResultJson(id.getId(),"BuildClusters");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                componentAdapter.buildClusters(id.getId(),organization,compare,threshold,input.getRequirements(),input.getDependencies());
+                componentAdapter.buildClusters(id.getId(),organization,compare,threshold,input);
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -256,7 +255,6 @@ public class SimilarityServiceImpl implements SimilarityService {
     public ResultId buildClustersAndCompute(String url, String organization, boolean compare, double threshold, MultipartFile input) throws BadRequestException {
 
         checkThreshold(threshold);
-        //if (!input.inputOk()) throw new BadRequestException("The provided json has not requirements or dependencies");
         ResultId id = getId();
 
         //New thread

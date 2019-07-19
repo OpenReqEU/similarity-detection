@@ -218,14 +218,16 @@ public class ControllerTests {
 
     @Test
     public void buildClusters() throws Exception {
+        MockMultipartFile multipartFile = new MockMultipartFile("file", "test.txt",
+                "text/plain", "Spring Framework".getBytes());
         stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
-        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/BuildClusters").param("organization", "UPC").param("url", callback)
-                .param("compare", "true").param("threshold", "0")
-                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"orphans/input.json")))
+        MvcResult result = this.mockMvc.perform(multipart("/upc/similarity-detection/BuildClusters").file(multipartFile).param("organization", "UPC").param("url", callback)
+                .param("compare", "true").param("threshold", "0.12")
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE))
                 .andExpect(status().isOk()).andReturn();
         TestConfig testConfig = TestConfig.getInstance();
         while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}

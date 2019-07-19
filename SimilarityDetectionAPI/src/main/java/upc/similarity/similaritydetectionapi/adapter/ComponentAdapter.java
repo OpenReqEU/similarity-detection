@@ -47,7 +47,7 @@ public abstract class ComponentAdapter {
     Cluster operations
      */
 
-    public abstract void buildClusters(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException;
+    public abstract void buildClusters(String responseId, String organization, boolean compare, double threshold, MultipartFile input) throws ComponentException;
 
     public abstract void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, MultipartFile input) throws ComponentException;
 

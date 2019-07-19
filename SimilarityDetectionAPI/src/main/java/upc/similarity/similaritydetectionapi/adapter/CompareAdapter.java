@@ -60,16 +60,16 @@ public class CompareAdapter extends ComponentAdapter{
     }
 
     @Override
-    public void buildClusters(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException {
+    public void buildClusters(String responseId, String organization, boolean compare, double threshold, MultipartFile input) throws ComponentException {
 
-        JSONArray requirementsJson = listRequirementsToJson(requirements);
-        JSONArray dependenciesJson = listDependenciesToJson(dependencies);
+        String content = "";
+        try {
+            content = new String(input.getBytes(), "UTF-8");
+        } catch (IOException e) {
+            throw new InternalErrorException("Error loading input file");
+        }
 
-        JSONObject jsonToSend = new JSONObject();
-        jsonToSend.put("requirements", requirementsJson);
-        jsonToSend.put("dependencies", dependenciesJson);
-
-        connectionComponentPost(URL + "BuildClusters?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, jsonToSend);
+        connectionComponentPost(URL + "BuildClusters?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, content);
     }
 
     @Override

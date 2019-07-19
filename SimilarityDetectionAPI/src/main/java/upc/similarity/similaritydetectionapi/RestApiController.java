@@ -202,7 +202,7 @@ public class RestApiController {
      */
 
     @CrossOrigin
-    @PostMapping(value = "/BuildClusters", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/BuildClusters", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Generates the clusters from the input requirements and dependencies", notes = "<p>This method computes the clusters using the existing duplicates. The entry duplicates relations are " +
             "defined by the dependencies with type equal to similar or duplicate and type equal to accepted. All the requirements that do not have duplicates relationships with other requirements" +
             " are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the database.</p>", tags = "Clusters")
@@ -213,10 +213,10 @@ public class RestApiController {
                                         @ApiParam(value="Use text attribute?", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
                                         @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                         @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
-                                        @ApiParam(value="OpenReqJson with requirements and dependencies", required = true) @RequestBody ProjectWithDependencies input) {
+                                        @ApiParam(value="OpenReqJson with requirements and dependencies", required = true) @RequestParam("file") MultipartFile file) {
         try {
             if(url != null) urlOk(url);
-            return new ResponseEntity<>(similarityService.buildClusters(url,organization,compare,threshold,input),HttpStatus.OK);
+            return new ResponseEntity<>(similarityService.buildClusters(url,organization,compare,threshold,file),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }

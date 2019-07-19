@@ -34,7 +34,7 @@ public interface SimilarityService {
     Cluster operations
      */
 
-    public ResultId buildClusters(String url, String organization, boolean compare, double threshold, ProjectWithDependencies input) throws BadRequestException;
+    public ResultId buildClusters(String url, String organization, boolean compare, double threshold, MultipartFile input) throws BadRequestException;
 
     public ResultId buildClustersAndCompute(String url, String organization, boolean compare, double threshold, MultipartFile input) throws BadRequestException;
 
