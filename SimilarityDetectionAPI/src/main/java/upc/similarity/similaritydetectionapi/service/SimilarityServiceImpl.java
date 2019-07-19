@@ -400,7 +400,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     private void checkInput(Input input) throws BadRequestException {
-        if (!input.inputOk()) throw new BadRequestException(input.getMessage());
+        if (!input.inputOk()) throw new BadRequestException(input.checkMessage());
     }
 
     private void checkThreshold(double threshold) throws BadRequestException {

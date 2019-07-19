@@ -36,8 +36,13 @@ public class ProjectWithDependencies extends Input implements Serializable {
         return dependencies;
     }
 
+    @Override
     public boolean inputOk() {
-        message = "The two input arrays are empty";
         return (!this.requirements.isEmpty() || !this.dependencies.isEmpty());
+    }
+
+    @Override
+    public String checkMessage() {
+        return "The two input arrays are empty";
     }
 }

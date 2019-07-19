@@ -22,7 +22,11 @@ public class Dependencies extends Input implements Serializable {
 
     @Override
     public boolean inputOk() {
-        message = "The input dependencies array is empty";
         return !dependencies.isEmpty();
+    }
+
+    @Override
+    public String checkMessage() {
+        return "The input dependencies array is empty";
     }
 }

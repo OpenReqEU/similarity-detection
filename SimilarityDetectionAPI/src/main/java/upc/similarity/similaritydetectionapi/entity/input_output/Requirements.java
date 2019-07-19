@@ -26,8 +26,13 @@ public class Requirements extends Input implements Serializable{
         return requirements;
     }
 
+    @Override
     public boolean inputOk() {
-        this.message = "The input requirements array is empty";
         return !requirements.isEmpty();
+    }
+
+    @Override
+    public String checkMessage() {
+        return "The input requirements array is empty";
     }
 }

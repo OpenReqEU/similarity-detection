@@ -22,8 +22,13 @@ public class Projects extends Input implements Serializable {
         return projects;
     }
 
+    @Override
     public boolean inputOk() {
-        message = "The input projects array is empty";
         return !projects.isEmpty();
+    }
+
+    @Override
+    public String checkMessage() {
+        return "The input projects array is empty";
     }
 }
