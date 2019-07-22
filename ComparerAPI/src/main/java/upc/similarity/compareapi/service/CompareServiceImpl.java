@@ -263,6 +263,7 @@ public class CompareServiceImpl implements CompareService {
         Constants constants = Constants.getInstance();
         HashSet<String> repeated = new HashSet<>();
         Iterator it = model.getClusters().entrySet().iterator();
+        long numberDependencies = 0;
         while (it.hasNext()) {
             Map.Entry pair = (Map.Entry)it.next();
             List<String> clusterRequirements = (List<String>) pair.getValue();
@@ -273,6 +274,7 @@ public class CompareServiceImpl implements CompareService {
                     Dependency aux = new Dependency(dependency.getDependencyScore(),orphan,dependency.getToid(),constants.getStatus(), constants.getDependencyType(), constants.getComponent());
                     if (!repeated.contains(aux.getFromid()+aux.getToid())) {
                         array.put(aux.toJSON());
+                        ++numberDependencies;
                         ++cont;
                         if (cont >= constants.getMaxDepsForPage()) {
                             databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
@@ -285,6 +287,8 @@ public class CompareServiceImpl implements CompareService {
                 }
             }
         }
+
+        if (array.length() == 0 && numberDependencies == 0) databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
 
         if (array.length() > 0) {
             databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
@@ -529,6 +533,8 @@ public class CompareServiceImpl implements CompareService {
             }
         }
 
+        if (array.length() == 0 && numberDependencies == 0) databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
+
         if (array.length() > 0) {
             databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
         }
@@ -570,6 +576,8 @@ public class CompareServiceImpl implements CompareService {
                 }
             }
         }
+
+        if (array.length() == 0 && numberDependencies == 0) databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
 
         if (array.length() > 0) {
             databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
