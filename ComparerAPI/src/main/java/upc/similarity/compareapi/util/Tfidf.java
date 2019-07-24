@@ -137,7 +137,8 @@ public class Tfidf {
         for (List<String> doc : newDocs) {
             HashMap<String, Double> aux = new HashMap<>();
             for (String s : doc) {
-                Double idf = idf(finalSize, newCorpusFrequency.get(s));
+                double idf = idf(finalSize, newCorpusFrequency.get(s));
+                if (idf < 0) idf = 0.0;
                 Integer tf = wordBagArray.get(i).get(s);
                 double tfidf = idf * tf;
                 if (tfidf>=cutOffParameter) aux.put(s, tfidf);
@@ -198,7 +199,8 @@ public class Tfidf {
         for (List<String> doc : docs) {
             HashMap<String, Double> aux = new HashMap<>();
             for (String s : doc) {
-                Double idf = idf(docs.size(), corpusFrequency.get(s));
+                double idf = idf(docs.size(), corpusFrequency.get(s));
+                if (idf < 0) idf = 0.0;
                 Integer tf = wordBag.get(i).get(s);
                 double tfidf = idf * tf;
                 if (tfidf>=cutOffParameter) aux.put(s, tfidf);
