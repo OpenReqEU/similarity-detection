@@ -45,7 +45,7 @@ public interface CompareService {
 
     Dependencies simReqClusters(String organization, List<String> requirements, int maxValue) throws NotFoundException, InternalErrorException;
 
-    String TestAccuracy(boolean compare, Clusters input);
+    void TestAccuracy(boolean compare, Clusters input);
 
     String extractModel(boolean compare, String organization, Clusters input);
 

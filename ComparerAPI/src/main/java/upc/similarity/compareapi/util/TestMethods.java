@@ -27,8 +27,8 @@ public class TestMethods {
         return instance;
     }
 
-    public String TestAccuracy(boolean compare, Clusters input) {
-        CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
+    public void TestAccuracy(boolean compare, Clusters input) {
+        /*CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
         Model model = null;
         try {
             model = generateModel(compare, deleteDuplicates(input.getRequirements(), null, null));
@@ -44,7 +44,35 @@ public class TestMethods {
         }
         JSONObject result = new JSONObject();
         result.put("scores", scoresArray);
-        return result.toString();
+        return result.toString();*/
+
+        Thread thread = new Thread(() -> {
+            Control.getInstance().showInfoMessage("Start testMethod");
+            Model model = null;
+            try {
+                model = generateModel(compare, deleteDuplicates(input.getRequirements(), null, null));
+            } catch (Exception e) {
+                control.showInfoMessage(e.getMessage());
+            }
+            Svd svd = new Svd();
+            Map<String,Integer> ids = svd.compute(model.getDocs(), model.getCorpusFrequency());
+            JSONArray scoresArray = new JSONArray();
+            for (Dependency dependency: input.getDependencies()) {
+                String fromid = dependency.getFromid();
+                String toid = dependency.getToid();
+                double value = svd.compare(ids.get(fromid), ids.get(toid));
+                scoresArray.put(value);
+            }
+            JSONObject result = new JSONObject();
+            result.put("scores", scoresArray);
+            try(BufferedWriter writer = new BufferedWriter(new FileWriter("../testing/output/result.txt"))) {
+                writer.write(result.toString());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            Control.getInstance().showInfoMessage("Finish testMethod");
+        });
+        thread.start();
     }
 
     public String extractModel(boolean compare, String organization, Clusters input) {

@@ -661,8 +661,8 @@ public class CompareServiceImpl implements CompareService {
         return result;
     }
 
-    public String TestAccuracy(boolean compare, Clusters input) {
-        return TestMethods.getInstance().TestAccuracy(compare, input);
+    public void TestAccuracy(boolean compare, Clusters input) {
+        TestMethods.getInstance().TestAccuracy(compare, input);
     }
 
     public String extractModel(boolean compare, String organization, Clusters input) {

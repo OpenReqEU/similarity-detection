@@ -43,4 +43,25 @@ public class CosineSimilarity {
         }
         return sqrt(norm);
     }
+
+    public double compute(double[] a, double[] b) {
+        double cosine=0.0;
+        for (int i = 0; i < a.length; ++i) {
+            cosine += a[i]*b[i];
+        }
+
+        double normA=norm(a);
+        double normB=norm(b);
+
+        cosine=cosine/(normA*normB);
+        return cosine;
+    }
+
+    private double norm(double[] a) {
+        double norm=0.0;
+        for (int i = 0; i < a.length; ++i) {
+            norm += a[i]*a[i];
+        }
+        return sqrt(norm);
+    }
 }
