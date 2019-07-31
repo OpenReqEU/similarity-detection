@@ -46,7 +46,7 @@ public class TestMethods {
         result.put("scores", scoresArray);
         return result.toString();*/
 
-        Thread thread = new Thread(() -> {
+        /*Thread thread = new Thread(() -> {
             Control.getInstance().showInfoMessage("Start testMethod");
             Model model = null;
             try {
@@ -72,7 +72,7 @@ public class TestMethods {
             }
             Control.getInstance().showInfoMessage("Finish testMethod");
         });
-        thread.start();
+        thread.start();*/
     }
 
     public String extractModel(boolean compare, String organization, Clusters input) {
