@@ -153,10 +153,10 @@ public class DatabaseOperations {
         return model;
     }
 
-    public void saveModel(String organization, String responseId, Model model) throws InternalErrorException {
+    public void saveModel(String organization, String responseId, Model model, List<Dependency> dependencies) throws InternalErrorException {
         String errorMessage = "Error while saving the new model to the database";
         try {
-            databaseModel.saveModel(organization, model);
+            databaseModel.saveModel(organization, model, dependencies);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organization, responseId, errorMessage);
         } catch (IOException | InternalErrorException e) {
@@ -235,10 +235,10 @@ public class DatabaseOperations {
         return result;
     }
 
-    public void updateModelClustersAndDependencies(String organization, String responseId, Model model, boolean useDepsAuxiliaryTable) throws InternalErrorException {
+    public void updateModelClustersAndDependencies(String organization, String responseId, Model model, List<Dependency> dependencies, boolean useDepsAuxiliaryTable) throws InternalErrorException {
         String errorMessage = "Error while saving the new model to the database";
         try {
-            databaseModel.updateClustersAndDependencies(organization, model, useDepsAuxiliaryTable);
+            databaseModel.updateClustersAndDependencies(organization, model, dependencies, useDepsAuxiliaryTable);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organization, responseId, errorMessage);
         }

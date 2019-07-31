@@ -198,7 +198,7 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void saveModel(String organization, Model model) throws IOException, InternalErrorException, SQLException {
+    public void saveModel(String organization, Model model, List<Dependency> dependencies) throws IOException, InternalErrorException, SQLException {
 
         insertNewOrganization(organization);
 
@@ -211,14 +211,14 @@ public class SQLiteDatabase implements DatabaseModel {
             saveCorpusFrequency(model.getCorpusFrequency(), conn);
             if (model.hasClusters()) {
                 saveClusters(model.getClusters(), conn);
-                saveDependencies(model.getDependencies(), conn, false);
+                saveDependencies(dependencies, conn, false);
             }
             conn.commit();
         }
     }
 
     @Override
-    public void updateClustersAndDependencies(String organization, Model model, boolean useDepsAuxiliaryTable) throws SQLException {
+    public void updateClustersAndDependencies(String organization, Model model, List<Dependency> dependencies, boolean useDepsAuxiliaryTable) throws SQLException {
 
         try (Connection conn = getConnection(organization)) {
             conn.setAutoCommit(false);
@@ -226,7 +226,7 @@ public class SQLiteDatabase implements DatabaseModel {
             if (model.hasClusters()) {
                 updateOrganizationClustersInfo(organization,model.getLastClusterId(),conn);
                 saveClusters(model.getClusters(), conn);
-                if (!useDepsAuxiliaryTable) saveDependencies(model.getDependencies(), conn, false);
+                if (!useDepsAuxiliaryTable) saveDependencies(dependencies, conn, false);
                 else insertAuxiliaryDepsTable(conn);
             }
             conn.commit();
@@ -259,12 +259,11 @@ public class SQLiteDatabase implements DatabaseModel {
             if (withFrequency) corpusFrequency = loadCorpusFrequency(conn);
             if (hasClusters) {
                 clusters = loadClusters(conn);
-                dependencies = loadDependencies(conn);
             }
             conn.commit();
         }
 
-        return (hasClusters) ? new Model(docs, corpusFrequency, threshold, compare, lastClusterId, clusters, dependencies) : new Model(docs, corpusFrequency, threshold, compare);
+        return (hasClusters) ? new Model(docs, corpusFrequency, threshold, compare, lastClusterId, clusters) : new Model(docs, corpusFrequency, threshold, compare);
     }
 
     @Override

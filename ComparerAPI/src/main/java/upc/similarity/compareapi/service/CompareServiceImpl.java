@@ -32,7 +32,7 @@ public class CompareServiceImpl implements CompareService {
         databaseOperations.generateResponse(organization,responseId);
         getAccessToUpdate(organization, responseId);
         try {
-            databaseOperations.saveModel(organization, responseId, generateModel(compare, threshold, deleteDuplicates(requirements, organization, responseId)));
+            databaseOperations.saveModel(organization, responseId, generateModel(compare, threshold, deleteDuplicates(requirements, organization, responseId)), null);
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
@@ -56,7 +56,7 @@ public class CompareServiceImpl implements CompareService {
 
         getAccessToUpdate(organization, responseId);
         try {
-            databaseOperations.saveModel(organization, responseId, model);
+            databaseOperations.saveModel(organization, responseId, model, null);
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
@@ -81,7 +81,7 @@ public class CompareServiceImpl implements CompareService {
             Model model = databaseOperations.loadModel(organization, responseId, true);
             List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements, organization, responseId);
             addRequirementsToModel(notDuplicatedRequirements, model);
-            databaseOperations.saveModel(organization, responseId, model);
+            databaseOperations.saveModel(organization, responseId, model, null);
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
@@ -106,7 +106,7 @@ public class CompareServiceImpl implements CompareService {
             List<String> requirementsIds = new ArrayList<>();
             for (Requirement requirement : notDuplicatedRequirements) requirementsIds.add(requirement.getId());
             Tfidf.getInstance().deleteReqsAndRecomputeModel(requirementsIds, model);
-            databaseOperations.saveModel(organization, responseId, model);
+            databaseOperations.saveModel(organization, responseId, model, null);
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
@@ -158,7 +158,7 @@ public class CompareServiceImpl implements CompareService {
             }
 
             reqProject(requirementsToCompare, projectRequirements, model, model.getThreshold(), organization, responseId);
-            databaseOperations.saveModel(organization, responseId, model);
+            databaseOperations.saveModel(organization, responseId, model, null);
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
@@ -215,14 +215,13 @@ public class CompareServiceImpl implements CompareService {
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
         ClusterAndDeps iniClusters = clusterOperations.computeIniClusters(input.getDependencies(), requirements);
 
-        model = new Model(model.getDocs(), model.getCorpusFrequency(), model.getThreshold(), model.isCompare(), iniClusters.getLastClusterId(), iniClusters.getClusters(), iniClusters.getDependencies());
-        model.getDependencies().addAll(iniClusters.getDependencies());
+        model = new Model(model.getDocs(), model.getCorpusFrequency(), model.getThreshold(), model.isCompare(), iniClusters.getLastClusterId(), iniClusters.getClusters());
         getAccessToUpdate(organization, responseId);
         try {
-            databaseOperations.saveModel(organization, responseId, model);
+            databaseOperations.saveModel(organization, responseId, model, iniClusters.getDependencies());
             databaseOperations.createDepsAuxiliaryTable(organization, null);
             clusterOperations.computeProposedDependencies(organization, responseId,  model.getDocs().keySet(), model.getClusters().keySet(), model, true);
-            databaseOperations.updateModelClustersAndDependencies(organization, null, model, true);
+            databaseOperations.updateModelClustersAndDependencies(organization, null, model, null, true);
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
@@ -246,14 +245,13 @@ public class CompareServiceImpl implements CompareService {
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
         ClusterAndDeps iniClusters = clusterOperations.computeIniClusters(input.getDependencies(), requirements);
 
-        model = new Model(model.getDocs(), model.getCorpusFrequency(), model.getThreshold(), model.isCompare(), iniClusters.getLastClusterId(), iniClusters.getClusters(), iniClusters.getDependencies());
-        model.getDependencies().addAll(iniClusters.getDependencies());
+        model = new Model(model.getDocs(), model.getCorpusFrequency(), model.getThreshold(), model.isCompare(), iniClusters.getLastClusterId(), iniClusters.getClusters());
         getAccessToUpdate(organization, responseId);
         try {
-            databaseOperations.saveModel(organization, responseId, model);
+            databaseOperations.saveModel(organization, responseId, model, iniClusters.getDependencies());
             databaseOperations.createDepsAuxiliaryTable(organization, null);
             clusterOperations.computeProposedDependencies(organization, responseId,  model.getDocs().keySet(), model.getClusters().keySet(), model, true);
-            databaseOperations.updateModelClustersAndDependencies(organization, null, model, true);
+            databaseOperations.updateModelClustersAndDependencies(organization, null, model, null, true);
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
@@ -360,7 +358,7 @@ public class CompareServiceImpl implements CompareService {
                 }
             }
             clusterOperations.updateProposedDependencies(organization, null, model, clustersChanged, true);
-            databaseOperations.updateModelClustersAndDependencies(organization, null, model, true);
+            databaseOperations.updateModelClustersAndDependencies(organization, null, model, null, true);
         } finally {
             releaseAccessToUpdate(organization, null);
         }
@@ -441,7 +439,7 @@ public class CompareServiceImpl implements CompareService {
 
             control.showInfoMessage("CronMethod: Update proposed dependencies");
             clusterOperations.updateProposedDependencies(organization, responseId, model, clustersChanged, true);
-            databaseOperations.updateModelClustersAndDependencies(organization, responseId, model, true);
+            databaseOperations.updateModelClustersAndDependencies(organization, responseId, model, null, true);
 
         } finally {
             releaseAccessToUpdate(organization, responseId);

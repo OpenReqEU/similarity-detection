@@ -22,14 +22,14 @@ public interface DatabaseModel {
 
     Model getModel(String organizationId, boolean withFrequency) throws NotFoundException, SQLException;
 
-    void saveModel(String organizationId, Model model) throws IOException, InternalErrorException, SQLException;
+    void saveModel(String organizationId, Model model, List<Dependency> dependencies) throws IOException, InternalErrorException, SQLException;
 
 
     /*
     Cluster operations
      */
 
-    void updateClustersAndDependencies(String organization, Model model, boolean useDepsAuxiliaryTable) throws SQLException;
+    void updateClustersAndDependencies(String organization, Model model, List<Dependency> dependencies, boolean useDepsAuxiliaryTable) throws SQLException;
 
     void createDepsAuxiliaryTable(String organizationId) throws SQLException;
 
