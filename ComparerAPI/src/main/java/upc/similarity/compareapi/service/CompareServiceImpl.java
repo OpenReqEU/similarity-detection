@@ -419,6 +419,8 @@ public class CompareServiceImpl implements CompareService {
             HashSet<Integer> clustersChanged = new HashSet<>();
             Map<String,Integer> reqCluster = computeReqClusterMap(model.getClusters(), model.getDocs().keySet());
 
+            control.showInfoMessage("CronMethod: Start loop");
+
             for (OrderedObject orderedObject: objects) {
                 if (orderedObject.isDependency()) {
                     List<Dependency> aux = new ArrayList<>();
@@ -434,8 +436,10 @@ public class CompareServiceImpl implements CompareService {
                     addRequirementsToModel(aux, model);
                 }
             }
+            control.showInfoMessage("CronMethod: Finish loop");
             clusterOperations.addDeletedDependencies(organization, responseId, deletedDependencies, model, clustersChanged, reqCluster);
 
+            control.showInfoMessage("CronMethod: Update proposed dependencies");
             clusterOperations.updateProposedDependencies(organization, responseId, model, clustersChanged, true);
             databaseOperations.updateModelClustersAndDependencies(organization, responseId, model, true);
 
