@@ -251,10 +251,13 @@ public class CompareServiceImpl implements CompareService {
             databaseOperations.saveModel(organization, responseId, model, iniClusters.getDependencies());
             databaseOperations.createDepsAuxiliaryTable(organization, null);
             clusterOperations.computeProposedDependencies(organization, responseId,  model.getDocs().keySet(), model.getClusters().keySet(), model, true);
+            control.showInfoMessage("BuildClustersAndCompute: Saving dependencies");
             databaseOperations.updateModelClustersAndDependencies(organization, null, model, null, true);
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
+
+        control.showInfoMessage("BuildClustersAndCompute: Computing output");
 
         int cont = 0;
         JSONArray array = new JSONArray();
