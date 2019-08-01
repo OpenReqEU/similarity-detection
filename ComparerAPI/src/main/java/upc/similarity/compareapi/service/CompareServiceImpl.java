@@ -241,6 +241,9 @@ public class CompareServiceImpl implements CompareService {
 
         databaseOperations.generateResponse(organization,responseId);
         List<Requirement> requirements = deleteDuplicates(input.getRequirements(),organization,responseId);
+
+        control.showInfoMessage("BuildClustersAndCompute: Number requirements: " + requirements.size());
+
         Model model = generateModel(compare, threshold, requirements);
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
         ClusterAndDeps iniClusters = clusterOperations.computeIniClusters(input.getDependencies(), requirements);
