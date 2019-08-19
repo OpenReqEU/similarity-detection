@@ -59,17 +59,17 @@ public class SwaggerConfig {
             "<li>DeleteDatabase: Deletes all data from the database</li>" +
             "</ul>"+
             "</ul>" +
-            "<p>All operations except ReqClusters, TreatAcceptedAndRejectedDependencies, GetResponse, DeleteOrganizationResponses and DeleteDatabase are asynchronous. It is necessary to write a server URL as parameter in all of them. The outcome of the operation will be returned to that url. All these operations follow the same pattern:</p>" +
+            "<p>All operations except ReqClusters, TreatAcceptedAndRejectedDependencies, GetResponse, DeleteOrganizationResponses and DeleteDatabase are asynchronous. All these operations follow the same pattern:</p>" +
             "<ol><li>The client calls the operation with all necessary parameters</li>" +
             "<li>The service receives the request and checks the main conditions</li>" +
             "<li>The service returns if the client request has been accepted or not and closes the connection" +
             "<ul><li>(httpStatus!=200) The request has not been accepted. The message body contains the exception cause.</li>" +
             "<li>(httpStatus==200) The request has been accepted. The similarity calculation runs in the background. The message body contains the request identifier i.e. <em>{\"id\": \"1548924677975_523\"}</em></li></ul>" +
-            "<li>When the calculation finishes (only if the request has been accepted) the service opens a connection with the server url specified as parameter. It sends a Json object that contains the outcome of the computation:<br>" +
+            "<li>When the calculation finishes (only if the request has been accepted) the service opens a connection with the server url specified as parameter (optional). It sends a Json object that contains the outcome of the computation:<br>" +
             "<ul>" +
             "<li>(success) Example: {\"code\": 200,\"id\": \"1557395889689_587\",\"operation\": \"AddReqs\"}.</li>" +
             "<li>(!success) Example: {\"code\": 400,\"id\": \"1557396039530_583\",\"error\": \"Bad request\",\"message\": \"The requirement with id QM-3 is already inside the project\",\"operation\": \"ReqProject\"}.</li>" +
-            "<li>The resulting dependencies can be obtained via the GetResponse method.</li></ul></li></ol>" +
+            "</ul><li>The result of the operation can be obtained through the GetResponse method.</li></li></ol>" +
             "<p>The API uses UTF-8 charset. Also, it uses the OpenReq format for input JSONs (it is specified in the Models section).</p>";
 
     /**

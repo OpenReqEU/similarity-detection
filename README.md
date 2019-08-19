@@ -43,8 +43,8 @@ The service is divided into two independent components: SimilarityDetectionAPI a
     - SimilarityDetectionAPI: main component
     - ComparerAPI: auxiliary component
     - TestingRestSercice: example of client
-    - testing: directory with input and output examples used for testing
-    - models.db: requirements database
+    - testing: directory with input and output examples used to test
+    - data: directory with the database files
     - LICENSE: license
 
 ### Asynchronous service
@@ -60,6 +60,18 @@ All operations except ReqClusters, GetResponse, DeleteOrganizationResponses and 
         4.1.(success) Example: {"code": 200,"id": "1557395889689_587","operation": "AddReqs"}.
         4.2.(!success) Example: {"code": 400,"id": "1557396039530_583","error": "Bad request","message": "The requirement with id QM-3 is already inside the project","operation": "ReqProject"}.
         4.3.The resulting dependencies can be obtained via the GetResponse method.
+        
+All operations except ReqClusters, TreatAcceptedAndRejectedDependencies, GetResponse, DeleteOrganizationResponses and DeleteDatabase are asynchronous. All these operations follow the same pattern:
+
+    1. The client calls the operation with all necessary parameters
+    2. The service receives the request and checks the main conditions
+    3. The service returns if the client request has been accepted or not and closes the connection
+        3.1. (httpStatus!=200) The request has not been accepted. The message body contains the exception cause.
+        3.2. (httpStatus==200) The request has been accepted. The similarity calculation runs in the background. The message body contains the request identifier i.e. {"id": "1548924677975_523"}
+    4. When the calculation finishes (only if the request has been accepted) the service opens a connection with the server url specified as parameter (optional). It sends a Json object that contains the outcome of the computation:
+        4.1. (success) Example: {"code": 200,"id": "1557395889689_587","operation": "AddReqs"}.
+        4.2. (!success) Example: {"code": 400,"id": "1557396039530_583","error": "Bad request","message": "The requirement with id QM-3 is already inside the project","operation": "ReqProject"}.
+    5. The result of the operation can be obtained through the GetResponse method.
 
 ### How to install
 
