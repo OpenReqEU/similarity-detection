@@ -192,6 +192,7 @@ public class SQLiteDatabase implements DatabaseModel {
                 stmt.execute(sql3);
                 conn.commit();
             }
+            configureOrganizationDatabase(dbMainName);
         } finally {
             releaseAccessToMainDb();
         }
