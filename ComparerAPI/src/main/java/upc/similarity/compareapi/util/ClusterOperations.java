@@ -138,7 +138,7 @@ public class ClusterOperations {
                     ++numberDependencies;
                     proposedDependencies.add(new Dependency(req1,maxReq,"proposed",maxScore,clusterId));
                     if (cont >= maxDeps) {
-                        control.showInfoMessage("Number deps: " + numberDependencies);
+                        //control.showInfoMessage("Number deps: " + numberDependencies);
                         cont = 0;
                         databaseOperations.saveDependencies(organization, responseId, proposedDependencies, useAuxiliaryTable);
                         proposedDependencies = new ArrayList<>();

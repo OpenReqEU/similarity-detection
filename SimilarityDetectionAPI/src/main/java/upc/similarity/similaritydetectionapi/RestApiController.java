@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import upc.similarity.similaritydetectionapi.config.Control;
 import upc.similarity.similaritydetectionapi.config.TestConfig;
-import upc.similarity.similaritydetectionapi.entity.Requirement;
 import upc.similarity.similaritydetectionapi.entity.input_output.*;
 import upc.similarity.similaritydetectionapi.exception.*;
 import upc.similarity.similaritydetectionapi.service.SimilarityService;
@@ -23,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping(value = "upc/similarity-detection")
-@Api(value = "SimilarityDetectionAPI", produces = MediaType.APPLICATION_JSON_VALUE)
 public class RestApiController {
 
     @Autowired
@@ -31,7 +29,7 @@ public class RestApiController {
 
 
     /*
-    Main operations
+    Similarity without clusters
      */
 
     @CrossOrigin
@@ -39,7 +37,7 @@ public class RestApiController {
     @ApiOperation(value = "Builds a model with the input requirements", notes = "Builds a model with the entry requirements. " +
             "The generated model is assigned to the specified organization and stored in an internal database. Each organization" +
             " only can have one model at a time. If at the time of generating a new model the corresponding organization already has" +
-            " an existing model, it is replaced by the new one.", tags = "Model")
+            " an existing model, it is replaced by the new one.", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -62,7 +60,7 @@ public class RestApiController {
             "The generated model is assigned to the specified organization and stored in an internal database. Each organization" +
             " only can have one model at a time. If at the time of generating a new model the corresponding organization already has" +
             " an existing model, it is replaced by the new one.</p><br><p>Also, it returns an array of dependencies between all possible pairs of " +
-            " requirements from the requirements received as input.</p>", tags = "Model")
+            " requirements from the requirements received as input.</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -83,7 +81,7 @@ public class RestApiController {
     @PostMapping(value = "/AddRequirements", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Add requirements to the model", notes = "<p>Given a list of requirements, the endpoint pre-processes them and adds them to a specified " +
             "organization’s model. If the model has clusters, the endpoint adds each input requirement as a cluster of one requirement. If some of the entry requirements " +
-            "were already part of the model, the endpoint will update its information and compare them again as the other entry requirements.\n</p>", tags = "Model")
+            "were already part of the model, the endpoint will update its information and compare them again as the other entry requirements.\n</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=404, message = "Not found"),
@@ -103,7 +101,7 @@ public class RestApiController {
     @PostMapping(value = "/DeleteRequirements", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Delete requirements from the model", notes = "Given a list of requirements, the endpoint deletes them from a specified organization’s model. " +
             "If the model has clusters, the endpoint deletes each input requirement from his cluster and updates the cluster centroid if the deleted requirement was the " +
-            "oldest one. \n", tags = "Model")
+            "oldest one. \n", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=404, message = "Not found"),
@@ -122,7 +120,7 @@ public class RestApiController {
     @CrossOrigin
     @PostMapping(value = "/ReqReq", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Similarity comparison between two requirements", notes = "Returns a dependency between the two input requirements. The similarity score is computed with the" +
-            " model assigned to the specified organization. The two requirements must be in this model.", tags = "Compare")
+            " model assigned to the specified organization. The two requirements must be in this model.", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=404, message = "Not found"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -140,7 +138,7 @@ public class RestApiController {
     @CrossOrigin
     @PostMapping(value = "/ReqOrganization", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Similarity comparison between a set of requirements and all the organization requirements", notes = "<p>Adds the input requirements to the organization model and returns " +
-            "an array of dependencies between them and all the organization requirements. If any input requirement is already part of the organization's model, it will be overwritten with the new information.</p>", tags = "Compare")
+            "an array of dependencies between them and all the organization requirements. If any input requirement is already part of the organization's model, it will be overwritten with the new information.</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -159,7 +157,7 @@ public class RestApiController {
     @PostMapping(value = "/ReqProject", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Similarity comparison between a list of requirements and all the requirements of a specific project", notes = "<p>Returns an array of dependencies " +
             "between the list of requirements and the project's requirements received as input. The similarity score is computed with the model assigned to the specified organization. " +
-            "All the requirements must be inside this model.</p>", tags = "Compare")
+            "All the requirements must be inside this model.</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=404, message = "Not found"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -180,7 +178,7 @@ public class RestApiController {
     @PostMapping(value = "/Project", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Similarity comparison between the requirements of one project", notes = "<p>Returns an array of dependencies between all possible pairs of " +
             "requirements from the project received as input. The similarity score is computed with the model assigned to the specified organization. All the requirements" +
-            " must be inside this model.</p>", tags = "Compare")
+            " must be inside this model.</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=404, message = "Not found"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -198,14 +196,14 @@ public class RestApiController {
 
 
     /*
-    Cluster operations
+    Similarity with clusters
      */
 
     @CrossOrigin
     @PostMapping(value = "/BuildClusters", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Generates the clusters from the input requirements and dependencies", notes = "<p>This method computes the clusters using the existing duplicates. The entry duplicates relations are " +
             "defined by the dependencies with type equal to similar or duplicate and type equal to accepted. All the requirements that do not have duplicates relationships with other requirements" +
-            " are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the database.</p>", tags = "Clusters")
+            " are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the database.</p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -227,7 +225,7 @@ public class RestApiController {
     @ApiOperation(value = "Generates the clusters from the input requirements and dependencies and computes the similarity score between them", notes = "<p>This method computes the clusters using" +
             " the existing duplicates. The entry duplicates relations are defined by the dependencies with type equal to similar or duplicate and type equal to accepted. All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. " +
             "All the requirements are pre-processed and stored in the database. Then, we compare each orphan (cluster with only one requirement) with all the requirements of each cluster" +
-            " and return the highest similarity score for all the comparisons that are bigger than the established threshold.</p>", tags = "Clusters")
+            " and return the highest similarity score for all the comparisons that are bigger than the established threshold.</p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -251,7 +249,7 @@ public class RestApiController {
             "each input requirement and all the requirements of each cluster (it returns both accepted and proposed dependencies, but not the rejected ones). The comparisons are done" +
             " with all the requirements in the database. If the number of maximum dependencies to be returned is received as parameter (maxNumber), we only return the maxNumber " +
             "dependencies with highest score. When maxNumber is equal to 0 only the accepted dependencies are returned and when maxNumber is equal to -1 all the accepted and proposed " +
-            "dependencies of the specified requirement are returned. This method is synchronous.</p>", tags = "Clusters")
+            "dependencies of the specified requirement are returned. This method is synchronous.</p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -270,7 +268,8 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/TreatAcceptedAndRejectedDependencies", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Updates the organization clusters with the input dependencies", notes = "<p>Given a set of accepted and rejected dependencies, updates the clusters and dependencies accordingly. This method is synchronous.</p>", tags = "Clusters")
+    @ApiOperation(value = "Updates the organization clusters with the input dependencies", notes = "<p>Given a set of accepted and rejected dependencies, updates the clusters and dependencies accordingly. " +
+            "This method is synchronous.</p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -293,7 +292,7 @@ public class RestApiController {
             "<li>Updated requirements: The input requirements with a title or text different from the one stored in the database are considered updated requirements. The method updates their pre-process in the database and updates the organization clusters accordingly.</li>" +
             "<li>New dependencies: The input similarity dependencies that do not pertain to the organization's model are considered to be new dependencies. The method uses the accepted and rejected dependencies to update the organization clusters.</li>" +
             "<li>Removed dependencies: The organization dependencies that do not appear in the input similarity dependencies are considered removed dependencies. The method updates them as rejected and changes the clusters accordingly.</li>" +
-            "</ul></p>", tags = "Clusters")
+            "</ul></p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -311,7 +310,7 @@ public class RestApiController {
 
 
     /*
-    Auxiliary operations
+    Auxiliary methods
      */
 
     @CrossOrigin
@@ -349,8 +348,9 @@ public class RestApiController {
     }
 
     @CrossOrigin
-    @DeleteMapping(value = "/DeleteOrganization", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Delete organization", notes = "<p>Deletes all data from an specified organization. If this method is called while a calculation is being carried out with the chosen organization, unforeseen results may occur.</p>", tags = "Auxiliary methods")
+    @DeleteMapping(value = "/DeleteOrganizationData", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Delete organization", notes = "<p>Deletes all data from an specified organization. If this method is called while a calculation is being carried out with the chosen organization, " +
+            "unforeseen results may occur.</p>", tags = "Auxiliary methods")
     @ApiResponses(value = {
             @ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=404, message = "Not found"),
@@ -366,7 +366,8 @@ public class RestApiController {
 
     @CrossOrigin
     @DeleteMapping(value = "/ClearDatabase", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Clear all data from the database", notes = "<p>Clears all data from the database. If this method is called while a calculation is being carried out, unforeseen results may occur.</p>", tags = "Auxiliary methods")
+    @ApiOperation(value = "Clear all data from the database", notes = "<p>Clears all data from the database. If this method is called while a calculation is being carried out, unforeseen results may occur.</p>" +
+            "", tags = "Auxiliary methods")
     @ApiResponses(value = {
             @ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -379,6 +380,7 @@ public class RestApiController {
         }
     }
 
+    //Testing accuracy
     @CrossOrigin
     @PostMapping(value = "/Test", produces = MediaType.APPLICATION_JSON_VALUE)
     public void test(@RequestBody String result) {

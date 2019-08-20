@@ -23,28 +23,24 @@ import java.util.HashSet;
 @EnableSwagger2
 public class SwaggerConfig {
 
-    private static final String	LICENSE_TEXT	    = "License";
     private static final String	TITLE		    = "SIMILARITY DETECTION COMPONENT";
     private static final String	DESCRIPTION    = "" +
             "<p>The component is based in tf-idf numerical statistic. The aim of the API is to calculate the similarity score between multiple pairs of requirements."+
             "</p>" +
-            "<p>There are four types of operations (each method has a more extensive description in its own operation box): </p>" +
+            "<p>There are three types of operations (each method has a more extensive description in its own operation box): </p>" +
             "<ul>" +
-            "<li><strong>Model</strong>: These methods are responsible for pre-processing the input requirements, generating a model that saves the requirements information and assigning it to an organization. Generating these models is mandatory before making any comparison.</li>" +
+            "<li><strong>Similarity without clusters</strong>: These methods work only with a set of input requirements. There are two types of operations. The ones who generate a model with the input requirements and the ones who use these models to compute the similarity between the requirements. Each model is assigned to an organization and can be used infinite times.</li>" +
             "<ul>" +
             "<li>BuildModel: Pre-processes the input requirements, generates a model and assings it to an specified organization.</li>" +
             "<li>AddRequirements: Pre-processes the input requirements and adds them to an existing model.</li>" +
             "<li>DeleteRequirements: Deletes the input requirements from an existing model.</li>" +
-            "</ul>"+
-            "<li><strong>Compare</strong>: These methods are in charge of comparing and returning the corresponding similarity dependencies between the specified requirements of an organization’s model.</li>" +
-            "<ul>" +
             "<li>ReqReq: Compares two requirements.</li>" +
             "<li>ReqProject: Compares between a list of requirements and a set of requirements.</li>" +
             "<li>ReqOrganization: Pre-processes the input requirements and adds them to an organization's model. Also it compares the input requirements with all the requirements of the organization's model.</li>" +
             "<li>Project: Compares all possible pairs of requirements from a set of requirements.</li>" +
             "<li>AddReqsAndCompute: Generates a model with the input requirements and computes the similarity score between all the possible pairs of requirements.</li>" +
             "</ul>"+
-            "<li><strong>Clusters</strong>: These methods are responsible for pre-processing the input requirements and dependencies, generating a model that saves the requirements information and the clusters architecture and assigning it to an organization. <u>The clusters are considered as graphs connected by similarity dependencies accepted by the user where the nodes are the requirements of the model</u>. We denominate orphans to the clusters with only one requirement. </li>" +
+            "<li><strong>Similarity with clusters</strong>: These methods work with a set of input requirements and dependencies. <u>The clusters are considered as graphs connected by similarity dependencies accepted by the user where the nodes are the requirements of the model</u>. We denominate orphans to the clusters with only one requirement. </li>" +
             "<ul>" +
             "<li>AddClusters: Pre-processes the input requirements, generates a model with the requirements information, the clusters architecture and the input similarity dependencies and assings it to an specified organization.</li>" +
             "<li>AddClustersAndCompute: Pre-processes the input requirements, generates a model with the requirements information, the clusters architecture and the input similarity dependencies and assings it to an specified organization. All the resulting orphans are compared with all the requirements of each cluster and the maximum score is returned for each one as long as it is above the specified threshold.</li>" +
@@ -54,7 +50,7 @@ public class SwaggerConfig {
             "</ul>"+
             "<li><strong>Auxiliary methods</strong>:</li>" +
             "<ul>" +
-            "<li>GetResponse: Returns in patches the resulting dependencies of the other methods</li>" +
+            "<li>GetResponse: Returns the output of the async methods</li>" +
             "<li>DeleteOrganizationResponses: Deletes the organization responses from the database</li>" +
             "<li>DeleteDatabase: Deletes all data from the database</li>" +
             "</ul>"+
@@ -72,10 +68,6 @@ public class SwaggerConfig {
             "</ul><li>The result of the operation can be obtained through the GetResponse method.</li></li></ol>" +
             "<p>The API uses UTF-8 charset. Also, it uses the OpenReq format for input JSONs (it is specified in the Models section).</p>";
 
-    /**
-     * API Documentation Generation.
-     * @return
-     */
     @Bean
     public Docket api() {
         HashSet<String> protocols = new HashSet<>();
@@ -89,15 +81,13 @@ public class SwaggerConfig {
                 .select()
                 .paths(PathSelectors.regex("^((?!Test).)*$"))
                 .apis(RequestHandlerSelectors.basePackage("upc.similarity.similaritydetectionapi")).paths(PathSelectors.regex("/upc.*"))
-                .build().tags(new Tag("Similarity detection Service", "API related to similarity detection"));
+                .build()/*.tags(new Tag("Similarity without clusters", "", 1), new Tag("Similarity with clusters", "", 2),
+                        new Tag("Auxiliary methods", "", 3))*/;
     }
-    /**
-     * Informtion that appear in the API Documentation Head.
-     *
-     * @return
-     */
+
     private ApiInfo apiInfo() {
-        return new ApiInfoBuilder().title(TITLE).description(DESCRIPTION).license(LICENSE_TEXT)
+        return new ApiInfoBuilder().title(TITLE).description(DESCRIPTION)
+                .license("License").licenseUrl("https://www.eclipse.org/org/documents/epl-2.0/EPL-2.0.txt")
                 .contact(new Contact("UPC-GESSI (OPENReq)", "http://openreq.eu/", ""))
                 .build();
     }
