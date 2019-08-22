@@ -37,7 +37,7 @@ public class RestApiController {
     @ApiOperation(value = "Builds a tf-idf model with the input requirements.", notes = "<p><i>Asynchronous</i> method.</p><p>Builds a tf-idf model with the requirements specified in the JSON object. " +
             "The generated model is assigned to the specified organization and stored in an internal database. Each organization" +
             " can have only one model. If at the time of generating a new model the corresponding organization already has" +
-            " an existing model, it is replaced by the new one. The user can choose whether to use onyle the name of the requirement for constructuing the model, or use also the text of the requirements.</p>", tags = "Similarity without clusters")
+            " an existing model, it is replaced by the new one. The user can choose whether to use only the name of the requirements for constructing the model, or to use also the text of the requirements.</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -56,10 +56,10 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/BuildModelAndCompute", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Builds a tf-idf model with the input requirements and computes and returns the similarity scores among all the possible pairs of requirements.", notes = "<p><i>Asynchronous</i> method.</p><p>Builds a tf-idf model with the requirements specified in the JSON object." +
+    @ApiOperation(value = "Builds a tf-idf model with the input requirements and returns the similarity scores among all the possible pairs of requirements.", notes = "<p><i>Asynchronous</i> method.</p><p>Builds a tf-idf model with the requirements specified in the JSON object." +
             "The generated model is assigned to the specified organization and stored in an internal database. Each organization" +
             " can have only one model. If at the time of generating a new model the corresponding organization already has" +
-            " an existing model, it is replaced by the new one. The user can choose whether to use onyle the name of the requirement for constructuing the model, or use also the text of the requirements. </p><br><p>This method returns an array of dependencies containing the similarities that are greater than the established threshold between all possible pairs of " +
+            " an existing model, it is replaced by the new one. The user can choose whether to use only the name of the requirements for constructing the model, or to use also the text of the requirements. </p><br><p>This method returns an array of dependencies containing the similarities that are greater than the established threshold between all possible pairs of " +
             " requirements received as input.</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
@@ -79,7 +79,7 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/AddRequirements", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Add requirements to the tf-idf model of an organization.", notes = "<p><i>Asynchronous</i> method.</p><p>Given a list of requirements, the endpoint pre-processes them and adds them to a specified " +
+    @ApiOperation(value = "Adds requirements to the tf-idf model of an organization.", notes = "<p><i>Asynchronous</i> method.</p><p>Given a list of requirements, the endpoint pre-processes them and adds them to a specified " +
             "organization’s tf-idf model. If some of the entry requirements " +
             "were already part of the model, the endpoint will update its information.\n</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
@@ -99,7 +99,7 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/DeleteRequirements", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Delete requirements from the tf-idf model of an organization", notes = "<p><i>Asynchronous</i> method.</p><p>Given a list of requirements, the endpoint deletes them from a specified organization’s tf-idf model. \n</p>", tags = "Similarity without clusters")
+    @ApiOperation(value = "Deletes requirements from the tf-idf model of an organization", notes = "<p><i>Asynchronous</i> method.</p><p>Given a list of requirements, the endpoint deletes them from a specified organization’s tf-idf model. \n</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=404, message = "Not found"),
@@ -200,7 +200,10 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/BuildClusters", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Generates the clusters using the input requirements and dependencies.", notes = "<p><i>Asynchronous</i> method.</p><p>This method computes the clusters using the existing duplicates. These duplicates relations are defined by the dependencies with type equal to <i>similar</i> or <i>duplicate</i> and type equal to <i>accepted</i>. All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the database, together with their corresponding tf-idf model and the clusters information. The user can choose whether to use onyle the name of the requirement for constructuing the tf-idf model, or use also the text of the requirements. Finally, all the requirements are compared with all the requirements of other clusters of the organization, and those similarities with score greater than the established threshold for each requirement are stored in the database.</p>", tags = "Similarity with clusters")
+    @ApiOperation(value = "Generates the clusters using the input requirements and dependencies.", notes = "<p><i>Asynchronous</i> method.</p><p>This method computes the clusters using the existing duplicates. These duplicates relations are defined by " +
+            "the dependencies with type equal to <i>similar</i> or <i>duplicates</i> and status equal to <i>accepted</i>. All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one " +
+            "requirement. All the requirements are pre-processed and stored in the database, together with their corresponding tf-idf model and the clusters information. The user can choose whether to use only the name of the requirements for constructing the tf-idf model," +
+            " or to use also the text of the requirements. Finally, all the requirements are compared with all the requirements of other clusters of the organization, and those similarities with score greater than the established threshold for each requirement are stored in the database.</p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -220,7 +223,11 @@ public class RestApiController {
     @CrossOrigin
     @PostMapping(value = "/BuildClustersAndCompute", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Generates the clusters using the input requirements and dependencies, and returns the similarity score between them.", notes =
-            "<p><i>Asynchronous</i> method.</p><p>This method computes the clusters using the existing duplicates. These duplicates relations are defined by the dependencies with type equal to <i>similar</i> or <i>duplicate</i> and type equal to <i>accepted</i>. All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the database, together with their corresponding tf-idf model and the clusters information. The user can choose whether to use onyle the name of the requirement for constructuing the tf-idf model, or use also the text of the requirements. Finally, all the requirements are compared with all the requirements of other clusters of the organization, and those similarities with score greater than the established threshold for each requirement are stored in the database. It returns for each requirement the highest similarity score for each cluster (only if they are greater than the established threshold).</p>", tags = "Similarity with clusters")
+            "<p><i>Asynchronous</i> method.</p><p>This method computes the clusters using the existing duplicates. These duplicates relations are defined by the dependencies with type equal to <i>similar</i> or <i>duplicates</i> and type equal to <i>accepted</i>." +
+                    " All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the database, together with their corresponding " +
+                    "tf-idf model and the clusters information. The user can choose whether to use only the name of the requirements for constructing the tf-idf model, or to use also the text of the requirements. Finally, all the requirements are compared with all the " +
+                    "requirements of other clusters of the organization, and those similarities with score greater than the established threshold for each requirement are stored in the database. It returns for each requirement the highest similarity score for each cluster " +
+                    "(only if they are greater than the established threshold).</p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -239,12 +246,12 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/ReqClusters", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Similarity comparison between a list of input requirements and all the organization's clusters.", notes = "<p><i>Synchronous</i> method.</p><p>Synchronous method.</p><p>The requirements received should already exist for the organization and" +
-            " should have been already preprocessed; the method only needs the ids of the requirements forming the input list (received as a parameter). It returns a dependencies array with the highest similarity comparison between " +
+    @ApiOperation(value = "Similarity comparison between a requirement and all the organization's clusters.", notes = "<p><i>Synchronous</i> method.</p><p>The requirements received should already exist for the organization and" +
+            " should have already been preprocessed; the method only needs the id of the requirement (received as a parameter). It returns a dependencies array with the highest similarity comparison between " +
             "each input requirement and all the requirements of each cluster (it returns both accepted and proposed dependencies, but not the rejected ones). The comparisons are done" +
-            " with all the requirements (i.e.m clusters) in the database for this organization. If the number of maximum dependencies to be returned is received as parameter (maxNumber), the mothod only returns the <i>maxNumber</i> " +
-            "dependencies with highest score. When <i>maxNumber</i> is equal to 0 only the accepted dependencies are returned and when maxNumber is lower than -1 or not specified all the accepted and proposed " +
-            "dependencies of the specified requirement are returned.</p>", tags = "Similarity with clusters")
+            " with all the requirements (i.e.m clusters) in the database for this organization. If the number of maximum dependencies to be returned is received as parameter (maxNumber), the method only returns the <i>maxNumber</i> " +
+            "of dependencies with highest score. When <i>maxNumber</i> is equal to 0 only the accepted dependencies are returned and when maxNumber is lower than 0 or not specified, all the accepted and proposed " +
+            "dependencies of the requirement received as input are returned.</p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -263,7 +270,8 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/TreatAcceptedAndRejectedDependencies", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Updates the organization clusters with the input dependencies.", notes = "<p><i>Synchronous</i> method.</p><p>Given a set of <i>accepted</i> and <i>rejected</i> dependencies, updates the clusters and dependencies accordingly. </p>", tags = "Similarity with clusters")
+    @ApiOperation(value = "Updates the organization clusters with the input dependencies.", notes = "<p><i>Synchronous</i> method.</p><p>Given a set of <i>accepted</i> and <i>rejected</i> dependencies, updates the clusters " +
+            "and dependencies accordingly. </p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -342,7 +350,7 @@ public class RestApiController {
 
     @CrossOrigin
     @DeleteMapping(value = "/DeleteOrganizationData", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Delete the organization's requirements data.", notes = "<p><i>Synchronous</i> method.</p><p>Deletes all the models data (tf-idf and/or clusters) of the specified organization. If this method is called while a calculation is being carried out with the chosen organization, " +
+    @ApiOperation(value = "Deletes the organization's requirements data.", notes = "<p><i>Synchronous</i> method.</p><p>Deletes all the models data (tf-idf and/or clusters) of the specified organization. If this method is called while a calculation is being carried out with the chosen organization, " +
             "unforeseen results may occur.</p>", tags = "Auxiliary methods")
     @ApiResponses(value = {
             @ApiResponse(code=200, message = "OK"),
@@ -359,7 +367,7 @@ public class RestApiController {
 
     @CrossOrigin
     @DeleteMapping(value = "/ClearDatabase", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Clear all data from the database.", notes = "<p><i>Synchronous</i> method.</p><p>Clears all data from the database. If this method is called while a calculation is being carried out, unforeseen results may occur.</p>" +
+    @ApiOperation(value = "Clears all data from the database.", notes = "<p><i>Synchronous</i> method.</p><p>Clears all data from the database. If this method is called while a calculation is being carried out, unforeseen results may occur.</p>" +
             "", tags = "Auxiliary methods")
     @ApiResponses(value = {
             @ApiResponse(code=200, message = "OK"),

@@ -66,6 +66,9 @@ public class SwaggerConfig {
             "<li>(success) Example: {\"code\": 200,\"id\": \"1557395889689_587\",\"operation\": \"AddReqs\"}.</li>" +
             "<li>(!success) Example: {\"code\": 400,\"id\": \"1557396039530_583\",\"error\": \"Bad request\",\"message\": \"The requirement with id QM-3 is already inside the project\",\"operation\": \"ReqProject\"}.</li>" +
             "</ul><li>The result of the operation can be obtained through the GetResponse method.</li></li></ol>" +
+            "<p>The service uses locks to control the concurrency of the different operations in each organization. To guarantee the ACID properties the methods which write or update data can't be parallelized. For example, " +
+            "the BuildClusters and BatchProcess methods cannot be parallelized, one has to wait for the other before starting. The service has a small queue of about 3 seconds to solve the small deviations. However, if one method " +
+            "has to wait for more than 3 seconds it will return an error with code 423. This only happens with methods using the same organization. The methods like ReqClusters that only read data from the database are not affected.</p>" +
             "<p>The API uses UTF-8 charset. Also, it uses the OpenReq format for input JSONs (it is specified in the Models section).</p>";
 
     @Bean
@@ -81,8 +84,7 @@ public class SwaggerConfig {
                 .select()
                 .paths(PathSelectors.regex("^((?!Test).)*$"))
                 .apis(RequestHandlerSelectors.basePackage("upc.similarity.similaritydetectionapi")).paths(PathSelectors.regex("/upc.*"))
-                .build()/*.tags(new Tag("Similarity without clusters", "", 1), new Tag("Similarity with clusters", "", 2),
-                        new Tag("Auxiliary methods", "", 3))*/;
+                .build();
     }
 
     private ApiInfo apiInfo() {

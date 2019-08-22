@@ -9,6 +9,7 @@ public class Constants {
     private int maxDepsForPage = 20000;
     private String badRequestMessage = "Bad request";
     private String notFoundMessage = "Not found";
+    private String notFinishedMessage = "Not finished";
     private String internalErrorMessage = "Internal Error";
     private String sqlErrorMessage = "Database error";
     private String dependenciesArrayName = "dependencies";
@@ -43,6 +44,10 @@ public class Constants {
 
     public String getNotFoundMessage() {
         return notFoundMessage;
+    }
+
+    public String getNotFinishedMessage() {
+        return notFinishedMessage;
     }
 
     public String getInternalErrorMessage() {

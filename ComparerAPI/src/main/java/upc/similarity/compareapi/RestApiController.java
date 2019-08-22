@@ -210,11 +210,11 @@ public class RestApiController {
     }
 
     @PostMapping(value = "/CronMethod")
-    public ResponseEntity cronMethod(@RequestParam("organization") String organization,
+    public ResponseEntity batchProcess(@RequestParam("organization") String organization,
                                         @RequestParam("responseId") String responseId,
                                         @RequestBody Clusters input) {
         try {
-            compareService.cronMethod(responseId,organization,input);
+            compareService.batchProcess(responseId,organization,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));

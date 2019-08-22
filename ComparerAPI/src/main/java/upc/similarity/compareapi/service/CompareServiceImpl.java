@@ -20,12 +20,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class CompareServiceImpl implements CompareService {
 
     private Control control = Control.getInstance();
-    //next phase -> Map<String,PriorityQueue>
     private ConcurrentHashMap<String, AtomicBoolean> organizationLocks = new ConcurrentHashMap<>(); // true -> locked, false -> free
     private Random random = new Random();
 
+
+    /*
+    Similarity without clusters
+     */
+
     @Override
-    public void buildModel(String responseId, boolean compare, double threshold, String organization, List<Requirement> requirements) throws BadRequestException, InternalErrorException {
+    public void buildModel(String responseId, boolean compare, double threshold, String organization, List<Requirement> requirements) throws BadRequestException, NotFinishedException, InternalErrorException {
         control.showInfoMessage("BuildModel: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
@@ -42,7 +46,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void buildModelAndCompute(String responseId, boolean compare, String organization, double threshold, List<Requirement> requirements) throws BadRequestException, NotFoundException, InternalErrorException {
+    public void buildModelAndCompute(String responseId, boolean compare, String organization, double threshold, List<Requirement> requirements) throws BadRequestException, NotFinishedException, InternalErrorException {
         control.showInfoMessage("BuildModelAndCompute: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
@@ -69,7 +73,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void addRequirements(String responseId, String organization, List<Requirement> requirements) throws InternalErrorException, BadRequestException, NotFoundException {
+    public void addRequirements(String responseId, String organization, List<Requirement> requirements) throws BadRequestException, NotFoundException, NotFinishedException, InternalErrorException {
         control.showInfoMessage("AddRequirements: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
@@ -92,7 +96,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void deleteRequirements(String responseId, String organization, List<Requirement> requirements) throws InternalErrorException, BadRequestException, NotFoundException {
+    public void deleteRequirements(String responseId, String organization, List<Requirement> requirements) throws BadRequestException, NotFoundException, NotFinishedException, InternalErrorException  {
         control.showInfoMessage("DeleteRequirements: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
@@ -130,7 +134,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void simReqOrganization(String responseId, String organization, List<Requirement> requirements) throws NotFoundException, InternalErrorException, BadRequestException {
+    public void simReqOrganization(String responseId, String organization, List<Requirement> requirements) throws NotFoundException, NotFinishedException, BadRequestException, InternalErrorException {
         control.showInfoMessage("SimReqOrganization: Start computing");
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId);
@@ -201,8 +205,13 @@ public class CompareServiceImpl implements CompareService {
         control.showInfoMessage("SimProject: Finish computing");
     }
 
+
+    /*
+    Similarity with clusters
+     */
+
     @Override
-    public void buildClusters(String responseId, boolean compare, double threshold, String organization, Clusters input) throws BadRequestException, InternalErrorException {
+    public void buildClusters(String responseId, boolean compare, double threshold, String organization, Clusters input) throws BadRequestException, NotFinishedException, InternalErrorException {
         control.showInfoMessage("BuildClusters: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
@@ -232,7 +241,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, Clusters input) throws BadRequestException, InternalErrorException {
+    public void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, Clusters input) throws BadRequestException, NotFinishedException, InternalErrorException {
         control.showInfoMessage("BuildClustersAndCompute: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
@@ -336,7 +345,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void treatAcceptedAndRejectedDependencies(String organization, List<Dependency> dependencies) throws NotFoundException, BadRequestException, InternalErrorException {
+    public void treatAcceptedAndRejectedDependencies(String organization, List<Dependency> dependencies) throws NotFoundException, BadRequestException, NotFinishedException, InternalErrorException {
         control.showInfoMessage("TreatAcceptedAndRejectedDependencies: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
@@ -373,7 +382,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void cronMethod(String responseId, String organization, Clusters input) throws BadRequestException, InternalErrorException, NotFoundException {
+    public void batchProcess(String responseId, String organization, Clusters input) throws BadRequestException, NotFoundException, NotFinishedException, InternalErrorException{
         control.showInfoMessage("CronMethod: Start computing");
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
@@ -455,6 +464,11 @@ public class CompareServiceImpl implements CompareService {
         control.showInfoMessage("CronMethod: Finish computing");
     }
 
+
+    /*
+    Auxiliary methods
+     */
+
     @Override
     public String getResponsePage(String organization, String responseId) throws NotFoundException, InternalErrorException, NotFinishedException {
         return DatabaseOperations.getInstance().getResponsePage(organization, responseId);
@@ -466,7 +480,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void clearOrganization(String organization) throws NotFoundException, InternalErrorException {
+    public void clearOrganization(String organization) throws NotFoundException, NotFinishedException, InternalErrorException {
         getAccessToUpdate(organization, null);
         try {
             DatabaseOperations.getInstance().clearOrganization(organization);
@@ -481,9 +495,21 @@ public class CompareServiceImpl implements CompareService {
     }
 
 
+    /*
+    Test methods
+     */
+
+    public void TestAccuracy(boolean compare, Clusters input) {
+        TestMethods.getInstance().TestAccuracy(compare, input);
+    }
+
+    public String extractModel(boolean compare, String organization, Clusters input) {
+        return TestMethods.getInstance().extractModel(compare, organization, input);
+    }
+
 
     /*
-    auxiliary operations
+    Private methods
      */
 
     private HashMap<String, Integer> computeReqClusterMap(Map<Integer,List<String>> clusters, Set<String> requirements) {
@@ -669,15 +695,7 @@ public class CompareServiceImpl implements CompareService {
         return result;
     }
 
-    public void TestAccuracy(boolean compare, Clusters input) {
-        TestMethods.getInstance().TestAccuracy(compare, input);
-    }
-
-    public String extractModel(boolean compare, String organization, Clusters input) {
-        return TestMethods.getInstance().extractModel(compare, organization, input);
-    }
-
-    public void getAccessToUpdate(String organization, String responseId) throws InternalErrorException {
+    public void getAccessToUpdate(String organization, String responseId) throws NotFinishedException, InternalErrorException {
         String errorMessage = "Synchronization error";
         int maxIterations = Constants.getInstance().getMaxSyncIterations();
         int sleepTime = Constants.getInstance().getSleepTime();
@@ -703,7 +721,8 @@ public class CompareServiceImpl implements CompareService {
         }
 
         if (count == (maxIterations + 1)) {
-            DatabaseOperations.getInstance().saveInternalException("Synchronization out of time",organization, responseId, new InternalErrorException("The database is busy"));
+            Control.getInstance().showErrorMessage("Synchronization out of time");
+            DatabaseOperations.getInstance().saveNotFinishedException(organization, responseId, new NotFinishedException("There is another computation in the same organization with write or update rights that has not finished yet"));
         }
     }
 

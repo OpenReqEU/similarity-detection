@@ -111,6 +111,18 @@ public class DatabaseOperations {
         }
     }
 
+    public void saveNotFinishedException(String organization, String responseId, NotFinishedException e) throws NotFinishedException, InternalErrorException {
+        try {
+            if (organization != null && responseId != null) {
+                databaseModel.saveException(organization, responseId, createJsonException(423, Constants.getInstance().getNotFinishedMessage(), e.getMessage()));
+                databaseModel.finishComputation(organization, responseId);
+            }
+            throw e;
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(),organization,responseId,"Error while saving a not finished exception response to the database");
+        }
+    }
+
     public void finishComputation(String organization, String responseId) throws InternalErrorException {
         String errorMessage = "Error while finishing computation";
         try {

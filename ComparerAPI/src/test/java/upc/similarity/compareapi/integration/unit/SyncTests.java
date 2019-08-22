@@ -8,6 +8,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import upc.similarity.compareapi.dao.DatabaseModel;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.exception.InternalErrorException;
+import upc.similarity.compareapi.exception.NotFinishedException;
 import upc.similarity.compareapi.service.CompareServiceImpl;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -86,8 +87,10 @@ public class SyncTests {
                 try {
                     compareService.getAccessToUpdate("UPC", "1234");
                     compareService.getAccessToUpdate("UPC", "1234");
-                } catch (InternalErrorException e) {
+                } catch (NotFinishedException e) {
                     control.flag1 = true;
+                } catch (InternalErrorException e) {
+                    //does nothing
                 }
             });
 
@@ -96,8 +99,10 @@ public class SyncTests {
                     compareService.getAccessToUpdate("UB", "1234");
                     compareService.removeOrganizationLock("UB");
                     compareService.releaseAccessToUpdate("UB", "1234");
-                } catch (Exception e) {
+                } catch (InternalErrorException e) {
                     control.flag2 = true;
+                }catch (NotFinishedException e) {
+                    //does nothing
                 }
             });
 
@@ -108,7 +113,7 @@ public class SyncTests {
             thread2.join();
 
             assertTrue(control.flag1);
-            assertTrue(control.flag1);
+            assertTrue(control.flag2);
 
             ConcurrentHashMap<String, AtomicBoolean> concurrentMap = compareService.getConcurrentMap();
             assertTrue(concurrentMap.get("UPC").get());
