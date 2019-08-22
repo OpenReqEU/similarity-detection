@@ -25,25 +25,25 @@ public class SwaggerConfig {
 
     private static final String	TITLE		    = "SIMILARITY DETECTION COMPONENT";
     private static final String	DESCRIPTION    = "" +
-            "<p>The component is based in tf-idf numerical statistic. The aim of the API is to calculate the similarity score between multiple pairs of requirements."+
+            "<p>The component is based on tf-idf numerical statistics. The aim of the API is to calculate the similarity score between multiple pairs of requirements."+
             "</p>" +
             "<p>There are three types of operations (each method has a more extensive description in its own operation box): </p>" +
             "<ul>" +
-            "<li><strong>Similarity without clusters</strong>: These methods work only with a set of input requirements. There are two types of operations. The ones who generate a model with the input requirements and the ones who use these models to compute the similarity between the requirements. Each model is assigned to an organization and can be used infinite times.</li>" +
+            "<li><strong>Similarity without clusters</strong>: These methods work only with a set of input requirements. There are two types of operations. The ones that generate and update a tf-idf model with the input requirements, and the ones that use these tf-idf models to compute the similarity between the requirements; therefore, before using the operations, is necessary to create a tf-idf model first for the organization. Each tf-idf model is assigned to an organization and can be used infinite times. </li>" +
             "<ul>" +
-            "<li>BuildModel: Pre-processes the input requirements, generates a model and assings it to an specified organization.</li>" +
-            "<li>AddRequirements: Pre-processes the input requirements and adds them to an existing model.</li>" +
-            "<li>DeleteRequirements: Deletes the input requirements from an existing model.</li>" +
+            "<li>BuildModel: Pre-processes the input requirements, generates a tf-idf model and assings it to an specified organization.</li>" +
+            "<li>BuildModelAndCompute: Pre-processes the input requirements, generates a tf-idf model with the input requirements and computes and returns the similarity score between all the possible pairs of requirements.</li>" +
+            "<li>AddRequirements: Pre-processes the input requirements and adds them to an existing tf-idf model.</li>" +
+            "<li>DeleteRequirements: Deletes the input requirements from an existing tf-idf model.</li>" +
             "<li>ReqReq: Compares two requirements.</li>" +
-            "<li>ReqProject: Compares between a list of requirements and a set of requirements.</li>" +
-            "<li>ReqOrganization: Pre-processes the input requirements and adds them to an organization's model. Also it compares the input requirements with all the requirements of the organization's model.</li>" +
+            "<li>ReqProject: Compares all the requirements in the input list with a set of requirements given in the input.</li>" +
             "<li>Project: Compares all possible pairs of requirements from a set of requirements.</li>" +
-            "<li>AddReqsAndCompute: Generates a model with the input requirements and computes the similarity score between all the possible pairs of requirements.</li>" +
+            "<li>ReqOrganization: Pre-processes the input requirements and adds them to an organization's tf-idf model. It also compares the input requirements with all the requirements of the organization.</li>" +
             "</ul>"+
             "<li><strong>Similarity with clusters</strong>: These methods work with a set of input requirements and dependencies. <u>The clusters are considered as graphs connected by similarity dependencies accepted by the user where the nodes are the requirements of the model</u>. We denominate orphans to the clusters with only one requirement. </li>" +
             "<ul>" +
-            "<li>AddClusters: Pre-processes the input requirements, generates a model with the requirements information, the clusters architecture and the input similarity dependencies and assings it to an specified organization.</li>" +
-            "<li>AddClustersAndCompute: Pre-processes the input requirements, generates a model with the requirements information, the clusters architecture and the input similarity dependencies and assings it to an specified organization. All the resulting orphans are compared with all the requirements of each cluster and the maximum score is returned for each one as long as it is above the specified threshold.</li>" +
+            "<li>BuildClusters: Pre-processes the input requirements, generates a tf-idf model with the requirements information, the clusters architecture and the input similarity dependencies and assigns it to an specified organization. All the requirements are compared with all the requirements of other clusters of the organization, and the maximum score with each cluster for each requirement is stored in the database.</li>" +
+            "<li>BuildClustersAndCompute: Pre-processes the input requirements, generates a tf-idf model with the requirements information, the clusters architecture and the input similarity dependencies and assings it to an specified organization. All the requirements are compared with all the requirements of other clusters of the organization, and the maximum score with each cluster for each requirement is stored in the database. The method returns the maximum similarity score between each requirement and all the requirements that make up each one of the existing clusters of the organization.</li>" +
             "<li>ReqClusters: Given a list of requirements ids, returns the maximum similarity score between each requirement and all the requirements that make up each of the existing clusters in the organization model.</li>" +
             "<li>BatchProcess: Given a set of updates done in the requirements, updates the clusters and dependencies accordingly.</li>"+
             "<li>TreatAcceptedAndRejectedDependencies: Given a set of accepted and rejected dependencies, updates the clusters and dependencies accordingly.</li>"+
@@ -55,13 +55,13 @@ public class SwaggerConfig {
             "<li>DeleteDatabase: Deletes all data from the database</li>" +
             "</ul>"+
             "</ul>" +
-            "<p>All operations except ReqClusters, TreatAcceptedAndRejectedDependencies, GetResponse, DeleteOrganizationResponses and DeleteDatabase are asynchronous. All these operations follow the same pattern:</p>" +
+            "<p>All operations except <i>ReqReq</i>, <i>ReqClusters</i>, <i>TreatAcceptedAndRejectedDependencies</i> and the auxiliary methods are asynchronous. All these operations follow the same pattern:</p>" +
             "<ol><li>The client calls the operation with all necessary parameters</li>" +
             "<li>The service receives the request and checks the main conditions</li>" +
             "<li>The service returns if the client request has been accepted or not and closes the connection" +
             "<ul><li>(httpStatus!=200) The request has not been accepted. The message body contains the exception cause.</li>" +
-            "<li>(httpStatus==200) The request has been accepted. The similarity calculation runs in the background. The message body contains the request identifier i.e. <em>{\"id\": \"1548924677975_523\"}</em></li></ul>" +
-            "<li>When the calculation finishes (only if the request has been accepted) the service opens a connection with the server url specified as parameter (optional). It sends a Json object that contains the outcome of the computation:<br>" +
+            "<li>(httpStatus==200) The request has been accepted. The similarity calculation runs in the background. The message body contains the request identifier, i.e., <em>{\"id\": \"1548924677975_523\"}</em></li></ul>" +
+            "<li>When the calculation finishes (only if the request has been accepted) the service opens a connection with the server url specified as parameter (optional). It sends a JSON object that contains the outcome of the computation:<br>" +
             "<ul>" +
             "<li>(success) Example: {\"code\": 200,\"id\": \"1557395889689_587\",\"operation\": \"AddReqs\"}.</li>" +
             "<li>(!success) Example: {\"code\": 400,\"id\": \"1557396039530_583\",\"error\": \"Bad request\",\"message\": \"The requirement with id QM-3 is already inside the project\",\"operation\": \"ReqProject\"}.</li>" +

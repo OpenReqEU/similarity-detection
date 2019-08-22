@@ -42,7 +42,6 @@ public class ControllerTests {
 
     private String path = "../testing/integration/main_component/";
     private String callback = "http://localhost:9404/upc/similarity-detection/Test";
-    private static boolean operationFinished = false;
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(9405);
