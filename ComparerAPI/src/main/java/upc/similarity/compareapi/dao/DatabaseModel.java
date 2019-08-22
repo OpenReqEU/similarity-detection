@@ -76,6 +76,8 @@ public interface DatabaseModel {
 
     void clearOrganizationResponses(String organizationId) throws SQLException, NotFoundException, InternalErrorException;
 
+    void clearOldResponses(long borderTime) throws InternalErrorException, SQLException;
+
     void clearOrganization(String organizationId) throws NotFoundException, SQLException, InternalErrorException, IOException;
 
     void clearDatabase() throws IOException, InternalErrorException, SQLException;

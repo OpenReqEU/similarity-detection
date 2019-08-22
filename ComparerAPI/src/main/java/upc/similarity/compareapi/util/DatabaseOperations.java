@@ -12,6 +12,7 @@ import upc.similarity.compareapi.exception.*;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -203,7 +204,7 @@ public class DatabaseOperations {
             databaseModel.clearOrganization(organization);
         } catch (IOException | SQLException sq) {
             treatSQLException(sq.getMessage(), null, null, errorMessage);
-        }catch (InternalErrorException e) {
+        } catch (InternalErrorException e) {
             saveInternalException(e.getMessage(), organization, null, new InternalErrorException(errorMessage));
         }
     }
@@ -340,6 +341,17 @@ public class DatabaseOperations {
             databaseModel.deleteReqDependencies(organizationId, requirementId, useAuxiliaryTable);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organizationId, responseId, "Error while delete the deleted requirement dependencies");
+        }
+    }
+
+    public void deleteOldResponses(long borderTime) throws InternalErrorException {
+        String errorMessage = "Error while deleting old responses";
+        try {
+            databaseModel.clearOldResponses(borderTime);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), null, null, errorMessage);
+        } catch (InternalErrorException e) {
+            saveInternalException(e.getMessage(), null, null, new InternalErrorException(errorMessage));
         }
     }
 

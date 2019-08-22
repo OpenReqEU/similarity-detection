@@ -405,7 +405,7 @@ public class RestApiController {
     }
 
     private ResponseEntity getComponentError(ComponentException e) {
-        if (e.getStatus() == 500) Control.getInstance().showStackTrace(e);
+        if (e.getStatus() == 500) Control.getInstance().showErrorMessage(e.getMessage());
         LinkedHashMap<String, String> result = new LinkedHashMap<>();
         result.put("status", e.getStatus()+"");
         result.put("error", e.getError());

@@ -1,5 +1,7 @@
 package upc.similarity.compareapi.integration.unit;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -10,7 +12,9 @@ import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.exception.NotFinishedException;
 import upc.similarity.compareapi.service.CompareServiceImpl;
+import upc.similarity.compareapi.util.Tfidf;
 
+import java.io.File;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -19,6 +23,22 @@ import static org.junit.Assert.*;
 @RunWith(SpringRunner.class)
 @SpringBootTest()
 public class SyncTests {
+
+    @BeforeClass
+    public static void createTestDB() throws Exception {
+        SQLiteDatabase.setDbPath("../testing/integration/test_database/");
+        SQLiteDatabase db = new SQLiteDatabase();
+        db.clearDatabase();
+        Tfidf.setCutOffDummy(true);
+    }
+
+    @AfterClass
+    public static void deleteTestDB() throws Exception {
+        SQLiteDatabase db = new SQLiteDatabase();
+        db.clearDatabase();
+        File file = new File("../testing/integration/test_database/main.db");
+        boolean result = file.delete();
+    }
 
     @Test
     public void getAccessToUpdateOrganization() {
@@ -31,8 +51,8 @@ public class SyncTests {
 
             Thread thread1 = new Thread(() -> {
                 try {
-                    compareService.getAccessToUpdate("UPC", "1234");
-                    compareService.releaseAccessToUpdate("UPC", "1234");
+                    compareService.getAccessToUpdate("UPC", null);
+                    compareService.releaseAccessToUpdate("UPC", null);
                 } catch (Exception e) {
                     control.flag = false;
                 }
@@ -40,7 +60,7 @@ public class SyncTests {
 
             Thread thread2 = new Thread(() -> {
                 try {
-                    compareService.getAccessToUpdate("UB", "1234");
+                    compareService.getAccessToUpdate("UB", null);
                 } catch (Exception e) {
                     control.flag = false;
                 }
@@ -48,8 +68,8 @@ public class SyncTests {
 
             Thread thread3 = new Thread(() -> {
                 try {
-                    compareService.getAccessToUpdate("UPC", "1234");
-                    compareService.releaseAccessToUpdate("UPC", "1234");
+                    compareService.getAccessToUpdate("UPC", null);
+                    compareService.releaseAccessToUpdate("UPC", null);
                 } catch (Exception e) {
                     control.flag = false;
                 }
@@ -85,8 +105,8 @@ public class SyncTests {
 
             Thread thread1 = new Thread(() -> {
                 try {
-                    compareService.getAccessToUpdate("UPC", "1234");
-                    compareService.getAccessToUpdate("UPC", "1234");
+                    compareService.getAccessToUpdate("UPC", null);
+                    compareService.getAccessToUpdate("UPC", null);
                 } catch (NotFinishedException e) {
                     control.flag1 = true;
                 } catch (InternalErrorException e) {
@@ -96,9 +116,9 @@ public class SyncTests {
 
             Thread thread2 = new Thread(() -> {
                 try {
-                    compareService.getAccessToUpdate("UB", "1234");
+                    compareService.getAccessToUpdate("UB", null);
                     compareService.removeOrganizationLock("UB");
-                    compareService.releaseAccessToUpdate("UB", "1234");
+                    compareService.releaseAccessToUpdate("UB", null);
                 } catch (InternalErrorException e) {
                     control.flag2 = true;
                 }catch (NotFinishedException e) {

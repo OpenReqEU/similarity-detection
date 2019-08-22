@@ -9,6 +9,7 @@ import upc.similarity.compareapi.entity.Model;
 import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.exception.NotFinishedException;
 import upc.similarity.compareapi.exception.NotFoundException;
+import upc.similarity.compareapi.util.Time;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
+import java.time.Clock;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
@@ -114,7 +116,23 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     private Connection getConnection(String organization) throws SQLException {
-        return DriverManager.getConnection(buildDbUrl(organization));
+        Connection conn = DriverManager.getConnection(buildDbUrl(organization));
+        String sql = "PRAGMA foreign_keys = ON;";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.execute();
+        }
+        //TODO temporary code
+        sql = "PRAGMA foreign_keys;";
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            boolean correct = true;
+            if (rs.next()) {
+                String response = rs.getString(1);
+                if (!response.equals("1")) correct = false;
+            } else correct = false;
+            if (!correct) throw  new SQLException("Error when activating foreign keys");
+        }
+        return conn;
     }
 
     public SQLiteDatabase() throws ClassNotFoundException {
@@ -171,6 +189,7 @@ public class SQLiteDatabase implements DatabaseModel {
                     + " actualPage integer, \n"
                     + " maxPages integer, \n"
                     + " finished integer, \n"
+                    + " time long, \n"
                     + " PRIMARY KEY(organizationId, responseId)"
                     + ");";
 
@@ -179,8 +198,7 @@ public class SQLiteDatabase implements DatabaseModel {
                     + " responseId varchar, \n"
                     + " page integer, \n"
                     + " jsonResponse text, \n"
-                    + " FOREIGN KEY(organizationId) REFERENCES responses(organizationId), \n"
-                    + " FOREIGN KEY(responseId) REFERENCES responses(responseId), \n"
+                    + " FOREIGN KEY(organizationId, responseId) REFERENCES responses(organizationId, responseId), \n"
                     + " PRIMARY KEY(organizationId, responseId, page)"
                     + ");";
 
@@ -269,7 +287,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
     @Override
     public void saveResponse(String organizationId, String responseId) throws SQLException, InternalErrorException {
-        String sql = "INSERT INTO responses(organizationId, responseId, actualPage, maxPages, finished) VALUES (?,?,?,?,?)";
+        String sql = "INSERT INTO responses(organizationId, responseId, actualPage, maxPages, finished, time) VALUES (?,?,?,?,?,?)";
 
         getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName);
@@ -279,6 +297,7 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.setInt(3,0);
             ps.setInt(4,0);
             ps.setInt(5,0);
+            ps.setLong(6, getCurrentTime());
             ps.execute();
         } finally {
             releaseAccessToMainDb();
@@ -627,7 +646,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
     @Override
     public void clearOrganizationResponses(String organizationId) throws SQLException, NotFoundException, InternalErrorException {
-        String sql = "SELECT responseId, finished FROM responses WHERE organizationId = ?";
+        String sql = "SELECT responseId FROM responses WHERE organizationId = ? AND finished = ?";
 
         getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName)) {
@@ -635,14 +654,37 @@ public class SQLiteDatabase implements DatabaseModel {
             if (!existsOrganization(organizationId)) throw new NotFoundException("The organization " + organizationId + " does not exist");
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, organizationId);
+                ps.setInt(2, 1);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         String responseId = rs.getString("responseId");
-                        int finished = rs.getInt("finished");
-                        if (finished == 1) {
-                            deleteAllResponsePages(organizationId, responseId, conn);
-                            deleteResponse(organizationId,responseId,conn);
-                        }
+                        deleteAllResponsePages(organizationId, responseId, conn);
+                        deleteResponse(organizationId,responseId,conn);
+                    }
+                }
+            }
+            conn.commit();
+        } finally {
+            releaseAccessToMainDb();
+        }
+    }
+
+    @Override
+    public void clearOldResponses(long borderTime) throws InternalErrorException, SQLException {
+        String sql = "SELECT organizationId, responseId FROM responses WHERE time < ? AND finished = ?";
+
+        getAccessToMainDb();
+        try (Connection conn = getConnection(dbMainName)) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setLong(1, borderTime);
+                ps.setInt(2, 1);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String organizationId = rs.getString("organizationId");
+                        String responseId = rs.getString("responseId");
+                        deleteAllResponsePages(organizationId, responseId, conn);
+                        deleteResponse(organizationId,responseId,conn);
                     }
                 }
             }
@@ -1121,5 +1163,9 @@ public class SQLiteDatabase implements DatabaseModel {
         }
 
         return dependencies;
+    }
+
+    private long getCurrentTime() {
+        return Time.getInstance().getCurrentMillis();
     }
 }
