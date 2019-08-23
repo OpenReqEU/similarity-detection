@@ -43,9 +43,9 @@ public interface CompareService {
 
     void buildClusters(String responseId, boolean compare, double threshold, String organization, Clusters requirements) throws BadRequestException, NotFinishedException, InternalErrorException;
 
-    void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, Clusters requirements) throws BadRequestException, NotFinishedException, InternalErrorException;
+    void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, int maxNumber, Clusters requirements) throws BadRequestException, NotFinishedException, InternalErrorException;
 
-    Dependencies simReqClusters(String organization, List<String> requirements, int maxValue) throws NotFoundException, InternalErrorException;
+    Dependencies simReqClusters(String organization, List<String> requirements, int maxNumber) throws NotFoundException, InternalErrorException;
 
     void treatAcceptedAndRejectedDependencies(String organization, List<Dependency> dependencies) throws NotFoundException, BadRequestException, NotFinishedException, InternalErrorException;
 

@@ -45,7 +45,7 @@ public interface DatabaseModel {
 
     List<Dependency> getRejectedDependencies(String organizationId, boolean useAuxiliaryTable) throws SQLException;
 
-    List<Dependency> getReqDependencies(String organizationId, String requirementId, boolean useAuxiliaryTable) throws SQLException;
+    List<Dependency> getReqDependencies(String organizationId, String requirementId, String status, boolean useAuxiliaryTable) throws SQLException;
 
     List<Dependency> getDependencies(String organizationId) throws SQLException;
 

@@ -138,9 +138,10 @@ public class RestApiController {
                                                   @RequestParam("compare") boolean compare,
                                                   @RequestParam("responseId") String responseId,
                                                   @RequestParam("threshold") double threshold,
+                                                  @RequestParam("maxNumber") int maxNumber,
                                                   @RequestBody Clusters input) {
         try {
-            compareService.buildClustersAndCompute(responseId,compare,organization,threshold,input);
+            compareService.buildClustersAndCompute(responseId,compare,organization,threshold,maxNumber,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));

@@ -47,7 +47,7 @@ public class CompareAdapter extends ComponentAdapter{
     }
 
     @Override
-    public void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, MultipartFile input) throws ComponentException {
+    public void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, int maxNumber, MultipartFile input) throws ComponentException {
 
         String content = "";
         try {
@@ -56,7 +56,7 @@ public class CompareAdapter extends ComponentAdapter{
             throw new InternalErrorException("Error loading input file");
         }
 
-        connectionComponentPost(URL + "BuildClustersAndCompute?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, content);
+        connectionComponentPost(URL + "BuildClustersAndCompute?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold + "&maxNumber=" + maxNumber, content);
     }
 
     @Override

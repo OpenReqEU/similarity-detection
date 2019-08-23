@@ -241,7 +241,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, Clusters input) throws BadRequestException, NotFinishedException, InternalErrorException {
+    public void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, int maxNumber, Clusters input) throws BadRequestException, NotFinishedException, InternalErrorException {
         control.showInfoMessage("BuildClustersAndCompute: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
@@ -263,7 +263,6 @@ public class CompareServiceImpl implements CompareService {
             databaseOperations.saveModel(organization, responseId, model, iniClusters.getDependencies());
             databaseOperations.createDepsAuxiliaryTable(organization, null);
             clusterOperations.computeProposedDependencies(organization, responseId,  model.getDocs().keySet(), model.getClusters().keySet(), model, true);
-            control.showInfoMessage("BuildClustersAndCompute: Saving dependencies");
             databaseOperations.updateModelClustersAndDependencies(organization, null, model, null, true);
         } finally {
             releaseAccessToUpdate(organization, responseId);
@@ -275,28 +274,28 @@ public class CompareServiceImpl implements CompareService {
         JSONArray array = new JSONArray();
         Constants constants = Constants.getInstance();
         HashSet<String> repeated = new HashSet<>();
-        Iterator it = model.getClusters().entrySet().iterator();
         long numberDependencies = 0;
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-            List<String> clusterRequirements = (List<String>) pair.getValue();
-            if (clusterRequirements.size() == 1) {
-                String orphan = clusterRequirements.get(0);
-                List<Dependency> proposedDependencies = databaseOperations.getReqDepedencies(organization, responseId, orphan, false);
-                for (Dependency dependency: proposedDependencies) {
-                    Dependency aux = new Dependency(dependency.getDependencyScore(),orphan,dependency.getToid(),constants.getStatus(), constants.getDependencyType(), constants.getComponent());
-                    if (!repeated.contains(aux.getFromid()+aux.getToid())) {
-                        array.put(aux.toJSON());
-                        ++numberDependencies;
-                        ++cont;
-                        if (cont >= constants.getMaxDepsForPage()) {
-                            databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
-                            array = new JSONArray();
-                            cont = 0;
-                        }
-                        repeated.add(aux.getFromid()+aux.getToid());
-                        repeated.add(aux.getToid()+aux.getFromid());
+        for (Requirement requirement: requirements) {
+            String id = requirement.getId();
+            List<Dependency> dependencies = databaseOperations.getReqDepedencies(organization, null, id, "accepted", false);
+            List<Dependency> proposedDependencies = databaseOperations.getReqDepedencies(organization, null, id, "proposed", false);
+            proposedDependencies.sort(Comparator.comparing(Dependency::getDependencyScore).reversed());
+            int highIndex = maxNumber;
+            if (maxNumber < 0 || maxNumber > proposedDependencies.size()) highIndex = proposedDependencies.size();
+            dependencies.addAll(proposedDependencies.subList(0, highIndex));
+            for (Dependency dependency: dependencies) {
+                Dependency aux = new Dependency(dependency.getDependencyScore(),id,dependency.getToid(),dependency.getStatus(), constants.getDependencyType(), constants.getComponent());
+                if (!repeated.contains(aux.getFromid()+aux.getToid())) {
+                    array.put(aux.toJSON());
+                    ++numberDependencies;
+                    ++cont;
+                    if (cont >= constants.getMaxDepsForPage()) {
+                        databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
+                        array = new JSONArray();
+                        cont = 0;
                     }
+                    repeated.add(aux.getFromid()+aux.getToid());
+                    repeated.add(aux.getToid()+aux.getFromid());
                 }
             }
         }
@@ -313,10 +312,9 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public Dependencies simReqClusters(String organization, List<String> requirements, int maxValue) throws NotFoundException, InternalErrorException {
+    public Dependencies simReqClusters(String organization, List<String> requirements, int maxNumber) throws NotFoundException, InternalErrorException {
         control.showInfoMessage("SimReqClusters: Start computing");
         List<Dependency> result = new ArrayList<>();
-        List<Dependency> proposedDeps = new ArrayList<>();
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         if (!databaseOperations.existsOrganization(null, organization)) throw new NotFoundException("The organization with id " + organization + " does not exist");
@@ -324,21 +322,21 @@ public class CompareServiceImpl implements CompareService {
         HashSet<String> repeated = new HashSet<>();
 
         for (String id: requirements) {
-            List<Dependency> dependencies = databaseOperations.getReqDepedencies(organization, null, id, false);
-            for (Dependency dependency: dependencies) {
-                Dependency aux = new Dependency(dependency.getDependencyScore(),id,dependency.getToid(),dependency.getStatus(), constants.getDependencyType(), constants.getComponent());
-                if (!repeated.contains(aux.getFromid()+aux.getToid())) {
-                    if (aux.getStatus().equals("accepted")) result.add(aux);
-                    else proposedDeps.add(aux);
-                    repeated.add(aux.getFromid()+aux.getToid());
-                    repeated.add(aux.getToid()+aux.getFromid());
+            List<Dependency> dependencies = databaseOperations.getReqDepedencies(organization, null, id, "accepted", false);
+            List<Dependency> proposedDependencies = databaseOperations.getReqDepedencies(organization, null, id, "proposed", false);
+            proposedDependencies.sort(Comparator.comparing(Dependency::getDependencyScore).reversed());
+            int highIndex = maxNumber;
+            if (maxNumber < 0 || maxNumber > proposedDependencies.size()) highIndex = proposedDependencies.size();
+            dependencies.addAll(proposedDependencies.subList(0, highIndex));
+            for (Dependency dependency : dependencies) {
+                Dependency aux = new Dependency(dependency.getDependencyScore(), id, dependency.getToid(), dependency.getStatus(), constants.getDependencyType(), constants.getComponent());
+                if (!repeated.contains(aux.getFromid() + aux.getToid())) {
+                    result.add(aux);
+                    repeated.add(aux.getFromid() + aux.getToid());
+                    repeated.add(aux.getToid() + aux.getFromid());
                 }
             }
         }
-
-        proposedDeps.sort(Comparator.comparing(Dependency::getDependencyScore).reversed());
-        if (maxValue < 0 || maxValue > proposedDeps.size()) maxValue = proposedDeps.size();
-        result.addAll(proposedDeps.subList(0, maxValue));
 
         control.showInfoMessage("SimReqClusters: Finish computing");
         return new Dependencies(result);
@@ -383,7 +381,7 @@ public class CompareServiceImpl implements CompareService {
 
     @Override
     public void batchProcess(String responseId, String organization, Clusters input) throws BadRequestException, NotFoundException, NotFinishedException, InternalErrorException{
-        control.showInfoMessage("CronMethod: Start computing");
+        control.showInfoMessage("BatchProcess: Start computing");
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
 
@@ -432,8 +430,6 @@ public class CompareServiceImpl implements CompareService {
             HashSet<Integer> clustersChanged = new HashSet<>();
             Map<String,Integer> reqCluster = computeReqClusterMap(model.getClusters(), model.getDocs().keySet());
 
-            control.showInfoMessage("CronMethod: Start loop");
-
             for (OrderedObject orderedObject: objects) {
                 if (orderedObject.isDependency()) {
                     List<Dependency> aux = new ArrayList<>();
@@ -449,10 +445,7 @@ public class CompareServiceImpl implements CompareService {
                     addRequirementsToModel(aux, model);
                 }
             }
-            control.showInfoMessage("CronMethod: Finish loop");
             clusterOperations.addDeletedDependencies(organization, responseId, deletedDependencies, model, clustersChanged, reqCluster);
-
-            control.showInfoMessage("CronMethod: Update proposed dependencies");
             clusterOperations.updateProposedDependencies(organization, responseId, model, clustersChanged, true);
             databaseOperations.updateModelClustersAndDependencies(organization, responseId, model, null, true);
 
@@ -461,7 +454,7 @@ public class CompareServiceImpl implements CompareService {
         }
 
         databaseOperations.generateEmptyResponse(organization, responseId);
-        control.showInfoMessage("CronMethod: Finish computing");
+        control.showInfoMessage("BatchProcess: Finish computing");
     }
 
 

@@ -23,7 +23,4 @@ public class Control {
         log.log(Level.SEVERE, text);
     }
 
-
-
-
 }

@@ -1,0 +1,6 @@
+{"dependencies":[
+{"dependency_score":0.7569990339871457,"fromid":"UPC-6","toid":"UPC-1","status":"proposed","dependency_type":"similar","description":["Similarity-UPC"]},
+{"dependency_score":0.25494407595423274,"fromid":"UPC-6","toid":"UPC-4","status":"proposed","dependency_type":"similar","description":["Similarity-UPC"]},
+{"dependency_score":0.0,"fromid":"UPC-1","toid":"UPC-2","status":"accepted","dependency_type":"similar","description":["Similarity-UPC"]},
+{"dependency_score":0.0,"fromid":"UPC-1","toid":"UPC-3","status":"accepted","dependency_type":"similar","description":["Similarity-UPC"]},
+{"dependency_score":0.7569990339871457,"fromid":"UPC-1","toid":"UPC-4","status":"proposed","dependency_type":"similar","description":["Similarity-UPC"]}]}

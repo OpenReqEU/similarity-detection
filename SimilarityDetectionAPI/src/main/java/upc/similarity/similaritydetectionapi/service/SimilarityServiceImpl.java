@@ -253,7 +253,7 @@ public class SimilarityServiceImpl implements SimilarityService {
 
 
     @Override
-    public ResultId buildClustersAndCompute(String url, String organization, boolean compare, double threshold, MultipartFile input) throws BadRequestException {
+    public ResultId buildClustersAndCompute(String url, String organization, boolean compare, double threshold, int maxNumber, MultipartFile input) throws BadRequestException {
 
         checkThreshold(threshold);
         ResultId id = getId();
@@ -263,7 +263,7 @@ public class SimilarityServiceImpl implements SimilarityService {
             ResultJson result = new ResultJson(id.getId(),"BuildClustersAndCompute");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                componentAdapter.buildClustersAndCompute(id.getId(),organization,compare,threshold,input);
+                componentAdapter.buildClustersAndCompute(id.getId(),organization,compare,threshold,maxNumber,input);
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());

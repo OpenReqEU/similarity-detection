@@ -227,7 +227,9 @@ public class RestApiController {
                     " All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the database, together with their corresponding " +
                     "tf-idf model and the clusters information. The user can choose whether to use only the name of the requirements for constructing the tf-idf model, or to use also the text of the requirements. Finally, all the requirements are compared with all the " +
                     "requirements of other clusters of the organization, and those similarities with score greater than the established threshold for each requirement are stored in the database. It returns for each requirement the highest similarity score for each cluster " +
-                    "(only if they are greater than the established threshold).</p>", tags = "Similarity with clusters")
+                    "(only if they are greater than the established threshold). If the number of maximum dependencies to be returned is received as parameter (maxNumber), the method only returns the <i>maxNumber</i>" +
+                    " of dependencies with highest score for each requirement. When <i>maxNumber</i> is equal to 0 only the accepted dependencies are returned and when maxNumber is lower than 0 or not specified, all the accepted and proposed" +
+                    " dependencies of each requirement are returned.</p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -235,10 +237,12 @@ public class RestApiController {
                                                   @ApiParam(value="Use the text field of the requirements to construct the model", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
                                                   @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the proposed dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                                   @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
+                                                  @ApiParam(value="Max number of dependencies to return for each requirement", required = false, example = "10") @RequestParam(value = "maxNumber", required = false) Integer maxNumber,
                                                   @ApiParam(value="OpenReq JSON with requirements and dependencies", required = true) @RequestParam("file") MultipartFile file) {
         try {
+            if (maxNumber == null) maxNumber = -1;
             if(url != null) urlOk(url);
-            return new ResponseEntity<>(similarityService.buildClustersAndCompute(url, organization, compare, threshold, file),HttpStatus.OK);
+            return new ResponseEntity<>(similarityService.buildClustersAndCompute(url, organization, compare, threshold, maxNumber, file),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }

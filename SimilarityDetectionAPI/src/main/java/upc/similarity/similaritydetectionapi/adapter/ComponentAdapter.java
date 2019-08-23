@@ -49,7 +49,7 @@ public abstract class ComponentAdapter {
 
     public abstract void buildClusters(String responseId, String organization, boolean compare, double threshold, MultipartFile input) throws ComponentException;
 
-    public abstract void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, MultipartFile input) throws ComponentException;
+    public abstract void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, int maxNumber, MultipartFile input) throws ComponentException;
 
     public abstract String simReqClusters(String organization, int maxValue, List<String> requirements) throws ComponentException;
 

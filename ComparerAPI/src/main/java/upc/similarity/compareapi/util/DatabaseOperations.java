@@ -325,10 +325,10 @@ public class DatabaseOperations {
         return result;
     }
 
-    public List<Dependency> getReqDepedencies(String organizationId, String responseId, String requirementId, boolean useAuxiliaryTable) throws InternalErrorException {
+    public List<Dependency> getReqDepedencies(String organizationId, String responseId, String requirementId, String status, boolean useAuxiliaryTable) throws InternalErrorException {
         List<Dependency> result = new ArrayList<>();
         try {
-            result = databaseModel.getReqDependencies(organizationId, requirementId, useAuxiliaryTable);
+            result = databaseModel.getReqDependencies(organizationId, requirementId, status, useAuxiliaryTable);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organizationId, responseId, "Error while loading the "+requirementId+" dependencies from the database");
         }

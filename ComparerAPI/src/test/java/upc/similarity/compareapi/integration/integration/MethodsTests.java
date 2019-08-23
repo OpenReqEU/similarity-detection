@@ -177,7 +177,7 @@ public class MethodsTests {
     }
 
     @Test
-    public void addClusters() throws Exception {
+    public void buildClusters() throws Exception {
         this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "0")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"generateClusters/input.json")))
                 .andExpect(status().isOk());
@@ -190,9 +190,9 @@ public class MethodsTests {
     }
 
     @Test
-    public void addClustersAndCompute() throws Exception {
-        this.mockMvc.perform(post(url + "BuildClustersAndCompute").param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"generateClustersAndCompute/input.json")))
+    public void buildClustersAndCompute() throws Exception {
+        this.mockMvc.perform(post(url + "BuildClustersAndCompute").param("organization", "UPC").param("threshold", "0.2")
+                .param("compare", "true").param("responseId", id+"").param("maxNumber", "-1").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"generateClustersAndCompute/input.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "generateClustersAndCompute/output.json")));
@@ -210,7 +210,13 @@ public class MethodsTests {
         ++id;
         this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("maxValue", "-1")
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqClusters/input_operation.json")))
-                .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "simReqClusters/output.json")));
+                .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "simReqClusters/output_all.json")));
+        this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("maxValue", "0")
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqClusters/input_operation.json")))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "simReqClusters/output_only_accepted.json")));
+        this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("maxValue", "1")
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqClusters/input_operation.json")))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "simReqClusters/output_only_one.json")));
     }
 
     @Test

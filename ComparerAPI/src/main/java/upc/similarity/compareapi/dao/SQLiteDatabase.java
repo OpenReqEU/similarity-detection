@@ -548,23 +548,21 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public List<Dependency> getReqDependencies(String organizationId, String requirementId, boolean useAuxiliaryTable) throws SQLException {
+    public List<Dependency> getReqDependencies(String organizationId, String requirementId, String status, boolean useAuxiliaryTable) throws SQLException {
         List<Dependency> result = new ArrayList<>();
 
         try (Connection conn = getConnection(organizationId)) {
 
-            String sql = "SELECT toid, status, score FROM dependencies WHERE fromid = ? AND (status = ? OR status = ?)";
-            if (useAuxiliaryTable) sql = "SELECT toid, status, score FROM aux_dependencies WHERE fromid = ? AND (status = ? OR status = ?)";
+            String sql = "SELECT toid, score FROM dependencies WHERE fromid = ? AND status = ?";
+            if (useAuxiliaryTable) sql = "SELECT toid, score FROM aux_dependencies WHERE fromid = ? AND status = ?";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, requirementId);
-                ps.setString(2, "accepted");
-                ps.setString(3, "proposed");
+                ps.setString(2, status);
 
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         String toid = rs.getString("toid");
-                        String status = rs.getString("status");
                         double score = rs.getDouble("score");
                         result.add(new Dependency(requirementId,toid,status,score,-1));
                     }
