@@ -33,7 +33,7 @@ public class CompareServiceImpl implements CompareService {
         control.showInfoMessage("BuildModel: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
-        databaseOperations.generateResponse(organization,responseId);
+        databaseOperations.generateResponse(organization,responseId,"BuildModel");
         getAccessToUpdate(organization, responseId);
         try {
             databaseOperations.saveModel(organization, responseId, generateModel(compare, threshold, deleteDuplicates(requirements, organization, responseId)), null);
@@ -50,7 +50,7 @@ public class CompareServiceImpl implements CompareService {
         control.showInfoMessage("BuildModelAndCompute: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
-        databaseOperations.generateResponse(organization,responseId);
+        databaseOperations.generateResponse(organization,responseId,"BuildModelAndCompute");
 
         Model model = generateModel(compare, threshold, deleteDuplicates(requirements,organization,responseId));
         List<String> requirementsIds = new ArrayList<>();
@@ -77,7 +77,7 @@ public class CompareServiceImpl implements CompareService {
         control.showInfoMessage("AddRequirements: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
-        databaseOperations.generateResponse(organization,responseId);
+        databaseOperations.generateResponse(organization,responseId,"AddRequirements");
 
         getAccessToUpdate(organization, responseId);
 
@@ -100,7 +100,7 @@ public class CompareServiceImpl implements CompareService {
         control.showInfoMessage("DeleteRequirements: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
-        databaseOperations.generateResponse(organization,responseId);
+        databaseOperations.generateResponse(organization,responseId,"DeleteRequirements");
 
         getAccessToUpdate(organization, responseId);
 
@@ -137,7 +137,7 @@ public class CompareServiceImpl implements CompareService {
     public void simReqOrganization(String responseId, String organization, List<Requirement> requirements) throws NotFoundException, NotFinishedException, BadRequestException, InternalErrorException {
         control.showInfoMessage("SimReqOrganization: Start computing");
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
-        databaseOperations.generateResponse(organization,responseId);
+        databaseOperations.generateResponse(organization,responseId,"SimReqOrganization");
 
         getAccessToUpdate(organization, responseId);
 
@@ -177,7 +177,7 @@ public class CompareServiceImpl implements CompareService {
         control.showInfoMessage("SimReqProject: Start computing");
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
-        databaseOperations.generateResponse(organization,responseId);
+        databaseOperations.generateResponse(organization,responseId,"SimReqProject");
 
         Model model = databaseOperations.loadModel(organization, responseId, false);
         for (String req: projectRequirements.getReqsToCompare()) {
@@ -195,7 +195,7 @@ public class CompareServiceImpl implements CompareService {
         control.showInfoMessage("SimProject: Start computing");
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
-        databaseOperations.generateResponse(organization,responseId);
+        databaseOperations.generateResponse(organization,responseId,"SimProject");
 
         Model model = databaseOperations.loadModel(organization, responseId, false);
 
@@ -218,7 +218,7 @@ public class CompareServiceImpl implements CompareService {
 
         if (!input.inputOk()) databaseOperations.saveBadRequestException(organization, responseId, new BadRequestException("The input requirements array is empty"));
 
-        databaseOperations.generateResponse(organization,responseId);
+        databaseOperations.generateResponse(organization,responseId,"BuildClusters");
         List<Requirement> requirements = deleteDuplicates(input.getRequirements(),organization,responseId);
         Model model = generateModel(compare, threshold, requirements);
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
@@ -248,7 +248,7 @@ public class CompareServiceImpl implements CompareService {
 
         if (!input.inputOk()) databaseOperations.saveBadRequestException(organization, responseId, new BadRequestException("The input requirements array is empty"));
 
-        databaseOperations.generateResponse(organization,responseId);
+        databaseOperations.generateResponse(organization,responseId,"BuildClustersAndCompute");
         List<Requirement> requirements = deleteDuplicates(input.getRequirements(),organization,responseId);
 
         control.showInfoMessage("BuildClustersAndCompute: Number requirements: " + requirements.size());
@@ -385,7 +385,7 @@ public class CompareServiceImpl implements CompareService {
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
 
-        databaseOperations.generateResponse(organization,responseId);
+        databaseOperations.generateResponse(organization,responseId,"BatchProcess");
 
         getAccessToUpdate(organization, responseId);
 
@@ -465,6 +465,11 @@ public class CompareServiceImpl implements CompareService {
     @Override
     public String getResponsePage(String organization, String responseId) throws NotFoundException, InternalErrorException, NotFinishedException {
         return DatabaseOperations.getInstance().getResponsePage(organization, responseId);
+    }
+
+    @Override
+    public Organization getOrganizationInfo(String organization) throws NotFoundException, InternalErrorException {
+        return DatabaseOperations.getInstance().getOrganizationInfo(organization);
     }
 
     @Override

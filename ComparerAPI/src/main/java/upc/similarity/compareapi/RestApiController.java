@@ -20,6 +20,11 @@ public class RestApiController {
     @Autowired
     CompareService compareService;
 
+
+    /*
+    Similarity without clusters
+     */
+
     @PostMapping(value = "/BuildModel")
     public ResponseEntity buildModel(@RequestParam("organization") String organization,
                                      @RequestParam("compare") boolean compare,
@@ -28,6 +33,20 @@ public class RestApiController {
                                      @RequestBody List<Requirement> input) {
         try {
             compareService.buildModel(responseId,compare,threshold,organization,input);
+            return new ResponseEntity<>(null,HttpStatus.OK);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
+        }
+    }
+
+    @PostMapping(value = "/BuildModelAndCompute")
+    public ResponseEntity buildModelAndCompute(@RequestParam("organization") String organization,
+                                               @RequestParam("compare") boolean compare,
+                                               @RequestParam("responseId") String responseId,
+                                               @RequestParam("threshold") double threshold,
+                                               @RequestBody List<Requirement> input) {
+        try {
+            compareService.buildModelAndCompute(responseId,compare,organization,threshold,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
@@ -105,19 +124,10 @@ public class RestApiController {
         }
     }
 
-    @PostMapping(value = "/BuildModelAndCompute")
-    public ResponseEntity buildModelAndCompute(@RequestParam("organization") String organization,
-                                               @RequestParam("compare") boolean compare,
-                                               @RequestParam("responseId") String responseId,
-                                               @RequestParam("threshold") double threshold,
-                                               @RequestBody List<Requirement> input) {
-        try {
-            compareService.buildModelAndCompute(responseId,compare,organization,threshold,input);
-            return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (ComponentException e) {
-            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
-        }
-    }
+
+    /*
+    Similarity with clusters
+     */
 
     @PostMapping(value = "/BuildClusters")
     public ResponseEntity buildClusters(@RequestParam("organization") String organization,
@@ -170,11 +180,37 @@ public class RestApiController {
         }
     }
 
+    @PostMapping(value = "/BatchProcess")
+    public ResponseEntity batchProcess(@RequestParam("organization") String organization,
+                                       @RequestParam("responseId") String responseId,
+                                       @RequestBody Clusters input) {
+        try {
+            compareService.batchProcess(responseId,organization,input);
+            return new ResponseEntity<>(null,HttpStatus.OK);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
+        }
+    }
+
+
+    /*
+    Auxiliary methods
+     */
+
     @GetMapping(value = "/GetResponsePage")
     public ResponseEntity getResponsePage(@RequestParam("organization") String organization,
                                         @RequestParam("responseId") String responseId) {
         try {
             return new ResponseEntity<>(compareService.getResponsePage(organization,responseId),HttpStatus.OK);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
+        }
+    }
+
+    @GetMapping(value = "/GetOrganizationInfo")
+    public ResponseEntity getResponsePage(@RequestParam("organization") String organization) {
+        try {
+            return new ResponseEntity<>(compareService.getOrganizationInfo(organization),HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
@@ -210,20 +246,8 @@ public class RestApiController {
         }
     }
 
-    @PostMapping(value = "/CronMethod")
-    public ResponseEntity batchProcess(@RequestParam("organization") String organization,
-                                        @RequestParam("responseId") String responseId,
-                                        @RequestBody Clusters input) {
-        try {
-            compareService.batchProcess(responseId,organization,input);
-            return new ResponseEntity<>(null,HttpStatus.OK);
-        } catch (ComponentException e) {
-            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
-        }
-    }
-
     /*
-    Auxiliary operations
+    Test methods
      */
 
     @PostMapping(value = "/TestAccuracy")

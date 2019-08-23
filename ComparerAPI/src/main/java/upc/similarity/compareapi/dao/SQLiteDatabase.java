@@ -5,7 +5,9 @@ import org.json.JSONObject;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.config.Control;
 import upc.similarity.compareapi.entity.Dependency;
+import upc.similarity.compareapi.entity.Execution;
 import upc.similarity.compareapi.entity.Model;
+import upc.similarity.compareapi.entity.Organization;
 import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.exception.NotFinishedException;
 import upc.similarity.compareapi.exception.NotFoundException;
@@ -190,6 +192,7 @@ public class SQLiteDatabase implements DatabaseModel {
                     + " maxPages integer, \n"
                     + " finished integer, \n"
                     + " time long, \n"
+                    + " methodName varchar, \n"
                     + " PRIMARY KEY(organizationId, responseId)"
                     + ");";
 
@@ -253,6 +256,36 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
+    public Organization getOrganizationInfo(String organizationId) throws NotFoundException, SQLException {
+
+        if (!existsOrganization(organizationId)) throw new NotFoundException("The organization with id " + organizationId + " does not exist");
+        List<Execution> currentExecutions = new ArrayList<>();
+        List<Execution> pendingResponses = new ArrayList<>();
+        OrganizationInfo organizationInfo = null;
+        try(Connection conn = getConnection(organizationId)) {
+            organizationInfo = getOrganizationInfo(organizationId,conn);
+            String sql = "SELECT responseId, maxPages, finished, time, methodName FROM responses WHERE organizationId = ?";
+            try(PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, organizationId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String responseId = rs.getString("responseId");
+                        boolean finished = rs.getBoolean("finished");
+                        long time = rs.getLong("time");
+                        String methodName = rs.getString("methodName");
+                        Integer maxPages = null;
+                        if (finished) maxPages = rs.getInt("maxPages");
+                        Execution execution = new Execution(responseId, methodName, maxPages, time);
+                        if (finished) pendingResponses.add(execution);
+                        else currentExecutions.add(execution);
+                    }
+                }
+            }
+        }
+        return new Organization(organizationId, organizationInfo.threshold, organizationInfo.compare, organizationInfo.hasClusters, currentExecutions, pendingResponses);
+    }
+
+    @Override
     public Model getModel(String organization, boolean withFrequency) throws NotFoundException, SQLException {
 
         if (!existsOrganization(organization)) throw new NotFoundException("The organization with id " + organization + " does not exist");
@@ -269,7 +302,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
         try (Connection conn = getConnection(organization)) {
             conn.setAutoCommit(false);
-            Organization aux = getOrganizationInfo(organization,conn);
+            OrganizationInfo aux = getOrganizationInfo(organization,conn);
             threshold = aux.threshold;
             compare = aux.compare;
             hasClusters = aux.hasClusters;
@@ -286,8 +319,8 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void saveResponse(String organizationId, String responseId) throws SQLException, InternalErrorException {
-        String sql = "INSERT INTO responses(organizationId, responseId, actualPage, maxPages, finished, time) VALUES (?,?,?,?,?,?)";
+    public void saveResponse(String organizationId, String responseId, String methodName) throws SQLException, InternalErrorException {
+        String sql = "INSERT INTO responses(organizationId, responseId, actualPage, maxPages, finished, time, methodName) VALUES (?,?,?,?,?,?,?)";
 
         getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName);
@@ -298,6 +331,7 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.setInt(4,0);
             ps.setInt(5,0);
             ps.setLong(6, getCurrentTime());
+            ps.setString(7, methodName);
             ps.execute();
         } finally {
             releaseAccessToMainDb();
@@ -778,16 +812,16 @@ public class SQLiteDatabase implements DatabaseModel {
         }
     }
 
-    private class Organization {
+    private class OrganizationInfo {
         double threshold;
         boolean compare;
         boolean hasClusters;
         int lastClusterId;
     }
 
-    private Organization getOrganizationInfo(String organizationId, Connection conn) throws SQLException {
+    private OrganizationInfo getOrganizationInfo(String organizationId, Connection conn) throws SQLException {
 
-        Organization result = new Organization();
+        OrganizationInfo result = new OrganizationInfo();
         try (PreparedStatement ps = conn.prepareStatement("SELECT threshold, compare, hasClusters, lastClusterId FROM info WHERE id = ?")) {
                 ps.setString(1, organizationId);
 

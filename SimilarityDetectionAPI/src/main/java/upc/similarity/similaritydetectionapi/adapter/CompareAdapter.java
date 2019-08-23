@@ -98,7 +98,7 @@ public class CompareAdapter extends ComponentAdapter{
     }
 
     @Override
-    public void cronMethod(String responseId, String organization,  List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException {
+    public void batchProcess(String responseId, String organization,  List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException {
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
         JSONArray dependenciesJson = listDependenciesToJson(dependencies);
@@ -107,7 +107,7 @@ public class CompareAdapter extends ComponentAdapter{
         jsonToSend.put("requirements", requirementsJson);
         jsonToSend.put("dependencies", dependenciesJson);
 
-        connectionComponentPost(URL + "CronMethod?responseId=" + responseId + "&organization=" + organization, jsonToSend);
+        connectionComponentPost(URL + "BatchProcess?responseId=" + responseId + "&organization=" + organization, jsonToSend);
     }
 
     @Override

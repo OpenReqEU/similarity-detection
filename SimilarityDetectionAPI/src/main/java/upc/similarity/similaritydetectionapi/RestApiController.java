@@ -308,7 +308,7 @@ public class RestApiController {
 
         try {
             if(url != null) urlOk(url);
-            return new ResponseEntity<>(similarityService.cronMethod(url, organization, input), HttpStatus.OK);
+            return new ResponseEntity<>(similarityService.batchProcess(url, organization, input), HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }
@@ -328,6 +328,25 @@ public class RestApiController {
             @ApiResponse(code=404, message = "Not found"),
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity getResponsePage(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+                                          @ApiParam(value="Response identifier", required = true, example = "12345678_89") @RequestParam("response") String responseId) {
+        try {
+            return new ResponseEntity<>(similarityService.getResponsePage(organization,responseId), HttpStatus.OK);
+        } catch (ComponentException e) {
+            return getComponentError(e);
+        }
+    }
+
+    /*
+    TODO falta documentacion y hacer los tests aqui y en compareapi
+     */
+
+    @CrossOrigin
+    @GetMapping(value = "/GetOrganizationInfo", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "", notes = "<p><i>Synchronous</i> method.</p><p></p>", tags = "Auxiliary methods")
+    @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
+            @ApiResponse(code=404, message = "Not found"),
+            @ApiResponse(code=500, message = "Internal error")})
+    public ResponseEntity getOrganizationInfo(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                           @ApiParam(value="Response identifier", required = true, example = "12345678_89") @RequestParam("response") String responseId) {
         try {
             return new ResponseEntity<>(similarityService.getResponsePage(organization,responseId), HttpStatus.OK);

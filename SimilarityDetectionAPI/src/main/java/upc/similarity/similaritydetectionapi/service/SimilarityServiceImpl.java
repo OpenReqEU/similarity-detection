@@ -293,7 +293,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId cronMethod(String url, String organization, ProjectWithDependencies input) throws ComponentException {
+    public ResultId batchProcess(String url, String organization, ProjectWithDependencies input) throws ComponentException {
 
         checkInput(input);
         ResultId id = getId();
@@ -303,7 +303,7 @@ public class SimilarityServiceImpl implements SimilarityService {
             ResultJson result = new ResultJson(id.getId(),"BatchProcess");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                componentAdapter.cronMethod(id.getId(), organization, input.getRequirements(), input.getDependencies());
+                componentAdapter.batchProcess(id.getId(), organization, input.getRequirements(), input.getDependencies());
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());

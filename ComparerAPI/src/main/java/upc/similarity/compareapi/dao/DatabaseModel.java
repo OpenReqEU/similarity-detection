@@ -2,6 +2,7 @@ package upc.similarity.compareapi.dao;
 
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
+import upc.similarity.compareapi.entity.Organization;
 import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.exception.NotFinishedException;
 import upc.similarity.compareapi.exception.NotFoundException;
@@ -64,7 +65,7 @@ public interface DatabaseModel {
     Auxiliary operations
      */
 
-    void saveResponse(String organizationId, String responseId) throws SQLException, InternalErrorException;
+    void saveResponse(String organizationId, String responseId, String methodName) throws SQLException, InternalErrorException;
 
     void saveResponsePage(String organizationId, String responseId, String jsonResponse) throws SQLException, NotFoundException, InternalErrorException;
 
@@ -73,6 +74,8 @@ public interface DatabaseModel {
     void finishComputation(String organizationId, String responseId) throws SQLException, InternalErrorException;
 
     String getResponsePage(String organizationId, String responseId) throws SQLException, NotFoundException, NotFinishedException;
+
+    Organization getOrganizationInfo(String organizationId) throws NotFoundException, SQLException;
 
     void clearOrganizationResponses(String organizationId) throws SQLException, NotFoundException, InternalErrorException;
 

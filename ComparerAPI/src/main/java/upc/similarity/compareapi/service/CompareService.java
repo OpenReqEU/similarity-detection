@@ -4,6 +4,7 @@ package upc.similarity.compareapi.service;
 import java.util.List;
 
 import upc.similarity.compareapi.entity.Dependency;
+import upc.similarity.compareapi.entity.Organization;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.entity.input.Clusters;
 import upc.similarity.compareapi.entity.input.ReqProject;
@@ -57,6 +58,8 @@ public interface CompareService {
      */
 
     String getResponsePage(String organization, String responseId) throws NotFoundException, InternalErrorException, NotFinishedException;
+
+    Organization getOrganizationInfo(String organization) throws NotFoundException, InternalErrorException;
 
     void clearOrganizationResponses(String organization) throws NotFoundException, InternalErrorException;
 

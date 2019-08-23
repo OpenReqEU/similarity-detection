@@ -42,7 +42,7 @@ public interface SimilarityService {
 
     public void treatDependencies(String organization, Dependencies dependencies) throws ComponentException;
 
-    public ResultId cronMethod(String url, String organization, ProjectWithDependencies input) throws ComponentException;
+    public ResultId batchProcess(String url, String organization, ProjectWithDependencies input) throws ComponentException;
 
     public String getResponsePage(String organization, String responseId) throws ComponentException;
 

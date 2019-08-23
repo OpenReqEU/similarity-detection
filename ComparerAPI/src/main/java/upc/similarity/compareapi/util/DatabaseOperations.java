@@ -8,6 +8,7 @@ import upc.similarity.compareapi.dao.DatabaseModel;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
+import upc.similarity.compareapi.entity.Organization;
 import upc.similarity.compareapi.exception.*;
 
 import java.io.IOException;
@@ -135,10 +136,10 @@ public class DatabaseOperations {
         }
     }
 
-    public void generateResponse(String organization, String responseId) throws InternalErrorException {
+    public void generateResponse(String organization, String responseId, String methodName) throws InternalErrorException {
         String errorMessage = "Error while saving new response to the database";
         try {
-            databaseModel.saveResponse(organization,responseId);
+            databaseModel.saveResponse(organization,responseId, methodName);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organization, responseId, errorMessage);
         } catch (InternalErrorException e) {
@@ -333,6 +334,16 @@ public class DatabaseOperations {
             treatSQLException(sq.getMessage(), organizationId, responseId, "Error while loading the "+requirementId+" dependencies from the database");
         }
         return result;
+    }
+
+    public Organization getOrganizationInfo(String organizationId) throws NotFoundException, InternalErrorException {
+        Organization organization = null;
+        try {
+            organization = databaseModel.getOrganizationInfo(organizationId);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), null, null, "Error while loading the organization's information from the database");
+        }
+        return organization;
     }
 
 

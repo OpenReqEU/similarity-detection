@@ -55,7 +55,7 @@ public abstract class ComponentAdapter {
 
     public abstract void treatDependencies(String organization, List<Dependency> dependencies) throws ComponentException;
 
-    public abstract void cronMethod(String responseId, String organization,  List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException;
+    public abstract void batchProcess(String responseId, String organization,  List<Requirement> requirements, List<Dependency> dependencies) throws ComponentException;
 
 
     /*
