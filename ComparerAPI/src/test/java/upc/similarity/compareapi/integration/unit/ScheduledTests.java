@@ -44,11 +44,11 @@ public class ScheduledTests {
     public void deleteOldResponses() throws Exception {
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         Time time = Time.getInstance();
-        databaseOperations.generateResponse("UPC", "1234");
+        databaseOperations.generateResponse("UPC", "1234", "Test");
         databaseOperations.generateResponsePage("1234", "UPC", new JSONArray(), "dependencies");
         databaseOperations.finishComputation("UPC", "1234");
         time.setClock(Clock.offset(time.getClock(), Duration.ofDays(-8)));
-        databaseOperations.generateResponse("UB", "4321");
+        databaseOperations.generateResponse("UB", "4321", "Test");
         databaseOperations.generateResponsePage("4321", "UB", new JSONArray(), "dependencies");
         databaseOperations.finishComputation("UB", "4321");
         time.setClock(Clock.offset(time.getClock(), Duration.ofDays(8)));

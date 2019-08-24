@@ -318,7 +318,6 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
 
-
     /*
     Auxiliary operations
      */
@@ -327,6 +326,12 @@ public class SimilarityServiceImpl implements SimilarityService {
     public String getResponsePage(String organization, String responseId) throws ComponentException {
         ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
         return componentAdapter.getResponsePage(organization,responseId);
+    }
+
+    @Override
+    public String getOrganizationInfo(String organization) throws ComponentException {
+        ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
+        return componentAdapter.getOrganizationInfo(organization);
     }
 
     @Override

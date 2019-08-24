@@ -13,48 +13,50 @@ public interface SimilarityService {
     Main operations
      */
 
-    public ResultId buildModel(String url, String organization, boolean compare, double threshold, Requirements input) throws BadRequestException, NotFoundException;
+    ResultId buildModel(String url, String organization, boolean compare, double threshold, Requirements input) throws BadRequestException, NotFoundException;
 
-    public ResultId buildModelAndCompute(String url, String organization, boolean compare, double threshold, Requirements input) throws BadRequestException;
+    ResultId buildModelAndCompute(String url, String organization, boolean compare, double threshold, Requirements input) throws BadRequestException;
 
-    public ResultId addRequirements(String url, String organization, Requirements input) throws BadRequestException;
+    ResultId addRequirements(String url, String organization, Requirements input) throws BadRequestException;
 
-    public ResultId deleteRequirements(String url, String organization, Requirements input) throws BadRequestException;
+    ResultId deleteRequirements(String url, String organization, Requirements input) throws BadRequestException;
 
-    public String simReqReq(String organization, String req1, String req2) throws ComponentException;
+    String simReqReq(String organization, String req1, String req2) throws ComponentException;
 
-    public ResultId simReqOrganization(String url, String organization, Requirements input) throws InternalErrorException, BadRequestException;
+    ResultId simReqOrganization(String url, String organization, Requirements input) throws InternalErrorException, BadRequestException;
 
-    public ResultId simReqProject(String url, String organization, List<String> req, String project, Projects input) throws NotFoundException, BadRequestException;
+    ResultId simReqProject(String url, String organization, List<String> req, String project, Projects input) throws NotFoundException, BadRequestException;
 
-    public ResultId simProject(String url, String organization, String project, Projects input) throws NotFoundException, BadRequestException;
+    ResultId simProject(String url, String organization, String project, Projects input) throws NotFoundException, BadRequestException;
 
 
     /*
     Cluster operations
      */
 
-    public ResultId buildClusters(String url, String organization, boolean compare, double threshold, MultipartFile input) throws BadRequestException;
+    ResultId buildClusters(String url, String organization, boolean compare, double threshold, MultipartFile input) throws BadRequestException;
 
-    public ResultId buildClustersAndCompute(String url, String organization, boolean compare, double threshold, int maxNumber, MultipartFile input) throws BadRequestException;
+    ResultId buildClustersAndCompute(String url, String organization, boolean compare, double threshold, int maxNumber, MultipartFile input) throws BadRequestException;
 
-    public String simReqClusters(String organization, int maxValue, List<String> input) throws ComponentException;
+    String simReqClusters(String organization, int maxValue, List<String> input) throws ComponentException;
 
-    public void treatDependencies(String organization, Dependencies dependencies) throws ComponentException;
+    void treatDependencies(String organization, Dependencies dependencies) throws ComponentException;
 
-    public ResultId batchProcess(String url, String organization, ProjectWithDependencies input) throws ComponentException;
-
-    public String getResponsePage(String organization, String responseId) throws ComponentException;
+    ResultId batchProcess(String url, String organization, ProjectWithDependencies input) throws ComponentException;
 
 
     /*
     Auxiliary operations
      */
 
-    public void deleteOrganizationResponses(String organization) throws ComponentException;
+    String getResponsePage(String organization, String responseId) throws ComponentException;
 
-    public void clearOrganization(String organization) throws ComponentException;
+    String getOrganizationInfo(String organization) throws ComponentException;
 
-    public void clearDatabase() throws ComponentException;
+    void deleteOrganizationResponses(String organization) throws ComponentException;
+
+    void clearOrganization(String organization) throws ComponentException;
+
+    void clearDatabase() throws ComponentException;
 
 }

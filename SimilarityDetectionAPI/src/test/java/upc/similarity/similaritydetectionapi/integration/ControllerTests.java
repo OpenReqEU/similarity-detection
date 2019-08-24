@@ -48,7 +48,7 @@ public class ControllerTests {
 
 
     /*
-    Main operations
+    Similarity without clusters
      */
 
     @Test
@@ -212,7 +212,7 @@ public class ControllerTests {
 
 
     /*
-    Cluster operations
+    Similarity with clusters
      */
 
     @Test
@@ -278,7 +278,7 @@ public class ControllerTests {
     }
 
     @Test
-    public void cronMethod() throws Exception {
+    public void batchProcess() throws Exception {
         stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
@@ -295,7 +295,7 @@ public class ControllerTests {
 
 
     /*
-    Auxiliary operations
+    Auxiliary methods
      */
 
     @Test
@@ -308,6 +308,17 @@ public class ControllerTests {
         this.mockMvc.perform(get("/upc/similarity-detection/GetResponse").param("organization", "UPC")
                 .param("response", "11323324_566")).andDo(print())
                 .andExpect(status().isOk()).andExpect(status().isOk()).andExpect(content().string(read_file(path + "getResponse/output.json")));
+    }
+
+    @Test
+    public void getOrganizationInfo() throws Exception {
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.get(urlPathMatching("/upc/Compare/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(read_file(path + "getOrganizationInfo/output.json"))));
+        this.mockMvc.perform(get("/upc/similarity-detection/GetOrganizationInfo").param("organization", "UPC")).andDo(print())
+                .andExpect(status().isOk()).andExpect(status().isOk()).andExpect(content().string(read_file(path + "getOrganizationInfo/output.json")));
     }
 
     @Test
@@ -345,7 +356,7 @@ public class ControllerTests {
 
 
     /*
-    Private operations
+    Private methods
      */
 
     private String createJsonResult(int code, String id, String operation) {

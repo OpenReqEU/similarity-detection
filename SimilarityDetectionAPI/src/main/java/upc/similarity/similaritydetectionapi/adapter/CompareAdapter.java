@@ -14,12 +14,26 @@ public class CompareAdapter extends ComponentAdapter{
 
     private static final String URL = "http://localhost:9405/upc/Compare/";
 
+
+    /*
+    Similarity without clusters
+     */
+
+
     @Override
     public void buildModel(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException {
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
 
         connectionComponentPost(URL + "BuildModel?compare=" + compare + "&organization=" + organization + "&responseId=" + responseId + "&threshold=" + threshold, requirementsJson);
+    }
+
+    @Override
+    public void buildModelAndCompute(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException {
+
+        JSONArray requirementsJson = listRequirementsToJson(requirements);
+
+        connectionComponentPost(URL + "BuildModelAndCompute?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, requirementsJson);
     }
 
     @Override
@@ -39,25 +53,47 @@ public class CompareAdapter extends ComponentAdapter{
     }
 
     @Override
-    public void buildModelAndCompute(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException {
+    public String simReqReq(String responseId, String organization, String req1, String req2) throws ComponentException {
 
-        JSONArray requirementsJson = listRequirementsToJson(requirements);
-
-        connectionComponentPost(URL + "BuildModelAndCompute?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, requirementsJson);
+        return connectionComponentPost(URL + "SimReqReq?organization=" + organization + "&req1=" + req1 + "&req2=" + req2 + "&responseId=" + responseId, null);
     }
 
     @Override
-    public void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, int maxNumber, MultipartFile input) throws ComponentException {
+    public void simReqOrganization(String responseId, String organization, List<Requirement> requirements) throws ComponentException {
 
-        String content = "";
-        try {
-            content = new String(input.getBytes(), "UTF-8");
-        } catch (IOException e) {
-            throw new InternalErrorException("Error loading input file");
-        }
+        JSONArray requirementsJson = listRequirementsToJson(requirements);
 
-        connectionComponentPost(URL + "BuildClustersAndCompute?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold + "&maxNumber=" + maxNumber, content);
+        connectionComponentPost(URL + "SimReqOrganization?responseId=" + responseId + "&organization=" + organization, requirementsJson);
     }
+
+    @Override
+    public void simReqProject(String responseId, String organization, List<String> req, List<String> requirements) throws ComponentException {
+
+        JSONArray requirementsToCompare = new JSONArray();
+        for (String aux: req) requirementsToCompare.put(aux);
+        JSONArray projectRequirements = new JSONArray();
+        for (String aux: requirements) projectRequirements.put(aux);
+
+        JSONObject jsonToSend = new JSONObject();
+        jsonToSend.put("reqs_to_compare",requirementsToCompare);
+        jsonToSend.put("project_reqs",projectRequirements);
+
+        connectionComponentPost(URL + "SimReqProject?organization=" + organization + "&responseId=" + responseId, jsonToSend);
+    }
+
+    @Override
+    public void simProject(String responseId, String organization, List<String> reqs) throws ComponentException {
+
+        JSONArray jsonToSend = new JSONArray();
+        for (String aux: reqs) jsonToSend.put(aux);
+
+        connectionComponentPost(URL + "SimProject?organization=" + organization + "&responseId=" + responseId, jsonToSend);
+    }
+
+
+    /*
+    Similarity with clusters
+     */
 
     @Override
     public void buildClusters(String responseId, String organization, boolean compare, double threshold, MultipartFile input) throws ComponentException {
@@ -73,11 +109,16 @@ public class CompareAdapter extends ComponentAdapter{
     }
 
     @Override
-    public void simReqOrganization(String responseId, String organization, List<Requirement> requirements) throws ComponentException {
+    public void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, int maxNumber, MultipartFile input) throws ComponentException {
 
-        JSONArray requirementsJson = listRequirementsToJson(requirements);
+        String content = "";
+        try {
+            content = new String(input.getBytes(), "UTF-8");
+        } catch (IOException e) {
+            throw new InternalErrorException("Error loading input file");
+        }
 
-        connectionComponentPost(URL + "SimReqOrganization?responseId=" + responseId + "&organization=" + organization, requirementsJson);
+        connectionComponentPost(URL + "BuildClustersAndCompute?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold + "&maxNumber=" + maxNumber, content);
     }
 
     @Override
@@ -110,40 +151,21 @@ public class CompareAdapter extends ComponentAdapter{
         connectionComponentPost(URL + "BatchProcess?responseId=" + responseId + "&organization=" + organization, jsonToSend);
     }
 
-    @Override
-    public String simReqReq(String responseId, String organization, String req1, String req2) throws ComponentException {
 
-        return connectionComponentPost(URL + "SimReqReq?organization=" + organization + "&req1=" + req1 + "&req2=" + req2 + "&responseId=" + responseId, null);
-    }
-
-    @Override
-    public void simReqProject(String responseId, String organization, List<String> req, List<String> requirements) throws ComponentException {
-
-        JSONArray requirementsToCompare = new JSONArray();
-        for (String aux: req) requirementsToCompare.put(aux);
-        JSONArray projectRequirements = new JSONArray();
-        for (String aux: requirements) projectRequirements.put(aux);
-
-        JSONObject jsonToSend = new JSONObject();
-        jsonToSend.put("reqs_to_compare",requirementsToCompare);
-        jsonToSend.put("project_reqs",projectRequirements);
-
-        connectionComponentPost(URL + "SimReqProject?organization=" + organization + "&responseId=" + responseId, jsonToSend);
-    }
-
-    @Override
-    public void simProject(String responseId, String organization, List<String> reqs) throws ComponentException {
-
-        JSONArray jsonToSend = new JSONArray();
-        for (String aux: reqs) jsonToSend.put(aux);
-
-        connectionComponentPost(URL + "SimProject?organization=" + organization + "&responseId=" + responseId, jsonToSend);
-    }
+    /*
+    Auxiliary methods
+     */
 
     @Override
     public String getResponsePage(String organization, String responseId) throws ComponentException {
 
         return connectionComponentGet(URL + "GetResponsePage?organization=" + organization + "&responseId=" + responseId);
+    }
+
+    @Override
+    public String getOrganizationInfo(String organization) throws ComponentException {
+
+        return connectionComponentGet(URL + "GetOrganizationInfo?organization=" + organization);
     }
 
     @Override
@@ -163,6 +185,11 @@ public class CompareAdapter extends ComponentAdapter{
 
         connectionComponentDelete(URL + "ClearDatabase");
     }
+
+
+    /*
+    Private methods
+     */
 
     @Override
     protected void throwComponentException(Exception e, String message) throws InternalErrorException {

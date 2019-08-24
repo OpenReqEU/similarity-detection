@@ -9,7 +9,9 @@ public class Organization implements Serializable {
 
     private String name;
     private double threshold;
+    @JsonProperty("uses_text")
     private boolean compare;
+    @JsonProperty("has_clusters")
     private boolean clusters;
     @JsonProperty("current_executions")
     private List<Execution> currentExecutions;
@@ -25,4 +27,27 @@ public class Organization implements Serializable {
         this.pendingResponses = pendingResponses;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public double getThreshold() {
+        return threshold;
+    }
+
+    public boolean isCompare() {
+        return compare;
+    }
+
+    public boolean isClusters() {
+        return clusters;
+    }
+
+    public List<Execution> getPendingResponses() {
+        return pendingResponses;
+    }
+
+    public List<Execution> getCurrentExecutions() {
+        return currentExecutions;
+    }
 }

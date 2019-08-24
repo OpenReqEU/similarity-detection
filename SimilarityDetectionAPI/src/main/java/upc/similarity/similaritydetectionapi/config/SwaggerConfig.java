@@ -51,6 +51,7 @@ public class SwaggerConfig {
             "<li><strong>Auxiliary methods</strong>:</li>" +
             "<ul>" +
             "<li>GetResponse: Returns the output of the async methods</li>" +
+            "<li>GetOrganizationInfo: Returns the main information of the specified organization including the current computations and the pending responses</li>" +
             "<li>DeleteOrganizationResponses: Deletes the organization responses from the database</li>" +
             "<li>DeleteDatabase: Deletes all data from the database</li>" +
             "</ul>"+

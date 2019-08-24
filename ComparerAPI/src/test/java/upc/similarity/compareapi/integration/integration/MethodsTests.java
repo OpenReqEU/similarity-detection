@@ -18,11 +18,16 @@ import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
 import upc.similarity.compareapi.util.DatabaseOperations;
 import upc.similarity.compareapi.util.Tfidf;
+import upc.similarity.compareapi.util.Time;
+
+import static java.time.Instant.ofEpochMilli;
 import static org.junit.Assert.assertEquals;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.time.Clock;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -63,6 +68,11 @@ public class MethodsTests {
         boolean result = file.delete();
     }
 
+
+    /*
+    Similarity without clusters
+     */
+
     @Test
     public void buildModel() throws Exception {
         this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
@@ -70,6 +80,16 @@ public class MethodsTests {
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "buildModel/output.json")));
+        ++id;
+    }
+
+    @Test
+    public void buildModelAndCompute() throws Exception {
+        this.mockMvc.perform(post(url + "BuildModelAndCompute").param("organization", "UPC").param("threshold", "0")
+                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"buildModelAndCompute/input.json")))
+                .andExpect(status().isOk());
+        this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "buildModelAndCompute/output.json")));
         ++id;
     }
 
@@ -114,12 +134,13 @@ public class MethodsTests {
     }
 
     @Test
-    public void buildModelAndCompute() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModelAndCompute").param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"buildModelAndCompute/input.json")))
+    public void simReqReq() throws Exception {
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
+                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqReq/input_model.json")))
                 .andExpect(status().isOk());
-        this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
-                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "buildModelAndCompute/output.json")));
+        this.mockMvc.perform(post(url + "SimReqReq").param("organization", "UPC")
+                .param("req1", "UPC-1").param("req2", "UPC-2"))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "simReqReq/output.json")));
         ++id;
     }
 
@@ -134,17 +155,6 @@ public class MethodsTests {
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simReqOrganization/output.json")));
-        ++id;
-    }
-
-    @Test
-    public void simReqReq() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
-                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqReq/input_model.json")))
-                .andExpect(status().isOk());
-        this.mockMvc.perform(post(url + "SimReqReq").param("organization", "UPC")
-                .param("req1", "UPC-1").param("req2", "UPC-2"))
-                .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "simReqReq/output.json")));
         ++id;
     }
 
@@ -175,6 +185,11 @@ public class MethodsTests {
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simProject/output.json")));
         ++id;
     }
+
+
+    /*
+    Similarity with clusters
+     */
 
     @Test
     public void buildClusters() throws Exception {
@@ -312,14 +327,49 @@ public class MethodsTests {
         assertEquals(read_file_json(path+"cronMethod/output_model_proposed.json"), extractModel("UPC",false, false));
     }
 
+
+    /*
+    Auxiliary methods
+     */
+
     @Test
-    public void clearOrganizationResponses() throws Exception {
+    public void getOrganizationInfo() throws Exception {
+        Time.getInstance().setClock(Clock.fixed(ofEpochMilli(0), ZoneId.systemDefault()));
+        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPCTest").param("threshold", "0.12")
+                .param("compare", "true").param("responseId", "Test0").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"getOrganizationInfo/input_model_with.json")))
+                .andExpect(status().isOk());
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPCTest").param("threshold", "0.15")
+                .param("compare", "true").param("responseId", "Test1").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"getOrganizationInfo/input_model_without.json")))
+                .andExpect(status().isOk());
+        DatabaseOperations.getInstance().generateResponse("UPCTest","Test3","TestMethod");
+        Time.getInstance().setClock(Clock.fixed(ofEpochMilli(40), ZoneId.systemDefault()));
+        this.mockMvc.perform(get(url + "GetOrganizationInfo").param("organization", "UPCTest"))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "getOrganizationInfo/output.json")));
+        Time.getInstance().setClock(Clock.systemUTC());
+    }
+
+    @Test
+    public void deleteOrganizationResponses() throws Exception {
         this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"deleteResponses/input_model.json")))
                 .andExpect(status().isOk());
+        ++id;
         this.mockMvc.perform(delete(url + "ClearOrganizationResponses").param("organization", "UPC"))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void deleteOrganizationData() throws Exception {
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
+                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"deleteOrganizationData/input_model.json")))
+                .andExpect(status().isOk());
+        this.mockMvc.perform(post(url + "SimReqReq").param("organization", "UPC").param("req1", "UPC-1").param("req2","UPC-2"))
+                .andExpect(status().isOk());
+        this.mockMvc.perform(delete(url + "ClearOrganization").param("organization", "UPC"))
+                .andExpect(status().isOk());
+        this.mockMvc.perform(post(url + "SimReqReq").param("organization", "UPC").param("req1", "UPC-1").param("req2","UPC-2"))
                 .andExpect(status().isNotFound());
         ++id;
     }
@@ -338,7 +388,7 @@ public class MethodsTests {
 
 
     /*
-    Auxiliary operations
+    Private methods
      */
 
     private String read_file_json(String path) throws Exception {

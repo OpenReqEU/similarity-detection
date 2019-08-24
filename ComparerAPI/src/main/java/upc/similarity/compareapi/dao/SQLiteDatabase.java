@@ -19,7 +19,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
-import java.time.Clock;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
@@ -178,11 +177,7 @@ public class SQLiteDatabase implements DatabaseModel {
             createOrganizationFiles(dbMainName);
 
             String sql1 = "CREATE TABLE organizations (\n"
-                    + "	id varchar PRIMARY KEY, \n"
-                    + " threshold double, \n"
-                    + " compare integer, \n"
-                    + " hasClusters integer, \n"
-                    + " lastClusterId integer"
+                    + "	id varchar PRIMARY KEY\n"
                     + ");";
 
             String sql2 = "CREATE TABLE responses (\n"
@@ -191,7 +186,8 @@ public class SQLiteDatabase implements DatabaseModel {
                     + " actualPage integer, \n"
                     + " maxPages integer, \n"
                     + " finished integer, \n"
-                    + " time long, \n"
+                    + " startTime long, \n"
+                    + " finalTIme long, \n"
                     + " methodName varchar, \n"
                     + " PRIMARY KEY(organizationId, responseId)"
                     + ");";
@@ -263,19 +259,27 @@ public class SQLiteDatabase implements DatabaseModel {
         List<Execution> pendingResponses = new ArrayList<>();
         OrganizationInfo organizationInfo = null;
         try(Connection conn = getConnection(organizationId)) {
-            organizationInfo = getOrganizationInfo(organizationId,conn);
-            String sql = "SELECT responseId, maxPages, finished, time, methodName FROM responses WHERE organizationId = ?";
+            organizationInfo = getOrganizationInfo(organizationId, conn);
+        }
+        try(Connection conn = getConnection(dbMainName)) {
+            String sql = "SELECT responseId, maxPages, finished, startTime, finalTime, methodName FROM responses WHERE organizationId = ?";
             try(PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, organizationId);
                 try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
+                    while (rs.next()) {
                         String responseId = rs.getString("responseId");
                         boolean finished = rs.getBoolean("finished");
-                        long time = rs.getLong("time");
+                        long startTime = rs.getLong("startTime");
+                        long finalTime = rs.getLong("finalTime");
                         String methodName = rs.getString("methodName");
                         Integer maxPages = null;
-                        if (finished) maxPages = rs.getInt("maxPages");
-                        Execution execution = new Execution(responseId, methodName, maxPages, time);
+                        Execution execution = null;
+                        if (finished) {
+                            maxPages = rs.getInt("maxPages");
+                            execution = new Execution(responseId, methodName, maxPages, startTime, finalTime);
+                        } else {
+                            execution = new Execution(responseId, methodName, maxPages, startTime, null);
+                        }
                         if (finished) pendingResponses.add(execution);
                         else currentExecutions.add(execution);
                     }
@@ -320,7 +324,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
     @Override
     public void saveResponse(String organizationId, String responseId, String methodName) throws SQLException, InternalErrorException {
-        String sql = "INSERT INTO responses(organizationId, responseId, actualPage, maxPages, finished, time, methodName) VALUES (?,?,?,?,?,?,?)";
+        String sql = "INSERT INTO responses(organizationId, responseId, actualPage, maxPages, finished, startTime, finalTime, methodName) VALUES (?,?,?,?,?,?,?,?)";
 
         getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName);
@@ -331,7 +335,8 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.setInt(4,0);
             ps.setInt(5,0);
             ps.setLong(6, getCurrentTime());
-            ps.setString(7, methodName);
+            ps.setLong(7, getCurrentTime());
+            ps.setString(8, methodName);
             ps.execute();
         } finally {
             releaseAccessToMainDb();
@@ -662,14 +667,15 @@ public class SQLiteDatabase implements DatabaseModel {
 
     @Override
     public void finishComputation(String organizationId, String responseId) throws SQLException, InternalErrorException {
-        String sql = "UPDATE responses SET finished = ? WHERE organizationId = ? AND responseId = ?";
+        String sql = "UPDATE responses SET finished = ?, finalTime = ? WHERE organizationId = ? AND responseId = ?";
 
         getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName);
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1,1);
-            ps.setString(2,organizationId);
-            ps.setString(3,responseId);
+            ps.setLong(2, getCurrentTime());
+            ps.setString(3,organizationId);
+            ps.setString(4,responseId);
             ps.executeUpdate();
         } finally {
             releaseAccessToMainDb();
@@ -703,7 +709,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
     @Override
     public void clearOldResponses(long borderTime) throws InternalErrorException, SQLException {
-        String sql = "SELECT organizationId, responseId FROM responses WHERE time < ? AND finished = ?";
+        String sql = "SELECT organizationId, responseId FROM responses WHERE finalTime < ? AND finished = ?";
 
         getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName)) {

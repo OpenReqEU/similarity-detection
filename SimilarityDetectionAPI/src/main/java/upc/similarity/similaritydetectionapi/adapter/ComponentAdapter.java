@@ -23,7 +23,7 @@ public abstract class ComponentAdapter {
 
 
     /*
-    Main operations
+    Similarity without clusters
      */
 
     public abstract void buildModel(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException;
@@ -44,7 +44,7 @@ public abstract class ComponentAdapter {
 
 
     /*
-    Cluster operations
+    Similarity with clusters
      */
 
     public abstract void buildClusters(String responseId, String organization, boolean compare, double threshold, MultipartFile input) throws ComponentException;
@@ -59,10 +59,12 @@ public abstract class ComponentAdapter {
 
 
     /*
-    Auxiliary operations
+    Auxiliary methods
      */
 
     public abstract String getResponsePage(String organization, String responseId) throws ComponentException;
+
+    public abstract String getOrganizationInfo(String organization) throws ComponentException;
 
     public abstract void deleteOrganizationResponses(String organization) throws ComponentException;
 
@@ -72,7 +74,7 @@ public abstract class ComponentAdapter {
 
 
     /*
-    Private operations
+    Private methods
      */
 
     protected String connectionComponentPost(String url, Object json) throws ComponentException {

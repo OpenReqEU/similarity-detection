@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping(value = "upc/similarity-detection")
 public class RestApiController {
 
+    //TODO update README and yaml file
+
     @Autowired
     SimilarityService similarityService;
 
@@ -336,20 +338,16 @@ public class RestApiController {
         }
     }
 
-    /*
-    TODO falta documentacion y hacer los tests aqui y en compareapi
-     */
-
     @CrossOrigin
     @GetMapping(value = "/GetOrganizationInfo", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "", notes = "<p><i>Synchronous</i> method.</p><p></p>", tags = "Auxiliary methods")
+    @ApiOperation(value = "Returns the main organization information", notes = "<p><i>Synchronous</i> method.</p>Returns the main information of the specified organization " +
+            "(name, threshold, if it uses the text attribute and if it has clusters). Also the method returns the async operations that have not finished yet and the pending responses to read.<p></p>", tags = "Auxiliary methods")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=404, message = "Not found"),
             @ApiResponse(code=500, message = "Internal error")})
-    public ResponseEntity getOrganizationInfo(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
-                                          @ApiParam(value="Response identifier", required = true, example = "12345678_89") @RequestParam("response") String responseId) {
+    public ResponseEntity getOrganizationInfo(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization) {
         try {
-            return new ResponseEntity<>(similarityService.getResponsePage(organization,responseId), HttpStatus.OK);
+            return new ResponseEntity<>(similarityService.getOrganizationInfo(organization), HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }
