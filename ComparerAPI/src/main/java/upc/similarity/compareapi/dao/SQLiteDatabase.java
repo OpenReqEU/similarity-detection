@@ -117,12 +117,12 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     private Connection getConnection(String organization) throws SQLException {
-        Connection conn = DriverManager.getConnection(buildDbUrl(organization));
+        /*Connection conn = DriverManager.getConnection(buildDbUrl(organization));
         String sql = "PRAGMA foreign_keys = ON;";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.execute();
-        }
-        return conn;
+        }*/
+        return DriverManager.getConnection(buildDbUrl(organization));
     }
 
     public SQLiteDatabase() throws ClassNotFoundException {

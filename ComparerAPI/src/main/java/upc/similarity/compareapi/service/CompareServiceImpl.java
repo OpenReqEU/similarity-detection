@@ -701,7 +701,8 @@ public class CompareServiceImpl implements CompareService {
         int maxIterations = Constants.getInstance().getMaxSyncIterations();
         int sleepTime = Constants.getInstance().getSleepTime();
         if (!organizationLocks.containsKey(organization)) {
-            organizationLocks.putIfAbsent(organization, new AtomicBoolean(false));
+            AtomicBoolean aux = organizationLocks.putIfAbsent(organization, new AtomicBoolean(false));
+            //aux not used
         }
         boolean correct = false;
         int count = 0;
