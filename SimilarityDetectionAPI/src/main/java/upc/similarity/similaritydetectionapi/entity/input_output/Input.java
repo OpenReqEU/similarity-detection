@@ -1,8 +1,8 @@
 package upc.similarity.similaritydetectionapi.entity.input_output;
 
-public abstract class Input {
+public interface Input {
 
-    public abstract boolean inputOk();
+    boolean inputOk();
 
-    public abstract String checkMessage();
+    String checkMessage();
 }

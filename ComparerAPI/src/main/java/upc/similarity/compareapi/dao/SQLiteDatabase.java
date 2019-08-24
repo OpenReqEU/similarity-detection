@@ -122,17 +122,6 @@ public class SQLiteDatabase implements DatabaseModel {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.execute();
         }
-        //TODO temporary code
-        sql = "PRAGMA foreign_keys;";
-        try (PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            boolean correct = true;
-            if (rs.next()) {
-                String response = rs.getString(1);
-                if (!response.equals("1")) correct = false;
-            } else correct = false;
-            if (!correct) throw  new SQLException("Error when activating foreign keys");
-        }
         return conn;
     }
 
@@ -297,7 +286,6 @@ public class SQLiteDatabase implements DatabaseModel {
         Map<String, Map<String, Double>> docs = null;
         Map<String, Integer> corpusFrequency = null;
         Map<Integer, List<String>> clusters = null;
-        List<Dependency> dependencies = null;
 
         double threshold;
         boolean compare;

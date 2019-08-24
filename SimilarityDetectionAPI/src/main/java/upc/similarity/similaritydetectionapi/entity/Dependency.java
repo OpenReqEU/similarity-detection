@@ -37,7 +37,7 @@ public class Dependency implements Serializable {
     private long createdAt;
     @ApiModelProperty(example = "1354019441000")
     @JsonProperty(value = "modified_at")
-    private long modified_at;
+    private long modifiedAt;
 
     public Dependency() {
         description = new ArrayList<>();
@@ -81,8 +81,8 @@ public class Dependency implements Serializable {
         return description;
     }
 
-    public long getModified_at() {
-        return modified_at;
+    public long getModifiedAt() {
+        return modifiedAt;
     }
 
     public long getCreatedAt() {
@@ -117,8 +117,8 @@ public class Dependency implements Serializable {
         this.description = description;
     }
 
-    public void setModified_at(long modified_at) {
-        this.modified_at = modified_at;
+    public void setModifiedAt(long modifiedAt) {
+        this.modifiedAt = modifiedAt;
     }
 
     public void setCreatedAt(long createdAt) {

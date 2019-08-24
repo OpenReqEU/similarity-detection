@@ -14,6 +14,7 @@ import upc.similarity.compareapi.exception.*;
 import upc.similarity.compareapi.util.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service("comparerService")
@@ -497,10 +498,12 @@ public class CompareServiceImpl implements CompareService {
     Test methods
      */
 
-    public void TestAccuracy(boolean compare, Clusters input) {
+    @Override
+    public void testAccuracy(boolean compare, Clusters input) {
         TestMethods.getInstance().TestAccuracy(compare, input);
     }
 
+    @Override
     public String extractModel(boolean compare, String organization, Clusters input) {
         return TestMethods.getInstance().extractModel(compare, organization, input);
     }
@@ -698,8 +701,7 @@ public class CompareServiceImpl implements CompareService {
         int maxIterations = Constants.getInstance().getMaxSyncIterations();
         int sleepTime = Constants.getInstance().getSleepTime();
         if (!organizationLocks.containsKey(organization)) {
-            AtomicBoolean aux = organizationLocks.putIfAbsent(organization, new AtomicBoolean(false));
-            //aux not used
+            organizationLocks.putIfAbsent(organization, new AtomicBoolean(false));
         }
         boolean correct = false;
         int count = 0;
@@ -734,7 +736,7 @@ public class CompareServiceImpl implements CompareService {
         organizationLocks.remove(organization);
     }
 
-    public ConcurrentHashMap<String, AtomicBoolean> getConcurrentMap() {
+    public ConcurrentMap<String, AtomicBoolean> getConcurrentMap() {
         return organizationLocks;
     }
 }

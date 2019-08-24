@@ -251,9 +251,9 @@ public class RestApiController {
      */
 
     @PostMapping(value = "/TestAccuracy")
-    public ResponseEntity TestAccuracy(@RequestParam("compare") boolean compare,
+    public ResponseEntity testAccuracy(@RequestParam("compare") boolean compare,
                                      @RequestBody Clusters input) {
-        compareService.TestAccuracy(compare,input);
+        compareService.testAccuracy(compare,input);
         return new ResponseEntity<>(null,HttpStatus.OK);
     }
 

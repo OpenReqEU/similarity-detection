@@ -117,7 +117,6 @@ public class ClusterOperations {
         List<Dependency> proposedDependencies = new ArrayList<>();
         int cont = 0;
         int maxDeps = Constants.getInstance().getMaxDepsForPage();
-        long numberDependencies = 0;
         //TODO this is causing n*n efficiency, can be improved saving the result of the pairs and only compute half of the matrix (less memory efficiency)
         for (String req1: requirements) {
             for (int clusterId: clustersIds) {
@@ -135,10 +134,8 @@ public class ClusterOperations {
                 }
                 if (maxReq != null) {
                     ++cont;
-                    ++numberDependencies;
                     proposedDependencies.add(new Dependency(req1,maxReq,"proposed",maxScore,clusterId));
                     if (cont >= maxDeps) {
-                        //control.showInfoMessage("Number deps: " + numberDependencies);
                         cont = 0;
                         databaseOperations.saveDependencies(organization, responseId, proposedDependencies, useAuxiliaryTable);
                         proposedDependencies = new ArrayList<>();
@@ -146,7 +143,7 @@ public class ClusterOperations {
                 }
             }
         }
-        if (proposedDependencies.size() > 0) databaseOperations.saveDependencies(organization, responseId, proposedDependencies, useAuxiliaryTable);
+        if (!proposedDependencies.isEmpty()) databaseOperations.saveDependencies(organization, responseId, proposedDependencies, useAuxiliaryTable);
     }
 
     private void deleteReqFromClusters(String organization, String responseId, String req, Model model, Set<Integer> clustersChanged, Map<String,Integer> reqCluster) throws InternalErrorException {
@@ -260,7 +257,7 @@ public class ClusterOperations {
         }
     }
 
-    public void addAcceptedDependencies(String organization, String responseId, List<Dependency> acceptedDependencies, Model model, HashSet<Integer> clustersChanged, Map<String,Integer> reqCluster) throws InternalErrorException {
+    public void addAcceptedDependencies(String organization, String responseId, List<Dependency> acceptedDependencies, Model model, Set<Integer> clustersChanged, Map<String,Integer> reqCluster) throws InternalErrorException {
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
         Map<String,Map<String,Double>> docs = model.getDocs();
@@ -344,7 +341,7 @@ public class ClusterOperations {
             priorityQueue.add(requirement);
             ++countIds;
         }
-        while(priorityQueue.size() > 0 && candidateClusters.size() > 1) {
+        while(!priorityQueue.isEmpty() && candidateClusters.size() > 1) {
             String requirement = priorityQueue.poll();
             if (!processedReqs.contains(requirement)) {
                 for (String req2 : reqDeps.get(requirement)) {

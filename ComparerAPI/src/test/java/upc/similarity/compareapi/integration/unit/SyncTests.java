@@ -16,6 +16,7 @@ import upc.similarity.compareapi.util.Tfidf;
 
 import java.io.File;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.*;
@@ -85,7 +86,7 @@ public class SyncTests {
 
             assertTrue(control.flag);
 
-            ConcurrentHashMap<String, AtomicBoolean> concurrentMap = compareService.getConcurrentMap();
+            ConcurrentMap<String, AtomicBoolean> concurrentMap = compareService.getConcurrentMap();
             assertFalse(concurrentMap.get("UPC").get());
             assertTrue(concurrentMap.get("UB").get());
         } catch (Exception e) {
@@ -135,7 +136,7 @@ public class SyncTests {
             assertTrue(control.flag1);
             assertTrue(control.flag2);
 
-            ConcurrentHashMap<String, AtomicBoolean> concurrentMap = compareService.getConcurrentMap();
+            ConcurrentMap<String, AtomicBoolean> concurrentMap = compareService.getConcurrentMap();
             assertTrue(concurrentMap.get("UPC").get());
             assertNull(concurrentMap.get("UB"));
         } catch (Exception e) {

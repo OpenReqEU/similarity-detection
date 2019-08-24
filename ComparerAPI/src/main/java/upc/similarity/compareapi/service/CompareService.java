@@ -72,7 +72,7 @@ public interface CompareService {
     Test methods
      */
 
-    void TestAccuracy(boolean compare, Clusters input);
+    void testAccuracy(boolean compare, Clusters input);
 
     String extractModel(boolean compare, String organization, Clusters input);
 

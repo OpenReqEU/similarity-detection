@@ -56,6 +56,6 @@ public class Execution implements Serializable {
         time = time%(60*1000);
         int seconds = (int) time/(1000);
         time = time%1000;
-        return spentTime = days + " days " + hours + " hours " + minutes + " minutes " + seconds + " seconds and " + time + " milliseconds //"+days+"-"+hours+"-"+minutes+"-"+seconds+"-"+time+"//";
+        return days + " days " + hours + " hours " + minutes + " minutes " + seconds + " seconds and " + time + " milliseconds //"+days+"-"+hours+"-"+minutes+"-"+seconds+"-"+time+"//";
     }
 }

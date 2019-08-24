@@ -17,12 +17,10 @@ public class Requirement implements Serializable {
     private String text;
     @JsonProperty(value="created_at")
     private long createdAt;
-    @JsonProperty(value = "modified_at")
-    private long modified_at;
+    @JsonProperty(value = "modifiedAt")
+    private long modifiedAt;
     @JsonProperty(value="status")
     private String status;
-
-    public Requirement() {}
 
     /*
     Get
@@ -44,8 +42,8 @@ public class Requirement implements Serializable {
         return createdAt;
     }
 
-    public long getModified_at() {
-        return modified_at;
+    public long getModifiedAt() {
+        return modifiedAt;
     }
 
     public String getStatus() {
@@ -53,7 +51,7 @@ public class Requirement implements Serializable {
     }
 
     public long getTime() {
-        return max(createdAt,modified_at);
+        return max(createdAt,modifiedAt);
     }
 
     /*
@@ -76,8 +74,8 @@ public class Requirement implements Serializable {
         this.createdAt = created_at;
     }
 
-    public void setModified_at(long modified_at) {
-        this.modified_at = modified_at;
+    public void setModifiedAt(long modifiedAt) {
+        this.modifiedAt = modifiedAt;
     }
 
     public void setStatus(String status) {

@@ -23,8 +23,8 @@ public class Requirement implements Serializable {
     @JsonProperty(value="created_at")
     private Long createdAt;
     @ApiModelProperty(example = "1354019441000")
-    @JsonProperty(value = "modified_at")
-    private long modified_at;
+    @JsonProperty(value = "modifiedAt")
+    private long modifiedAt;
 
     public String getId() {
         return id;
@@ -48,7 +48,7 @@ public class Requirement implements Serializable {
         json.put("name",name);
         json.put("text",text);
         json.put("created_at",createdAt);
-        json.put("modified_at", modified_at);
+        json.put("modified_at", modifiedAt);
         return json;
     }
 }

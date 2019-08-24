@@ -7,22 +7,22 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Dependencies extends Input implements Serializable {
+public class Dependencies implements Input, Serializable {
 
     @JsonProperty(value="dependencies")
-    private List<Dependency> dependencies;
+    private List<Dependency> dependenciesArray;
 
     public Dependencies() {
-        this.dependencies = new ArrayList<>();
+        this.dependenciesArray = new ArrayList<>();
     }
 
     public List<Dependency> getDependencies() {
-        return dependencies;
+        return dependenciesArray;
     }
 
     @Override
     public boolean inputOk() {
-        return !dependencies.isEmpty();
+        return !dependenciesArray.isEmpty();
     }
 
     @Override

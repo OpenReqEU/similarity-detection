@@ -29,7 +29,7 @@ public class Dependency implements Serializable {
     @JsonProperty(value="created_at", access = JsonProperty.Access.WRITE_ONLY)
     private long createdAt;
     @JsonProperty(value = "modified_at", access = JsonProperty.Access.WRITE_ONLY)
-    private long modified_at;
+    private long modifiedAt;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private int clusterId;
 
@@ -104,12 +104,12 @@ public class Dependency implements Serializable {
         return createdAt;
     }
 
-    public long getModified_at() {
-        return modified_at;
+    public long getModifiedAt() {
+        return modifiedAt;
     }
 
     public long computeTime() {
-        return max(createdAt,modified_at);
+        return max(createdAt,modifiedAt);
     }
 
     /*
@@ -148,8 +148,8 @@ public class Dependency implements Serializable {
         this.createdAt = createdAt;
     }
 
-    public void setModified_at(long modified_at) {
-        this.modified_at = modified_at;
+    public void setModifiedAt(long modifiedAt) {
+        this.modifiedAt = modifiedAt;
     }
 
     /*

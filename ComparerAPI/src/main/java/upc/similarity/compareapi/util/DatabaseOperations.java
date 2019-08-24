@@ -13,7 +13,6 @@ import upc.similarity.compareapi.exception.*;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;

@@ -22,7 +22,7 @@ import java.util.*;
 @Service("similarityService")
 public class SimilarityServiceImpl implements SimilarityService {
 
-    private static Component component = Component.TfIdfCompare;
+    private static Component component = Component.tfIdfCompare;
     private static String thresholdNotOk = "The threshold must be a number between 0 and 1 both included";
     private Random rand = new Random();
 
