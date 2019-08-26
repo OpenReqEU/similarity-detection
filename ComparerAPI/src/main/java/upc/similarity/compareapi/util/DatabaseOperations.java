@@ -379,7 +379,7 @@ public class DatabaseOperations {
                 databaseModel.finishComputation(organization, responseId);
             }
         } catch (SQLException sq2) {
-            //empty
+            control.showErrorMessage("Error while saving SQL exception: " + sq2.getMessage());
         }
         throw new InternalErrorException(message);
     }
