@@ -13,21 +13,21 @@ public interface SimilarityService {
     Main operations
      */
 
-    ResultId buildModel(String url, String organization, boolean compare, double threshold, Requirements input) throws BadRequestException, NotFoundException;
+    ResultId buildModel(String url, String organization, boolean compare, double threshold, RequirementsModel input) throws BadRequestException, NotFoundException;
 
-    ResultId buildModelAndCompute(String url, String organization, boolean compare, double threshold, Requirements input) throws BadRequestException;
+    ResultId buildModelAndCompute(String url, String organization, boolean compare, double threshold, RequirementsModel input) throws BadRequestException;
 
-    ResultId addRequirements(String url, String organization, Requirements input) throws BadRequestException;
+    ResultId addRequirements(String url, String organization, RequirementsModel input) throws BadRequestException;
 
-    ResultId deleteRequirements(String url, String organization, Requirements input) throws BadRequestException;
+    ResultId deleteRequirements(String url, String organization, RequirementsModel input) throws BadRequestException;
 
     String simReqReq(String organization, String req1, String req2) throws ComponentException;
 
-    ResultId simReqOrganization(String url, String organization, Requirements input) throws InternalErrorException, BadRequestException;
+    ResultId simReqOrganization(String url, String organization, RequirementsModel input) throws InternalErrorException, BadRequestException;
 
-    ResultId simReqProject(String url, String organization, List<String> req, String project, Projects input) throws NotFoundException, BadRequestException;
+    ResultId simReqProject(String url, String organization, List<String> req, String project, ProjectsModel input) throws NotFoundException, BadRequestException;
 
-    ResultId simProject(String url, String organization, String project, Projects input) throws NotFoundException, BadRequestException;
+    ResultId simProject(String url, String organization, String project, ProjectsModel input) throws NotFoundException, BadRequestException;
 
 
     /*
@@ -40,7 +40,7 @@ public interface SimilarityService {
 
     String simReqClusters(String organization, int maxValue, List<String> input) throws ComponentException;
 
-    void treatDependencies(String organization, Dependencies dependencies) throws ComponentException;
+    void treatDependencies(String organization, DependenciesModel dependencies) throws ComponentException;
 
     ResultId batchProcess(String url, String organization, ProjectWithDependencies input) throws ComponentException;
 

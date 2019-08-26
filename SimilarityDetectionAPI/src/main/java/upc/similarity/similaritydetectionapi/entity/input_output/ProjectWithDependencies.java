@@ -9,7 +9,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-@ApiModel(value = "ProjectWithDependencies", description = "OpenReqJson with requirements and dependencies")
+@ApiModel(value = "Requirements&Dependencies", description = "OpenReqJson with requirements and dependencies")
 public class ProjectWithDependencies implements Input, Serializable {
 
     @JsonProperty(value="requirements")

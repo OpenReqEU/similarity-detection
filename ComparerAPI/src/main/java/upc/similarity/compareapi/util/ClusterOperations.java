@@ -109,7 +109,6 @@ public class ClusterOperations {
 
     public void computeProposedDependencies(String organization, String responseId, Set<String> requirements, Set<Integer> clustersIds, Model model, boolean useAuxiliaryTable) throws InternalErrorException {
         Control control = Control.getInstance();
-        control.showInfoMessage("Start computing dependencies");
         CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         Map<Integer,List<String>> clusters = model.getClusters();

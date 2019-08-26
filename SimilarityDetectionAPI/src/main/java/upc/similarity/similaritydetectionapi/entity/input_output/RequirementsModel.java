@@ -9,26 +9,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 @ApiModel(value = "Requirements", description = "OpenReqJson with requirements")
-public class Requirements implements Input, Serializable{
+public class RequirementsModel implements Input, Serializable{
 
     @JsonProperty(value="requirements")
-    private List<Requirement> requirementsArray;
+    private List<Requirement> requirements;
 
-    public Requirements() {
-        requirementsArray = new ArrayList<>();
+    public RequirementsModel() {
+        requirements = new ArrayList<>();
     }
 
-    public Requirements(List<Requirement> requirements) {
-        this.requirementsArray = requirements;
+    public RequirementsModel(List<Requirement> requirements) {
+        this.requirements = requirements;
     }
 
     public List<Requirement> getRequirements() {
-        return requirementsArray;
+        return requirements;
     }
 
     @Override
     public boolean inputOk() {
-        return !requirementsArray.isEmpty();
+        return !requirements.isEmpty();
     }
 
     @Override

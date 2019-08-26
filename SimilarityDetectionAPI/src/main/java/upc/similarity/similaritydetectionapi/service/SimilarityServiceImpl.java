@@ -32,7 +32,7 @@ public class SimilarityServiceImpl implements SimilarityService {
      */
 
     @Override
-    public ResultId buildModel(String url, String organization, boolean compare, double threshold, Requirements input) throws BadRequestException {
+    public ResultId buildModel(String url, String organization, boolean compare, double threshold, RequirementsModel input) throws BadRequestException {
 
         checkInput(input);
         checkThreshold(threshold);
@@ -58,7 +58,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId addRequirements(String url, String organization, Requirements input) throws BadRequestException {
+    public ResultId addRequirements(String url, String organization, RequirementsModel input) throws BadRequestException {
 
         checkInput(input);
         ResultId id = getId();
@@ -83,7 +83,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId deleteRequirements(String url, String organization, Requirements input) throws BadRequestException {
+    public ResultId deleteRequirements(String url, String organization, RequirementsModel input) throws BadRequestException {
 
         checkInput(input);
         ResultId id = getId();
@@ -108,7 +108,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId buildModelAndCompute(String url, String organization, boolean compare, double threshold, Requirements input) throws BadRequestException {
+    public ResultId buildModelAndCompute(String url, String organization, boolean compare, double threshold, RequirementsModel input) throws BadRequestException {
 
         checkInput(input);
         checkThreshold(threshold);
@@ -134,7 +134,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simReqOrganization(String url, String organization, Requirements input) throws BadRequestException {
+    public ResultId simReqOrganization(String url, String organization, RequirementsModel input) throws BadRequestException {
 
         checkInput(input);
         ResultId id = getId();
@@ -168,7 +168,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simReqProject(String url, String organization, List<String> req, String projectId, Projects input) throws NotFoundException, BadRequestException {
+    public ResultId simReqProject(String url, String organization, List<String> req, String projectId, ProjectsModel input) throws NotFoundException, BadRequestException {
 
         checkInput(input);
         if (req.isEmpty()) throw new BadRequestException("The input parameter req is empty");
@@ -196,7 +196,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simProject(String url, String organization, String projectId, Projects input) throws NotFoundException, BadRequestException {
+    public ResultId simProject(String url, String organization, String projectId, ProjectsModel input) throws NotFoundException, BadRequestException {
 
         checkInput(input);
         Project project = searchProject(projectId,input.getProjects());
@@ -285,7 +285,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public void treatDependencies(String organization, Dependencies dependencies) throws ComponentException {
+    public void treatDependencies(String organization, DependenciesModel dependencies) throws ComponentException {
 
         checkInput(dependencies);
         ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);

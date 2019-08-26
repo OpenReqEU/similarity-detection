@@ -213,7 +213,7 @@ public class CompareServiceImpl implements CompareService {
 
     @Override
     public void buildClusters(String responseId, boolean compare, double threshold, String organization, Clusters input) throws BadRequestException, NotFinishedException, InternalErrorException {
-        control.showInfoMessage("BuildClusters: Start computing");
+        control.showInfoMessage("BuildClusters: Start computing; id: " + responseId + " number requirements: " + input.getRequirements().size());
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
@@ -243,7 +243,7 @@ public class CompareServiceImpl implements CompareService {
 
     @Override
     public void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, int maxNumber, Clusters input) throws BadRequestException, NotFinishedException, InternalErrorException {
-        control.showInfoMessage("BuildClustersAndCompute: Start computing");
+        control.showInfoMessage("BuildClustersAndCompute: Start computing; id: " + responseId + " number requirements: " + input.getRequirements().size());
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
@@ -251,8 +251,6 @@ public class CompareServiceImpl implements CompareService {
 
         databaseOperations.generateResponse(organization,responseId,"BuildClustersAndCompute");
         List<Requirement> requirements = deleteDuplicates(input.getRequirements(),organization,responseId);
-
-        control.showInfoMessage("BuildClustersAndCompute: Number requirements: " + requirements.size());
 
         Model model = generateModel(compare, threshold, requirements);
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
@@ -268,8 +266,6 @@ public class CompareServiceImpl implements CompareService {
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
-
-        control.showInfoMessage("BuildClustersAndCompute: Computing output");
 
         int cont = 0;
         JSONArray array = new JSONArray();
@@ -722,7 +718,7 @@ public class CompareServiceImpl implements CompareService {
         }
 
         if (count == (maxIterations + 1)) {
-            Control.getInstance().showErrorMessage("Synchronization out of time");
+            Control.getInstance().showInfoMessage("Synchronization out of time");
             DatabaseOperations.getInstance().saveNotFinishedException(organization, responseId, new NotFinishedException("There is another computation in the same organization with write or update rights that has not finished yet"));
         }
     }

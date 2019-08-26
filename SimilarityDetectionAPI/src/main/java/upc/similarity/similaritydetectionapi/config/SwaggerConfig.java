@@ -52,7 +52,7 @@ public class SwaggerConfig {
             "<li>GetResponse: Returns the output of the async methods</li>" +
             "<li>GetOrganizationInfo: Returns the main information of the specified organization including the current computations and the pending responses</li>" +
             "<li>DeleteOrganizationResponses: Deletes the organization responses from the database</li>" +
-            "<li>DeleteDatabase: Deletes all data from the database</li>" +
+            "<li>ClearDatabase: Deletes all data from the database</li>" +
             "</ul>"+
             "</ul>" +
             "<p>All operations except <i>ReqReq</i>, <i>ReqClusters</i>, <i>TreatAcceptedAndRejectedDependencies</i> and the auxiliary methods are asynchronous. All these operations follow the same pattern:</p>" +

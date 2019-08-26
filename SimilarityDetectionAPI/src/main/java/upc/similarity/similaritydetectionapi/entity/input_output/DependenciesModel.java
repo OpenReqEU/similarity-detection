@@ -1,28 +1,30 @@
 package upc.similarity.similaritydetectionapi.entity.input_output;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.annotations.ApiModel;
 import upc.similarity.similaritydetectionapi.entity.Dependency;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Dependencies implements Input, Serializable {
+@ApiModel(value = "Dependencies", description = "OpenReqJson with dependencies")
+public class DependenciesModel implements Input, Serializable {
 
     @JsonProperty(value="dependencies")
-    private List<Dependency> dependenciesArray;
+    private List<Dependency> dependencies;
 
-    public Dependencies() {
-        this.dependenciesArray = new ArrayList<>();
+    public DependenciesModel() {
+        this.dependencies = new ArrayList<>();
     }
 
     public List<Dependency> getDependencies() {
-        return dependenciesArray;
+        return dependencies;
     }
 
     @Override
     public boolean inputOk() {
-        return !dependenciesArray.isEmpty();
+        return !dependencies.isEmpty();
     }
 
     @Override

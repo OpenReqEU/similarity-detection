@@ -47,7 +47,7 @@ public class RestApiController {
                                      @ApiParam(value="Use the text field of the requirements to construct the model", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
                                      @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the proposed dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                      @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
-                                     @ApiParam(value="OpenReq JSON with requirements", required = true) @RequestBody Requirements input) {
+                                     @ApiParam(value="OpenReq JSON with requirements", required = true) @RequestBody RequirementsModel input) {
         try {
             if(url != null) urlOk(url);
             return new ResponseEntity<>(similarityService.buildModel(url,organization,compare,threshold,input),HttpStatus.OK);
@@ -70,7 +70,7 @@ public class RestApiController {
                                                @ApiParam(value="Use the text field of the requirements to construct the model", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
                                                @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                                @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
-                                               @ApiParam(value="OpenReq JSON with requirements", required = true) @RequestBody Requirements input) {
+                                               @ApiParam(value="OpenReq JSON with requirements", required = true) @RequestBody RequirementsModel input) {
         try {
             if(url != null) urlOk(url);
             return new ResponseEntity<>(similarityService.buildModelAndCompute(url,organization,compare,threshold,input),HttpStatus.OK);
@@ -90,7 +90,7 @@ public class RestApiController {
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity addRequirements(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                           @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
-                                          @ApiParam(value="OpenReq JSON with requirements", required = true) @RequestBody Requirements input) {
+                                          @ApiParam(value="OpenReq JSON with requirements", required = true) @RequestBody RequirementsModel input) {
         try {
             if(url != null) urlOk(url);
             return new ResponseEntity<>(similarityService.addRequirements(url,organization,input),HttpStatus.OK);
@@ -108,7 +108,7 @@ public class RestApiController {
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity deleteRequirements(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                              @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
-                                             @ApiParam(value="OpenReq JSON with requirements", required = true) @RequestBody Requirements input) {
+                                             @ApiParam(value="OpenReq JSON with requirements", required = true) @RequestBody RequirementsModel input) {
         try {
             if(url != null) urlOk(url);
             return new ResponseEntity<>(similarityService.deleteRequirements(url,organization,input),HttpStatus.OK);
@@ -144,7 +144,7 @@ public class RestApiController {
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity simReqOrganization(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                              @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
-                                             @ApiParam(value="OpenReq JSON with requirements", required = true) @RequestBody Requirements input) {
+                                             @ApiParam(value="OpenReq JSON with requirements", required = true) @RequestBody RequirementsModel input) {
         try {
             if(url != null) urlOk(url);
             return new ResponseEntity<>(similarityService.simReqOrganization(url,organization,input),HttpStatus.OK);
@@ -165,7 +165,7 @@ public class RestApiController {
                                         @ApiParam(value="Id of the requirements to compare", required = true) @RequestParam("req") List<String> req,
                                         @ApiParam(value="Id of the project to compare", required = true, example = "SM") @RequestParam("project") String project,
                                         @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
-                                        @ApiParam(value="OpenReq JSON with the project", required = true) @RequestBody Projects input) {
+                                        @ApiParam(value="OpenReq JSON with the project", required = true) @RequestBody ProjectsModel input) {
         try {
             if(url != null) urlOk(url);
             return new ResponseEntity<>(similarityService.simReqProject(url,organization,req,project,input), HttpStatus.OK);
@@ -185,7 +185,7 @@ public class RestApiController {
     public ResponseEntity simProject(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                      @ApiParam(value="Id of the project to compare", required = true, example = "SQ") @RequestParam("project") String project,
                                      @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
-                                     @ApiParam(value="OpenReq JSON with the project specifying the id of the requirements the project has", required = true) @RequestBody Projects input) {
+                                     @ApiParam(value="OpenReq JSON with the project specifying the id of the requirements the project has", required = true) @RequestBody ProjectsModel input) {
         try {
             if(url != null) urlOk(url);
             return new ResponseEntity<>(similarityService.simProject(url,organization,project,input), HttpStatus.OK);
@@ -282,7 +282,7 @@ public class RestApiController {
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity treatAcceptedAndRejectedDependencies(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
-                                                               @ApiParam(value="OpenReqJson with dependencies", required = true) @RequestBody Dependencies input) {
+                                                               @ApiParam(value="OpenReqJson with dependencies", required = true) @RequestBody DependenciesModel input) {
 
         try {
             similarityService.treatDependencies(organization, input);

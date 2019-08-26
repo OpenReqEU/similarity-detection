@@ -9,22 +9,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 @ApiModel(value = "Projects", description = "OpenReqJson with projects")
-public class Projects implements Input, Serializable {
+public class ProjectsModel implements Input, Serializable {
 
     @JsonProperty(value="projects")
-    private List<Project> projectsArray;
+    private List<Project> projects;
 
-    public Projects() {
-        this.projectsArray = new ArrayList<>();
+    public ProjectsModel() {
+        this.projects = new ArrayList<>();
     }
 
     public List<Project> getProjects() {
-        return projectsArray;
+        return projects;
     }
 
     @Override
     public boolean inputOk() {
-        return !projectsArray.isEmpty();
+        return !projects.isEmpty();
     }
 
     @Override
