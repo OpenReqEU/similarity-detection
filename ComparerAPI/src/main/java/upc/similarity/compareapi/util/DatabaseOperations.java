@@ -114,10 +114,15 @@ public class DatabaseOperations {
 
     public void saveNotFinishedException(String organization, String responseId, NotFinishedException e) throws NotFinishedException, InternalErrorException {
         try {
+            Control.getInstance().showInfoMessage("Save notFinishedException 1 " + organization + " " + responseId);
             if (organization != null && responseId != null) {
+                Control.getInstance().showInfoMessage("Save notFinishedException 2");
                 databaseModel.saveException(organization, responseId, createJsonException(423, Constants.getInstance().getNotFinishedMessage(), e.getMessage()));
+                Control.getInstance().showInfoMessage("Save notFinishedException 3");
                 databaseModel.finishComputation(organization, responseId);
+                Control.getInstance().showInfoMessage("Save notFinishedException 4");
             }
+            Control.getInstance().showInfoMessage("Save notFinishedException 5");
             throw e;
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(),organization,responseId,"Error while saving a not finished exception response to the database");
