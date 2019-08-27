@@ -385,12 +385,7 @@ public class CompareServiceImpl implements CompareService {
         databaseOperations.generateResponse(organization,responseId,"BatchProcess");
 
 
-        control.showInfoMessage("1");
-
-
         getAccessToUpdate(organization, responseId);
-
-        control.showInfoMessage("2");
 
         try {
             Model model = databaseOperations.loadModel(organization, responseId, true);
@@ -433,8 +428,6 @@ public class CompareServiceImpl implements CompareService {
             HashSet<Integer> clustersChanged = new HashSet<>();
             Map<String,Integer> reqCluster = computeReqClusterMap(model.getClusters(), model.getDocs().keySet());
 
-            control.showInfoMessage("3");
-
             for (OrderedObject orderedObject: objects) {
                 if (orderedObject.isDependency()) {
                     List<Dependency> aux = new ArrayList<>();
@@ -450,8 +443,6 @@ public class CompareServiceImpl implements CompareService {
                     addRequirementsToModel(aux, model);
                 }
             }
-
-            control.showInfoMessage("4");
 
             clusterOperations.addDeletedDependencies(organization, responseId, deletedDependencies, model, clustersChanged, reqCluster);
             clusterOperations.updateProposedDependencies(organization, responseId, model, clustersChanged, true);
