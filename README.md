@@ -22,7 +22,8 @@ There are three types of operations (each method has a more extensive descriptio
         - ReqReq: Compares two requirements.
         - ReqProject: Compares all the requirements in the input list with a set of requirements given in the input.
         - Project: Compares all possible pairs of requirements from a set of requirements.
-        - ReqOrganization: Pre-processes the input requirements and adds them to an organization's tf-idf model. It also compares the input requirements with all the requirements of the organization.
+        - ReqOrganization: Compares a set of requirements with all the requirements of an organization.
+        - NewReqOrganization: Pre-processes the input requirements and adds them to an organization's tf-idf model. It also compares the input requirements with all the requirements of the organization.
     - Similarity with clusters: These methods work with a set of input requirements and dependencies. The clusters are considered as graphs connected by similarity dependencies accepted by the user where the nodes are the requirements of the model. We denominate orphans to the clusters with only one requirement.
         - BuildClusters: Pre-processes the input requirements, generates a tf-idf model with the requirements information, the clusters architecture and the input similarity dependencies and assigns it to an specified organization. All the requirements are compared with all the requirements of other clusters of the organization, and the maximum score with each cluster for each requirement is stored in the database.
         - BuildClustersAndCompute: Pre-processes the input requirements, generates a tf-idf model with the requirements information, the clusters architecture and the input similarity dependencies and assings it to an specified organization. All the requirements are compared with all the requirements of other clusters of the organization, and the maximum score with each cluster for each requirement is stored in the database. The method returns the maximum similarity score between each requirement and all the requirements that make up each one of the existing clusters of the organization.
@@ -35,22 +36,7 @@ There are three types of operations (each method has a more extensive descriptio
         - DeleteOrganizationResponses: Deletes the organization responses from the database
         - DeleteDatabase: Deletes all data from the database
 
-The service uses locks to control the concurrency of the different operations in each organization. To guarantee the ACID properties the methods which write or update data can't be parallelized. For example, the BuildClusters and BatchProcess methods cannot be parallelized, one has to wait for the other before starting. The service has a small queue of about 3 seconds to solve the small deviations. However, if one method has to wait for more than 3 seconds it will return an error with code 423. This only happens with methods using the same organization. The methods like ReqClusters that only read data from the database are not affected.
-
 The API uses UTF-8 charset. Also, it uses the OpenReq format for input JSONs
-
-
-### Used technologies
-
-The service is divided into two independent components: SimilarityDetectionAPI and ComparerAPI. The first one is the main component in charge of receiving the requests and returning the final results whereas Comparer computes the similarity dependencies between the input requirements. The TestingRestService is just a client example to test the service.
-
-    - SimilarityDetectionAPI: main component
-    - ComparerAPI: auxiliary component
-    - ComparerAPI/data: directory where the data files are located
-    - TestingRestSercice: example of client
-    - testing: directory with input and output examples used to test
-    - data: directory with the database files
-    - LICENSE: license
 
 
 ### Asynchronous service
@@ -66,6 +52,25 @@ All operations except ReqReq, ReqClusters, TreatAcceptedAndRejectedDependencies 
         - (success) Example: {"code": 200,"id": "1557395889689_587","operation": "AddReqs"}.
         - (!success) Example: {"code": 400,"id": "1557396039530_583","error": "Bad request","message": "The requirement with id QM-3 is already inside the project","operation": "ReqProject"}.
     - The result of the operation can be obtained through the GetResponse method.
+
+    
+### Concurrency control
+
+The service uses locks to control the concurrency of the different operations in each organization. To guarantee the ACID properties the methods which write or update data can't be parallelized. For example, the BuildClusters and BatchProcess methods cannot be parallelized, one has to wait for the other before starting. The service has a small queue of about 3 seconds to solve the small deviations. However, if one method has to wait for more than 3 seconds it will return an error with code 423. This only happens with methods using the same organization. The methods like ReqClusters that only read data from the database are not affected.
+
+
+### Files structure
+
+The service is divided into two independent components: SimilarityDetectionAPI and ComparerAPI. The first one is the main component in charge of receiving the requests and returning the final results whereas Comparer computes the similarity dependencies between the input requirements. The TestingRestService is just a client example to test the service.
+
+    - SimilarityDetectionAPI: main component
+    - ComparerAPI: auxiliary component
+    - ComparerAPI/data: directory where the data files are located
+    - TestingRestSercice: example of client
+    - testing: directory with input and output examples used to test
+    - data: directory with the database files
+    - LICENSE: license
+    
 
 ### How to install
 
@@ -92,15 +97,13 @@ Steps to run the service:
 
 The service expects a JSON with OpenReqJson format.
 
-Check API details [here](https://api.openreq.eu/#/services/similarity-detection).
+Check API details [here](https://api.openreq.eu/similarity-detection/swagger-ui.html#/).
 
-### Notes for developers
-
-### Sources
 
 ## How to contribute
 
 See OpenReq project contribution [guidelines](https://github.com/OpenReqEU/OpenReq/blob/master/CONTRIBUTING.md)
+
 
 ## License
 
