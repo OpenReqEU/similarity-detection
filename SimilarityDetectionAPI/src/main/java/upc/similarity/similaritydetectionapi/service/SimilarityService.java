@@ -13,7 +13,7 @@ public interface SimilarityService {
     Main operations
      */
 
-    ResultId buildModel(String url, String organization, boolean compare, double threshold, RequirementsModel input) throws BadRequestException, NotFoundException;
+    ResultId buildModel(String url, String organization, boolean compare, RequirementsModel input) throws BadRequestException, NotFoundException;
 
     ResultId buildModelAndCompute(String url, String organization, boolean compare, double threshold, RequirementsModel input) throws BadRequestException;
 
@@ -23,11 +23,13 @@ public interface SimilarityService {
 
     String simReqReq(String organization, String req1, String req2) throws ComponentException;
 
-    ResultId simReqOrganization(String url, String organization, RequirementsModel input) throws InternalErrorException, BadRequestException;
+    ResultId simReqOrganization(String url, String organization, double threshold, List<String> input) throws InternalErrorException, BadRequestException;
 
-    ResultId simReqProject(String url, String organization, List<String> req, String project, ProjectsModel input) throws NotFoundException, BadRequestException;
+    ResultId simNewReqOrganization(String url, String organization, double threshold, RequirementsModel input) throws InternalErrorException, BadRequestException;
 
-    ResultId simProject(String url, String organization, String project, ProjectsModel input) throws NotFoundException, BadRequestException;
+    ResultId simReqProject(String url, String organization, List<String> req, String project, double threshold, ProjectsModel input) throws NotFoundException, BadRequestException;
+
+    ResultId simProject(String url, String organization, String project, double threshold, ProjectsModel input) throws NotFoundException, BadRequestException;
 
 
     /*

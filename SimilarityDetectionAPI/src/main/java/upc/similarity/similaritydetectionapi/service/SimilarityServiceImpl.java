@@ -32,10 +32,9 @@ public class SimilarityServiceImpl implements SimilarityService {
      */
 
     @Override
-    public ResultId buildModel(String url, String organization, boolean compare, double threshold, RequirementsModel input) throws BadRequestException {
+    public ResultId buildModel(String url, String organization, boolean compare, RequirementsModel input) throws BadRequestException {
 
         checkInput(input);
-        checkThreshold(threshold);
         ResultId id = getId();
 
         //New thread
@@ -43,7 +42,7 @@ public class SimilarityServiceImpl implements SimilarityService {
             ResultJson result = new ResultJson(id.getId(),"BuildModel");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                componentAdapter.buildModel(id.getId(),organization,compare,threshold,input.getRequirements());
+                componentAdapter.buildModel(id.getId(),organization,compare,input.getRequirements());
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -134,9 +133,10 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simReqOrganization(String url, String organization, RequirementsModel input) throws BadRequestException {
+    public ResultId simReqOrganization(String url, String organization, double threshold, List<String> input) throws BadRequestException {
 
-        checkInput(input);
+        if (input.isEmpty()) throw new BadRequestException("The input array is empty");
+        checkThreshold(threshold);
         ResultId id = getId();
 
         //New thread
@@ -144,7 +144,32 @@ public class SimilarityServiceImpl implements SimilarityService {
             ResultJson result = new ResultJson(id.getId(),"ReqOrganization");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                componentAdapter.simReqOrganization(id.getId(),organization,input.getRequirements());
+                componentAdapter.simReqOrganization(id.getId(),organization,threshold,input);
+                result.setCode(200);
+            } catch (ComponentException e) {
+                result.setException(e.getStatus(),e.getError(),e.getMessage());
+            }
+            finally {
+                updateClient(result,url);
+            }
+        });
+
+        thread.start();
+        return id;
+    }
+
+    @Override
+    public ResultId simNewReqOrganization(String url, String organization, double threshold, RequirementsModel input) throws BadRequestException {
+
+        checkInput(input);
+        ResultId id = getId();
+
+        //New thread
+        Thread thread = new Thread(() -> {
+            ResultJson result = new ResultJson(id.getId(),"NewReqOrganization");
+            try {
+                ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
+                componentAdapter.simNewReqOrganization(id.getId(),organization,threshold,input.getRequirements());
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -168,9 +193,10 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simReqProject(String url, String organization, List<String> req, String projectId, ProjectsModel input) throws NotFoundException, BadRequestException {
+    public ResultId simReqProject(String url, String organization, List<String> req, String projectId, double threshold, ProjectsModel input) throws NotFoundException, BadRequestException {
 
         checkInput(input);
+        checkThreshold(threshold);
         if (req.isEmpty()) throw new BadRequestException("The input parameter req is empty");
         Project project = searchProject(projectId,input.getProjects());
 
@@ -181,7 +207,7 @@ public class SimilarityServiceImpl implements SimilarityService {
             ResultJson result = new ResultJson(id.getId(),"ReqProject");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                componentAdapter.simReqProject(id.getId(),organization,req,project.getSpecifiedRequirements());
+                componentAdapter.simReqProject(id.getId(),organization,threshold,req,project.getSpecifiedRequirements());
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -196,9 +222,10 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId simProject(String url, String organization, String projectId, ProjectsModel input) throws NotFoundException, BadRequestException {
+    public ResultId simProject(String url, String organization, String projectId, double threshold, ProjectsModel input) throws NotFoundException, BadRequestException {
 
         checkInput(input);
+        checkThreshold(threshold);
         Project project = searchProject(projectId,input.getProjects());
         ResultId id = getId();
 
@@ -207,7 +234,7 @@ public class SimilarityServiceImpl implements SimilarityService {
             ResultJson result = new ResultJson(id.getId(),"Project");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                componentAdapter.simProject(id.getId(),organization,project.getSpecifiedRequirements());
+                componentAdapter.simProject(id.getId(),organization,threshold,project.getSpecifiedRequirements());
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());

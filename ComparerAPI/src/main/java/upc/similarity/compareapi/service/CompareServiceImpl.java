@@ -30,14 +30,15 @@ public class CompareServiceImpl implements CompareService {
      */
 
     @Override
-    public void buildModel(String responseId, boolean compare, double threshold, String organization, List<Requirement> requirements) throws BadRequestException, NotFinishedException, InternalErrorException {
+    public void buildModel(String responseId, boolean compare, String organization, List<Requirement> requirements) throws BadRequestException, NotFinishedException, InternalErrorException {
         control.showInfoMessage("BuildModel: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"BuildModel");
         getAccessToUpdate(organization, responseId);
         try {
-            databaseOperations.saveModel(organization, responseId, generateModel(compare, threshold, deleteDuplicates(requirements, organization, responseId)), null);
+            //threshold is never used in other methods
+            databaseOperations.saveModel(organization, responseId, generateModel(compare, 0, deleteDuplicates(requirements, organization, responseId)), null);
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
@@ -53,7 +54,8 @@ public class CompareServiceImpl implements CompareService {
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"BuildModelAndCompute");
 
-        Model model = generateModel(compare, threshold, deleteDuplicates(requirements,organization,responseId));
+        //threshold is never used in other methods
+        Model model = generateModel(compare, 0, deleteDuplicates(requirements,organization,responseId));
         List<String> requirementsIds = new ArrayList<>();
         for (Requirement requirement: requirements) {
             requirementsIds.add(requirement.getId());
@@ -135,7 +137,44 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void simReqOrganization(String responseId, String organization, List<Requirement> requirements) throws NotFoundException, NotFinishedException, BadRequestException, InternalErrorException {
+    public void simReqOrganization(String responseId, String organization, double threshold, List<String> requirements) throws NotFoundException, NotFinishedException, BadRequestException, InternalErrorException {
+        control.showInfoMessage("SimReqOrganization: Start computing");
+        DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
+        databaseOperations.generateResponse(organization,responseId,"SimReqOrganization");
+
+        getAccessToUpdate(organization, responseId);
+
+        try {
+            Model model = databaseOperations.loadModel(organization, responseId, true);
+
+            HashSet<String> repeatedHash = new HashSet<>();
+            List<String> projectRequirements = new ArrayList<>();
+            List<String> requirementsToCompare = new ArrayList<>();
+            for (String requirement : requirements) {
+                requirementsToCompare.add(requirement);
+                repeatedHash.add(requirement);
+            }
+
+            Iterator it = model.getDocs().entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry pair = (Map.Entry) it.next();
+                String id = (String) pair.getKey();
+                if (!repeatedHash.contains(id)) projectRequirements.add(id);
+            }
+
+            reqProject(requirementsToCompare, projectRequirements, model, threshold, organization, responseId);
+            databaseOperations.saveModel(organization, responseId, model, null);
+        } finally {
+            releaseAccessToUpdate(organization, responseId);
+        }
+
+        databaseOperations.finishComputation(organization, responseId);
+
+        control.showInfoMessage("SimReqOrganization: Finish computing");
+    }
+
+    @Override
+    public void simNewReqOrganization(String responseId, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, NotFinishedException, BadRequestException, InternalErrorException {
         control.showInfoMessage("SimReqOrganization: Start computing");
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"SimReqOrganization");
@@ -162,7 +201,7 @@ public class CompareServiceImpl implements CompareService {
                 if (!repeatedHash.contains(id)) projectRequirements.add(id);
             }
 
-            reqProject(requirementsToCompare, projectRequirements, model, model.getThreshold(), organization, responseId);
+            reqProject(requirementsToCompare, projectRequirements, model, threshold, organization, responseId);
             databaseOperations.saveModel(organization, responseId, model, null);
         } finally {
             releaseAccessToUpdate(organization, responseId);
@@ -174,7 +213,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void simReqProject(String responseId, String organization, ReqProject projectRequirements) throws NotFoundException, InternalErrorException, BadRequestException {
+    public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements) throws NotFoundException, InternalErrorException, BadRequestException {
         control.showInfoMessage("SimReqProject: Start computing");
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
@@ -185,14 +224,14 @@ public class CompareServiceImpl implements CompareService {
             if (projectRequirements.getProjectReqs().contains(req)) databaseOperations.saveBadRequestException(organization, responseId, new BadRequestException("The requirement with id " + req + " is already inside the project"));
         }
 
-        reqProject(projectRequirements.getReqsToCompare(), projectRequirements.getProjectReqs(), model, model.getThreshold(), organization, responseId);
+        reqProject(projectRequirements.getReqsToCompare(), projectRequirements.getProjectReqs(), model, threshold, organization, responseId);
 
         databaseOperations.finishComputation(organization, responseId);
         control.showInfoMessage("SimReqProject: Finish computing");
     }
 
     @Override
-    public void simProject(String responseId, String organization, List<String> projectRequirements) throws NotFoundException, InternalErrorException {
+    public void simProject(String responseId, String organization, double threshold, List<String> projectRequirements) throws NotFoundException, InternalErrorException {
         control.showInfoMessage("SimProject: Start computing");
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
@@ -200,7 +239,7 @@ public class CompareServiceImpl implements CompareService {
 
         Model model = databaseOperations.loadModel(organization, responseId, false);
 
-        project(projectRequirements, model, model.getThreshold(), responseId, organization);
+        project(projectRequirements, model, threshold, responseId, organization);
 
         databaseOperations.finishComputation(organization, responseId);
         control.showInfoMessage("SimProject: Finish computing");

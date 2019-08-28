@@ -36,8 +36,9 @@ public class SwaggerConfig {
             "<li>DeleteRequirements: Deletes the input requirements from an existing tf-idf model.</li>" +
             "<li>ReqReq: Compares two requirements.</li>" +
             "<li>ReqProject: Compares all the requirements in the input list with a set of requirements given in the input.</li>" +
-            "<li>Project: Compares all possible pairs of requirements from a set of requirements.</li>" +
-            "<li>ReqOrganization: Pre-processes the input requirements and adds them to an organization's tf-idf model. It also compares the input requirements with all the requirements of the organization.</li>" +
+            "<li>Project: Compares all possible pairs of requirements of an organization.</li>" +
+            "<li>ReqOrganization: Compares a set of requirements with all the requirements of an organization.</li>" +
+            "<li>NewReqOrganization: Pre-processes the input requirements and adds them to an organization's tf-idf model. It also compares the input requirements with all the requirements of the organization.</li>" +
             "</ul>"+
             "<li><strong>Similarity with clusters</strong>: These methods work with a set of input requirements and dependencies. <u>The clusters are considered as graphs connected by similarity dependencies accepted by the user where the nodes are the requirements of the model</u>. We denominate orphans to the clusters with only one requirement. </li>" +
             "<ul>" +

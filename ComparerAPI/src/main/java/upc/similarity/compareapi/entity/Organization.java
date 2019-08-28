@@ -1,14 +1,16 @@
 package upc.similarity.compareapi.entity;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
 import java.util.List;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Organization implements Serializable {
 
     private String name;
-    private double threshold;
+    private Double threshold;
     @JsonProperty("uses_text")
     private boolean compare;
     @JsonProperty("has_clusters")
@@ -20,7 +22,8 @@ public class Organization implements Serializable {
 
     public Organization(String name, double threshold, boolean compare, boolean clusters, List<Execution> currentExecutions, List<Execution> pendingResponses) {
         this.name = name;
-        this.threshold = threshold;
+        if (clusters) this.threshold = threshold;
+        else this.threshold = null;
         this.compare = compare;
         this.clusters = clusters;
         this.currentExecutions = currentExecutions;
@@ -31,7 +34,7 @@ public class Organization implements Serializable {
         return name;
     }
 
-    public double getThreshold() {
+    public Double getThreshold() {
         return threshold;
     }
 

@@ -75,7 +75,7 @@ public class MethodsTests {
 
     @Test
     public void buildModel() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"buildModel/input.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
@@ -95,7 +95,7 @@ public class MethodsTests {
 
     @Test
     public void addRequirements() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold","0")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"addRequirements/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
@@ -105,7 +105,7 @@ public class MethodsTests {
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "addRequirements/outputAdd.json")));
         ++id;
-        this.mockMvc.perform(post(url + "SimProject").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "SimProject").param("organization", "UPC").param("threshold", "0")
                 .param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"addRequirements/input_operation.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
@@ -115,7 +115,7 @@ public class MethodsTests {
 
     @Test
     public void deleteRequirements() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"deleteRequirements/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
@@ -125,7 +125,7 @@ public class MethodsTests {
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "deleteRequirements/outputAdd.json")));
         ++id;
-        this.mockMvc.perform(post(url + "SimProject").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "SimProject").param("organization", "UPC").param("threshold", "0")
                 .param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"deleteRequirements/input_operation.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
@@ -135,7 +135,7 @@ public class MethodsTests {
 
     @Test
     public void simReqReq() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqReq/input_model.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(post(url + "SimReqReq").param("organization", "UPC")
@@ -146,43 +146,75 @@ public class MethodsTests {
 
     @Test
     public void simReqOrganization() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqOrganization/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
-        this.mockMvc.perform(post(url + "SimReqOrganization").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "SimReqOrganization").param("organization", "UPC").param("threshold", "0")
                 .param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqOrganization/input_reqs.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
-                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simReqOrganization/output.json")));
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simReqOrganization/output_threshold_0.json")));
+        ++id;
+        this.mockMvc.perform(post(url + "SimReqOrganization").param("organization", "UPC").param("threshold", "0.04")
+                .param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqOrganization/input_reqs.json")))
+                .andExpect(status().isOk());
+        this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simReqOrganization/output_threshold_004.json")));
+        ++id;
+    }
+    @Test
+    public void simNewReqOrganization() throws Exception {
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simNewReqOrganization/input_model.json")))
+                .andExpect(status().isOk());
+        ++id;
+        this.mockMvc.perform(post(url + "SimNewReqOrganization").param("organization", "UPC").param("threshold", "0")
+                .param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simNewReqOrganization/input_reqs.json")))
+                .andExpect(status().isOk());
+        this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simNewReqOrganization/output.json")));
         ++id;
     }
 
+
     @Test
     public void simReqProject() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqProject/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
-        this.mockMvc.perform(post(url + "SimReqProject").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "SimReqProject").param("organization", "UPC").param("threshold", "0")
                 .param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"simReqProject/input_operation.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
-                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simReqProject/output.json")));
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simReqProject/output_threshold_0.json")));
+        ++id;
+        this.mockMvc.perform(post(url + "SimReqProject").param("organization", "UPC").param("threshold", "0.6")
+                .param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"simReqProject/input_operation.json")))
+                .andExpect(status().isOk());
+        this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simReqProject/output_threshold_06.json")));
         ++id;
     }
 
     @Test
     public void simProject() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simProject/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
-        this.mockMvc.perform(post(url + "SimProject").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "SimProject").param("organization", "UPC").param("threshold", "0")
                 .param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simProject/input_operation.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
-                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simProject/output.json")));
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simProject/output_threshold_0.json")));
+        ++id;
+        this.mockMvc.perform(post(url + "SimProject").param("organization", "UPC").param("threshold", "0.2")
+                .param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simProject/input_operation.json")))
+                .andExpect(status().isOk());
+        this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simProject/output_threshold_02.json")));
         ++id;
     }
 
@@ -338,13 +370,15 @@ public class MethodsTests {
         this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPCTest").param("threshold", "0.12")
                 .param("compare", "true").param("responseId", "Test0").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"getOrganizationInfo/input_model_with.json")))
                 .andExpect(status().isOk());
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPCTest").param("threshold", "0.15")
-                .param("compare", "true").param("responseId", "Test1").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"getOrganizationInfo/input_model_without.json")))
-                .andExpect(status().isOk());
         DatabaseOperations.getInstance().generateResponse("UPCTest","Test3","TestMethod");
         Time.getInstance().setClock(Clock.fixed(ofEpochMilli(40), ZoneId.systemDefault()));
         this.mockMvc.perform(get(url + "GetOrganizationInfo").param("organization", "UPCTest"))
-                .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "getOrganizationInfo/output.json")));
+                .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "getOrganizationInfo/output_with_clusters.json")));
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPCTest")
+                .param("compare", "false").param("responseId", "Test1").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"getOrganizationInfo/input_model_without.json")))
+                .andExpect(status().isOk());
+        this.mockMvc.perform(get(url + "GetOrganizationInfo").param("organization", "UPCTest"))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "getOrganizationInfo/output_without_clusters.json")));
         Time.getInstance().setClock(Clock.systemUTC());
     }
 
@@ -362,7 +396,7 @@ public class MethodsTests {
 
     @Test
     public void deleteOrganizationData() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"deleteOrganizationData/input_model.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(post(url + "SimReqReq").param("organization", "UPC").param("req1", "UPC-1").param("req2","UPC-2"))
@@ -376,7 +410,7 @@ public class MethodsTests {
 
     @Test
     public void clearDatabase() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"clearDatabase/input_model.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(delete(url + "ClearDatabase"))

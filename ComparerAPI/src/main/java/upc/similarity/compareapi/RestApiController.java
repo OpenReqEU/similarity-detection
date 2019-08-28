@@ -28,11 +28,10 @@ public class RestApiController {
     @PostMapping(value = "/BuildModel")
     public ResponseEntity buildModel(@RequestParam("organization") String organization,
                                      @RequestParam("compare") boolean compare,
-                                     @RequestParam("threshold") double threshold,
                                      @RequestParam("responseId") String responseId,
                                      @RequestBody List<Requirement> input) {
         try {
-            compareService.buildModel(responseId,compare,threshold,organization,input);
+            compareService.buildModel(responseId,compare,organization,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
@@ -90,10 +89,24 @@ public class RestApiController {
 
     @PostMapping(value = "/SimReqOrganization")
     public ResponseEntity simReqOrganization(@RequestParam("organization") String organization,
-                                        @RequestParam("responseId") String responseId,
-                                        @RequestBody List<Requirement> requirements) {
+                                             @RequestParam("responseId") String responseId,
+                                             @RequestParam("threshold") double threshold,
+                                             @RequestBody List<String> requirements) {
         try {
-            compareService.simReqOrganization(responseId,organization,requirements);
+            compareService.simReqOrganization(responseId,organization,threshold,requirements);
+            return new ResponseEntity<>(null,HttpStatus.OK);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
+        }
+    }
+
+    @PostMapping(value = "/SimNewReqOrganization")
+    public ResponseEntity simNewReqOrganization(@RequestParam("organization") String organization,
+                                             @RequestParam("responseId") String responseId,
+                                             @RequestParam("threshold") double threshold,
+                                             @RequestBody List<Requirement> requirements) {
+        try {
+            compareService.simNewReqOrganization(responseId,organization,threshold,requirements);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
@@ -102,10 +115,11 @@ public class RestApiController {
 
     @PostMapping(value = "/SimReqProject")
     public ResponseEntity simReqProject(@RequestParam("organization") String organization,
-                                           @RequestParam("responseId") String responseId,
-                                           @RequestBody ReqProject projectRequirements) {
+                                        @RequestParam("responseId") String responseId,
+                                        @RequestParam("threshold") double threshold,
+                                        @RequestBody ReqProject projectRequirements) {
         try {
-            compareService.simReqProject(responseId,organization,projectRequirements);
+            compareService.simReqProject(responseId,organization,threshold,projectRequirements);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
@@ -114,10 +128,11 @@ public class RestApiController {
 
     @PostMapping(value = "/SimProject")
     public ResponseEntity simProject(@RequestParam("organization") String organization,
-                                        @RequestParam("responseId") String responseId,
-                                        @RequestBody List<String> projectRequirements) {
+                                     @RequestParam("responseId") String responseId,
+                                     @RequestParam("threshold") double threshold,
+                                     @RequestBody List<String> projectRequirements) {
         try {
-            compareService.simProject(responseId,organization,projectRequirements);
+            compareService.simProject(responseId,organization,threshold,projectRequirements);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));

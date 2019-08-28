@@ -21,7 +21,7 @@ public interface CompareService {
     Similarity without clusters
      */
 
-    void buildModel(String responseId, boolean compare, double threshold, String organization, List<Requirement> requirements) throws BadRequestException, NotFinishedException, InternalErrorException;
+    void buildModel(String responseId, boolean compare, String organization, List<Requirement> requirements) throws BadRequestException, NotFinishedException, InternalErrorException;
 
     void buildModelAndCompute(String responseId, boolean compare, String organization, double threshold, List<Requirement> requirements) throws NotFinishedException, BadRequestException, InternalErrorException;
 
@@ -31,11 +31,13 @@ public interface CompareService {
 
     Dependency simReqReq(String organization, String req1, String req2) throws NotFoundException, InternalErrorException;
 
-    void simReqOrganization(String responseId, String organization, List<Requirement> requirements) throws NotFoundException, NotFinishedException, InternalErrorException, BadRequestException;
+    void simReqOrganization(String responseId, String organization, double threshold, List<String> requirements) throws NotFoundException, NotFinishedException, InternalErrorException, BadRequestException;
 
-    void simReqProject(String responseId, String organization, ReqProject projectRequirements) throws NotFoundException, InternalErrorException, BadRequestException;
+    void simNewReqOrganization(String responseId, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, NotFinishedException, InternalErrorException, BadRequestException;
 
-    void simProject(String responseId, String organization, List<String> projectRequirements) throws NotFoundException, InternalErrorException;
+    void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements) throws NotFoundException, InternalErrorException, BadRequestException;
+
+    void simProject(String responseId, String organization, double threshold, List<String> projectRequirements) throws NotFoundException, InternalErrorException;
 
 
     /*

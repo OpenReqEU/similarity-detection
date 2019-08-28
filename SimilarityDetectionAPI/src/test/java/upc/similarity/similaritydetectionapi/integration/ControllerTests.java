@@ -59,7 +59,7 @@ public class ControllerTests {
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
         MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/BuildModel").param("organization", "UPC").param("url", callback)
-                .param("compare", "true").param("threshold", "0")
+                .param("compare", "true")
                 .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"addReqs/input_addReqs.json")))
                 .andExpect(status().isOk()).andReturn();
         TestConfig testConfig = TestConfig.getInstance();
@@ -72,7 +72,7 @@ public class ControllerTests {
     @Test
     public void buildModelNotRequirements() throws Exception {
         this.mockMvc.perform(post("/upc/similarity-detection/BuildModel").param("organization", "UPC").param("url", callback)
-                .param("compare", "true").param("threshold", "0")
+                .param("compare", "true")
                 .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"addReqs/input_requirements_empty.json")))
                 .andExpect(status().isBadRequest());
     }
@@ -148,13 +148,13 @@ public class ControllerTests {
 
     @Test
     public void simReqOrganization() throws Exception {
-        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/SimReqOrganization"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
-        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/ReqOrganization").param("organization", "UPC").param("url", callback)
-                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"simReqOrganization/input_reqs.json")))
+        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/ReqOrganization").param("organization", "UPC")
+                .param("threshold", "0").param("url", callback).param("req", "UPC-1").param("req", "UPC-2"))
                 .andExpect(status().isOk()).andReturn();
         TestConfig testConfig = TestConfig.getInstance();
         while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
@@ -163,14 +163,30 @@ public class ControllerTests {
     }
 
     @Test
+    public void simNewReqOrganization() throws Exception {
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/SimNewReqOrganization"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("")));
+        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/NewReqOrganization").param("organization", "UPC").param("threshold", "0").param("url", callback)
+                .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"simNewReqOrganization/input_reqs.json")))
+                .andExpect(status().isOk()).andReturn();
+        TestConfig testConfig = TestConfig.getInstance();
+        while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
+        testConfig.setComputationFinished(false);
+        assertEquals(createJsonResult(200, aux_getResponseId(result), "NewReqOrganization"), testConfig.getResult().toString());
+    }
+
+    @Test
     public void reqProject() throws Exception {
-        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/SimReqProject*"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
         MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/ReqProject").param("organization", "UPC").param("url", callback)
-                .param("project", "UPC-P1").param("req", "UPC-1")
+                .param("project", "UPC-P1").param("req", "UPC-1").param("threshold", "0")
                 .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"reqProject/input_ReqProject.json")))
                 .andExpect(status().isOk()).andReturn();
         TestConfig testConfig = TestConfig.getInstance();
@@ -182,19 +198,19 @@ public class ControllerTests {
     @Test
     public void reqProjectNotExist() throws Exception {
         this.mockMvc.perform(post("/upc/similarity-detection/ReqProject").param("organization", "UPC").param("url", callback)
-                .param("project", "UPC-P2").param("req", "UPC-1")
+                .param("project", "UPC-P2").param("req", "UPC-1").param("threshold", "0")
                 .contentType(MediaType.APPLICATION_JSON).content(read_file(path+"reqProject/input_ReqProject.json")))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     public void project() throws Exception {
-        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/SimProject"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody("")));
-        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/Project").param("organization", "UPC").param("url", callback)
+        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/Project").param("organization", "UPC").param("url", callback).param("threshold", "0")
                 .param("project", "UPC-P1").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"project/input_Project.json")))
                 .andExpect(status().isOk()).andReturn();
         TestConfig testConfig = TestConfig.getInstance();
@@ -205,7 +221,7 @@ public class ControllerTests {
 
     @Test
     public void projectNotExist() throws Exception {
-        this.mockMvc.perform(post("/upc/similarity-detection/Project").param("organization", "UPC").param("url", callback)
+        this.mockMvc.perform(post("/upc/similarity-detection/Project").param("organization", "UPC").param("url", callback).param("threshold", "0")
                 .param("project", "UPC-P2").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"project/input_Project.json")))
                 .andExpect(status().isNotFound());
     }
