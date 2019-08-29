@@ -15,14 +15,16 @@ import upc.similarity.compareapi.util.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service("comparerService")
 public class CompareServiceImpl implements CompareService {
 
     private Control control = Control.getInstance();
-    private ConcurrentHashMap<String, AtomicBoolean> organizationLocks = new ConcurrentHashMap<>(); // true -> locked, false -> free
-    private Random random = new Random();
+    private ConcurrentHashMap<String, Lock> organizationLocks = new ConcurrentHashMap<>();
 
 
     /*
@@ -735,46 +737,39 @@ public class CompareServiceImpl implements CompareService {
 
     public void getAccessToUpdate(String organization, String responseId) throws NotFinishedException, InternalErrorException {
         String errorMessage = "Synchronization error";
-        int maxIterations = Constants.getInstance().getMaxSyncIterations();
         int sleepTime = Constants.getInstance().getSleepTime();
         if (!organizationLocks.containsKey(organization)) {
-            AtomicBoolean aux = organizationLocks.putIfAbsent(organization, new AtomicBoolean(false));
+            Lock aux = organizationLocks.putIfAbsent(organization, new ReentrantLock(true));
             //aux not used
         }
-        boolean correct = false;
-        int count = 0;
-        while (!correct && count <= maxIterations) {
-            AtomicBoolean atomicBoolean = organizationLocks.get(organization);
-            if (atomicBoolean == null) DatabaseOperations.getInstance().saveInternalException("Synchronization 1rst conditional",organization, responseId, new InternalErrorException(errorMessage));
-            else correct = atomicBoolean.compareAndSet(false,true);
-            if (!correct) {
-                ++count;
-                try {
-                    Thread.sleep(random.nextInt(sleepTime));
-                } catch (InterruptedException e) {
-                    DatabaseOperations.getInstance().saveInternalException("Synchronization 2nd conditional",organization, responseId, new InternalErrorException(errorMessage));
-                    Thread.currentThread().interrupt();
-                }
+        Lock lock = organizationLocks.get(organization);
+        if (lock == null) DatabaseOperations.getInstance().saveInternalException("Synchronization 1rst conditional",organization, responseId, new InternalErrorException(errorMessage));
+        else {
+            boolean correct = false;
+            try {
+                correct = lock.tryLock(sleepTime, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Control.getInstance().showErrorMessage(e.getMessage());
+                Thread.currentThread().interrupt();
             }
-        }
-
-        if (count == (maxIterations + 1)) {
-            Control.getInstance().showInfoMessage("Synchronization out of time");
-            DatabaseOperations.getInstance().saveNotFinishedException(organization, responseId, new NotFinishedException("There is another computation in the same organization with write or update rights that has not finished yet"));
+            if (!correct) {
+                Control.getInstance().showInfoMessage("The " + organization + " database is lock, another thread is using it");
+                DatabaseOperations.getInstance().saveNotFinishedException(organization, responseId, new NotFinishedException("There is another computation in the same organization with write or update rights that has not finished yet"));
+            }
         }
     }
 
     public void releaseAccessToUpdate(String organization, String responseId) throws InternalErrorException {
-        AtomicBoolean atomicBoolean = organizationLocks.get(organization);
-        if (atomicBoolean == null) DatabaseOperations.getInstance().saveInternalException("Synchronization 3rd conditional",organization, responseId, new InternalErrorException("Synchronization error"));
-        else atomicBoolean.set(false);
+        Lock lock = organizationLocks.get(organization);
+        if (lock == null) DatabaseOperations.getInstance().saveInternalException("Synchronization 2nd conditional",organization, responseId, new InternalErrorException("Synchronization error"));
+        else lock.unlock();
     }
 
     public void removeOrganizationLock(String organization) {
         organizationLocks.remove(organization);
     }
 
-    public ConcurrentMap<String, AtomicBoolean> getConcurrentMap() {
+    public ConcurrentMap<String, Lock> getConcurrentMap() {
         return organizationLocks;
     }
 }

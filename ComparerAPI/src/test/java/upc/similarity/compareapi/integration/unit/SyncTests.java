@@ -18,6 +18,7 @@ import java.io.File;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
 
 import static org.junit.Assert.*;
 
@@ -86,16 +87,16 @@ public class SyncTests {
 
             assertTrue(control.flag);
 
-            ConcurrentMap<String, AtomicBoolean> concurrentMap = compareService.getConcurrentMap();
-            assertFalse(concurrentMap.get("UPC").get());
-            assertTrue(concurrentMap.get("UB").get());
+            ConcurrentMap<String, Lock> concurrentMap = compareService.getConcurrentMap();
+            assertTrue(concurrentMap.get("UPC").tryLock());
+            assertFalse(concurrentMap.get("UB").tryLock());
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     @Test
-    public void removeOrganization() {
+    public void lockOrganization() {
         try {
             CompareServiceImpl compareService = new CompareServiceImpl();
             class Control {
@@ -107,37 +108,66 @@ public class SyncTests {
             Thread thread1 = new Thread(() -> {
                 try {
                     compareService.getAccessToUpdate("UPC", null);
-                    compareService.getAccessToUpdate("UPC", null);
-                } catch (NotFinishedException e) {
+                } catch (Exception e) {
                     control.flag1 = true;
-                } catch (InternalErrorException e) {
-                    //does nothing
                 }
             });
 
             Thread thread2 = new Thread(() -> {
                 try {
-                    compareService.getAccessToUpdate("UB", null);
-                    compareService.removeOrganizationLock("UB");
-                    compareService.releaseAccessToUpdate("UB", null);
+                    compareService.getAccessToUpdate("UPC", null);
                 } catch (InternalErrorException e) {
-                    control.flag2 = true;
+                    control.flag2 = false;
                 }catch (NotFinishedException e) {
-                    //does nothing
+                    control.flag2 = true;
                 }
             });
 
             thread1.start();
+            Thread.sleep(1000);
             thread2.start();
 
             thread1.join();
             thread2.join();
 
-            assertTrue(control.flag1);
+            assertFalse(control.flag1);
             assertTrue(control.flag2);
 
-            ConcurrentMap<String, AtomicBoolean> concurrentMap = compareService.getConcurrentMap();
-            assertTrue(concurrentMap.get("UPC").get());
+            ConcurrentMap<String, Lock> concurrentMap = compareService.getConcurrentMap();
+            assertFalse(concurrentMap.get("UPC").tryLock());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void removeOrganization() {
+        try {
+            CompareServiceImpl compareService = new CompareServiceImpl();
+            class Control {
+                public volatile boolean flag1 = false;
+            }
+            final Control control = new Control();
+
+            Thread thread1 = new Thread(() -> {
+                try {
+                    compareService.getAccessToUpdate("UB", null);
+                    compareService.removeOrganizationLock("UB");
+                    compareService.releaseAccessToUpdate("UB", null);
+                } catch (InternalErrorException e) {
+                    control.flag1 = true;
+                }catch (NotFinishedException e) {
+                    control.flag1 = false;
+                }
+            });
+
+            thread1.start();
+
+            thread1.join();
+
+            assertTrue(control.flag1);
+
+            ConcurrentMap<String, Lock> concurrentMap = compareService.getConcurrentMap();
             assertNull(concurrentMap.get("UB"));
         } catch (Exception e) {
             e.printStackTrace();

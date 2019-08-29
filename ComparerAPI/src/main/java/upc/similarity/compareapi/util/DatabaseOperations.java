@@ -88,7 +88,7 @@ public class DatabaseOperations {
     }
 
     public void saveInternalException(String console, String organization, String responseId, InternalErrorException e) throws InternalErrorException {
-        Control.getInstance().showErrorMessage(console);
+        Control.getInstance().showErrorMessage(console + " " + organization + " " + responseId);
         try {
             if (organization != null && responseId != null) {
                 databaseModel.saveException(organization, responseId, createJsonException(500, Constants.getInstance().getInternalErrorMessage(), e.getMessage()));
@@ -121,6 +121,8 @@ public class DatabaseOperations {
             throw e;
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(),organization,responseId,"Error while saving a not finished exception response to the database");
+        } catch (InternalErrorException e2) {
+            Control.getInstance().showErrorMessage("The main database is lock, another thread is using it 2");
         }
     }
 
@@ -130,7 +132,7 @@ public class DatabaseOperations {
             databaseModel.finishComputation(organization,responseId);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organization, responseId, errorMessage);
-        }catch (InternalErrorException e) {
+        } catch (InternalErrorException e) {
             saveInternalException(e.getMessage(), organization, responseId, new InternalErrorException(errorMessage));
         }
     }
@@ -372,7 +374,7 @@ public class DatabaseOperations {
      */
 
     private void treatSQLException(String sqlMessage, String organization, String responseId, String message) throws InternalErrorException {
-        control.showErrorMessage(sqlMessage);
+        control.showErrorMessage(sqlMessage + " " + organization + " " + responseId);
         try {
             if (organization != null && responseId != null) {
                 databaseModel.saveException(organization, responseId, createJsonException(500, Constants.getInstance().getSqlErrorMessage(), message));

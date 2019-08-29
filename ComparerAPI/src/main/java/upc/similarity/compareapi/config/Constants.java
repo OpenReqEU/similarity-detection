@@ -13,8 +13,7 @@ public class Constants {
     private String internalErrorMessage = "Internal Error";
     private String sqlErrorMessage = "Database error";
     private String dependenciesArrayName = "dependencies";
-    private int maxSyncIterations = 50;
-    private int sleepTime = 500;
+    private int sleepTime = 5; //seconds
 
     private Constants(){}
 
@@ -60,10 +59,6 @@ public class Constants {
 
     public String getDependenciesArrayName() {
         return dependenciesArrayName;
-    }
-
-    public int getMaxSyncIterations() {
-        return maxSyncIterations;
     }
 
     public int getSleepTime() {

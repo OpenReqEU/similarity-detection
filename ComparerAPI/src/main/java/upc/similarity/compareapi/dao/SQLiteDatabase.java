@@ -20,39 +20,33 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 
 public class SQLiteDatabase implements DatabaseModel {
 
-    private AtomicBoolean mainDbLock = new AtomicBoolean(false);
-    private Random random = new Random();
+    private Lock mainDbLock = new ReentrantLock(true);
     private static String dbMainName = "main";
     private static String dbPath = "data/";
     private static String driversName = "jdbc:sqlite:";
 
     private void getAccessToMainDb() throws InternalErrorException {
-        int maxIterations = Constants.getInstance().getMaxSyncIterations();
         int sleepTime = Constants.getInstance().getSleepTime();
         boolean correct = false;
-        int count = 0;
-        while (!correct && count <= maxIterations) {
-            correct = mainDbLock.compareAndSet(false,true);
-            if (!correct) {
-                ++count;
-                try {
-                    Thread.sleep(random.nextInt(sleepTime));
-                } catch (InterruptedException e) {
-                    Control.getInstance().showErrorMessage(e.getMessage());
-                    Thread.currentThread().interrupt();
-                }
-            }
+        try {
+            correct = mainDbLock.tryLock(sleepTime, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Control.getInstance().showErrorMessage(e.getMessage());
+            Thread.currentThread().interrupt();
         }
-        if (count == (maxIterations + 1)) throw new InternalErrorException("Synchronization error in the main database");
+        if (!correct) throw new InternalErrorException("The main database is lock, another thread is using it");
     }
 
     public void releaseAccessToMainDb() {
-        mainDbLock.set(false);
+        mainDbLock.unlock();
     }
 
     public static void setDbPath(String dbPath) {
@@ -117,11 +111,6 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     private Connection getConnection(String organization) throws SQLException {
-        /*Connection conn = DriverManager.getConnection(buildDbUrl(organization));
-        String sql = "PRAGMA foreign_keys = ON;";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.execute();
-        }*/
         return DriverManager.getConnection(buildDbUrl(organization));
     }
 
