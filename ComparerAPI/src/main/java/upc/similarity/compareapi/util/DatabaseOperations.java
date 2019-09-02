@@ -23,6 +23,11 @@ public class DatabaseOperations {
     private DatabaseModel databaseModel = getValue();
     private Control control = Control.getInstance();
 
+    //is public to be accessible by tests
+    public void setDatabaseModel(DatabaseModel databaseModel) {
+        this.databaseModel = databaseModel;
+    }
+
     private DatabaseModel getValue() {
         try {
             return new SQLiteDatabase();
@@ -78,8 +83,7 @@ public class DatabaseOperations {
     public void saveBadRequestException(String organization, String responseId, BadRequestException e) throws BadRequestException, InternalErrorException {
         try {
             if (organization != null && responseId != null) {
-                databaseModel.saveException(organization, responseId, createJsonException(400, Constants.getInstance().getBadRequestMessage(), e.getMessage()));
-                databaseModel.finishComputation(organization, responseId);
+                databaseModel.saveExceptionAndFinishComputation(organization, responseId, createJsonException(400, Constants.getInstance().getBadRequestMessage(), e.getMessage()));
             }
             throw e;
         } catch (SQLException sq) {
@@ -88,11 +92,11 @@ public class DatabaseOperations {
     }
 
     public void saveInternalException(String console, String organization, String responseId, InternalErrorException e) throws InternalErrorException {
-        Control.getInstance().showErrorMessage(console + " " + organization + " " + responseId);
+        if (console.contains("The main database is lock")) Control.getInstance().showWarnMessage(console + " " + organization + " " + responseId);
+        else Control.getInstance().showErrorMessage(console + " " + organization + " " + responseId);
         try {
             if (organization != null && responseId != null) {
-                databaseModel.saveException(organization, responseId, createJsonException(500, Constants.getInstance().getInternalErrorMessage(), e.getMessage()));
-                databaseModel.finishComputation(organization, responseId);
+                databaseModel.saveExceptionAndFinishComputation(organization, responseId, createJsonException(500, Constants.getInstance().getInternalErrorMessage(), e.getMessage()));
             }
             throw e;
         } catch (SQLException sq) {
@@ -103,8 +107,7 @@ public class DatabaseOperations {
     public void saveNotFoundException(String organization, String responseId, NotFoundException e) throws NotFoundException, InternalErrorException {
         try {
             if (organization != null && responseId != null) {
-                databaseModel.saveException(organization, responseId, createJsonException(404, Constants.getInstance().getNotFoundMessage(), e.getMessage()));
-                databaseModel.finishComputation(organization, responseId);
+                databaseModel.saveExceptionAndFinishComputation(organization, responseId, createJsonException(404, Constants.getInstance().getNotFoundMessage(), e.getMessage()));
             }
             throw e;
         } catch (SQLException sq) {
@@ -115,14 +118,14 @@ public class DatabaseOperations {
     public void saveNotFinishedException(String organization, String responseId, NotFinishedException e) throws NotFinishedException, InternalErrorException {
         try {
             if (organization != null && responseId != null) {
-                databaseModel.saveException(organization, responseId, createJsonException(423, Constants.getInstance().getNotFinishedMessage(), e.getMessage()));
-                databaseModel.finishComputation(organization, responseId);
+                databaseModel.saveExceptionAndFinishComputation(organization, responseId, createJsonException(423, Constants.getInstance().getNotFinishedMessage(), e.getMessage()));
             }
             throw e;
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(),organization,responseId,"Error while saving a not finished exception response to the database");
         } catch (InternalErrorException e2) {
-            Control.getInstance().showErrorMessage("The main database is lock, another thread is using it 2");
+            Control.getInstance().showWarnMessage("The main database is lock, another thread is using it 2 " + organization + " " + responseId);
+            throw e2;
         }
     }
 
@@ -377,8 +380,7 @@ public class DatabaseOperations {
         control.showErrorMessage(sqlMessage + " " + organization + " " + responseId);
         try {
             if (organization != null && responseId != null) {
-                databaseModel.saveException(organization, responseId, createJsonException(500, Constants.getInstance().getSqlErrorMessage(), message));
-                databaseModel.finishComputation(organization, responseId);
+                databaseModel.saveExceptionAndFinishComputation(organization, responseId, createJsonException(500, Constants.getInstance().getSqlErrorMessage(), message));
             }
         } catch (SQLException sq2) {
             control.showErrorMessage("Error while saving SQL exception: " + sq2.getMessage());

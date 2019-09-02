@@ -10,7 +10,7 @@ import upc.similarity.compareapi.util.Time;
 @Component
 public class ScheduledTasks {
 
-    @Scheduled(cron = "0 0 0 0,7,14,21,28 * ?") //once a week
+    @Scheduled(cron = "0 0 0 3,7,14,21,28 * ?") //once a week //TODO change day 3 to 1
     public void deleteOldResponses() {
         Control.getInstance().showInfoMessage("DeleteOldResponses: Start computing");
         try {

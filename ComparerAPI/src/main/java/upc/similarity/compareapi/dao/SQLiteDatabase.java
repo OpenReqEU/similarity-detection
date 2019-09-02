@@ -33,18 +33,18 @@ public class SQLiteDatabase implements DatabaseModel {
     private static String dbPath = "data/";
     private static String driversName = "jdbc:sqlite:";
 
-    private void getAccessToMainDb() throws InternalErrorException {
+    //is public to be accessible by tests
+    public void getAccessToMainDb() throws InternalErrorException {
         int sleepTime = Constants.getInstance().getSleepTime();
-        boolean correct = false;
         try {
-            correct = mainDbLock.tryLock(sleepTime, TimeUnit.SECONDS);
+            if (!mainDbLock.tryLock(sleepTime, TimeUnit.SECONDS)) throw new InternalErrorException("The main database is lock, another thread is using it");
         } catch (InterruptedException e) {
             Control.getInstance().showErrorMessage(e.getMessage());
             Thread.currentThread().interrupt();
         }
-        if (!correct) throw new InternalErrorException("The main database is lock, another thread is using it");
     }
 
+    //is public to be accessible by tests
     public void releaseAccessToMainDb() {
         mainDbLock.unlock();
     }
@@ -334,13 +334,21 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void saveException(String organizationId, String responseId, String jsonResponse) throws SQLException, InternalErrorException {
+    public void saveExceptionAndFinishComputation(String organizationId, String responseId, String jsonResponse) throws SQLException, InternalErrorException {
 
         getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName)) {
             conn.setAutoCommit(false);
             deleteAllResponsePages(organizationId, responseId, conn);
             insertResponsePage(organizationId, responseId, 0, jsonResponse, conn);
+            String sql = "UPDATE responses SET finished = ?, finalTime = ? WHERE organizationId = ? AND responseId = ?";
+            try(PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1,1);
+                ps.setLong(2, getCurrentTime());
+                ps.setString(3,organizationId);
+                ps.setString(4,responseId);
+                ps.executeUpdate();
+            }
             conn.commit();
         } finally {
             releaseAccessToMainDb();
@@ -388,7 +396,10 @@ public class SQLiteDatabase implements DatabaseModel {
 
     @Override
     public void createDepsAuxiliaryTable(String organizationId) throws SQLException {
-        String sql1 = "CREATE TABLE aux_dependencies (\n"
+
+        String sql1 = "DROP TABLE IF EXISTS aux_dependencies;";
+
+        String sql2 = "CREATE TABLE aux_dependencies (\n"
                 + "	fromid varchar, \n"
                 + " toid varchar, \n"
                 + " status varchar, \n"
@@ -397,13 +408,14 @@ public class SQLiteDatabase implements DatabaseModel {
                 + " PRIMARY KEY(fromid, toid)"
                 + ");";
 
-        String sql2 = "INSERT INTO aux_dependencies SELECT * FROM dependencies;";
+        String sql3 = "INSERT INTO aux_dependencies SELECT * FROM dependencies;";
 
         try (Connection conn = getConnection(organizationId);
              Statement stmt = conn.createStatement()) {
             conn.setAutoCommit(false);
             stmt.execute(sql1);
             stmt.execute(sql2);
+            stmt.execute(sql3);
             conn.commit();
         }
 

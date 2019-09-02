@@ -69,7 +69,7 @@ public interface DatabaseModel {
 
     void saveResponsePage(String organizationId, String responseId, String jsonResponse) throws SQLException, NotFoundException, InternalErrorException;
 
-    void saveException(String organizationId, String responseId, String jsonResponse) throws SQLException, InternalErrorException;
+    void saveExceptionAndFinishComputation(String organizationId, String responseId, String jsonResponse) throws SQLException, InternalErrorException;
 
     void finishComputation(String organizationId, String responseId) throws SQLException, InternalErrorException;
 

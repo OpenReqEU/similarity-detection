@@ -19,6 +19,10 @@ public class Control {
         log.log(Level.INFO, text);
     }
 
+    public void showWarnMessage(String text) {
+        log.log(Level.WARNING, text);
+    }
+
     public void showErrorMessage(String text) {
         log.log(Level.SEVERE, text);
     }

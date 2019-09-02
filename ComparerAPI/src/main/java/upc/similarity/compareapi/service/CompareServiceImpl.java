@@ -33,7 +33,7 @@ public class CompareServiceImpl implements CompareService {
 
     @Override
     public void buildModel(String responseId, boolean compare, String organization, List<Requirement> requirements) throws BadRequestException, NotFinishedException, InternalErrorException {
-        control.showInfoMessage("BuildModel: Start computing");
+        control.showInfoMessage("BuildModel: Start computing " + organization + " " + responseId);
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"BuildModel");
@@ -46,12 +46,12 @@ public class CompareServiceImpl implements CompareService {
         }
         databaseOperations.generateEmptyResponse(organization, responseId);
 
-        control.showInfoMessage("BuildModel: Finish computing");
+        control.showInfoMessage("BuildModel: Finish computing " + organization + " " + responseId);
     }
 
     @Override
     public void buildModelAndCompute(String responseId, boolean compare, String organization, double threshold, List<Requirement> requirements) throws BadRequestException, NotFinishedException, InternalErrorException {
-        control.showInfoMessage("BuildModelAndCompute: Start computing");
+        control.showInfoMessage("BuildModelAndCompute: Start computing " + organization + " " + responseId);
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"BuildModelAndCompute");
@@ -74,12 +74,12 @@ public class CompareServiceImpl implements CompareService {
 
         databaseOperations.finishComputation(organization, responseId);
 
-        control.showInfoMessage("BuildModelAndCompute: Finish computing");
+        control.showInfoMessage("BuildModelAndCompute: Finish computing " + organization + " " + responseId);
     }
 
     @Override
     public void addRequirements(String responseId, String organization, List<Requirement> requirements) throws BadRequestException, NotFoundException, NotFinishedException, InternalErrorException {
-        control.showInfoMessage("AddRequirements: Start computing");
+        control.showInfoMessage("AddRequirements: Start computing " + organization + " " + responseId);
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"AddRequirements");
@@ -97,12 +97,12 @@ public class CompareServiceImpl implements CompareService {
 
         databaseOperations.generateEmptyResponse(organization, responseId);
 
-        control.showInfoMessage("AddRequirements: Finish computing");
+        control.showInfoMessage("AddRequirements: Finish computing " + organization + " " + responseId);
     }
 
     @Override
     public void deleteRequirements(String responseId, String organization, List<Requirement> requirements) throws BadRequestException, NotFoundException, NotFinishedException, InternalErrorException  {
-        control.showInfoMessage("DeleteRequirements: Start computing");
+        control.showInfoMessage("DeleteRequirements: Start computing " + organization + " " + responseId);
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"DeleteRequirements");
@@ -122,7 +122,7 @@ public class CompareServiceImpl implements CompareService {
 
         databaseOperations.generateEmptyResponse(organization, responseId);
 
-        control.showInfoMessage("DeleteRequirements: Finish computing");
+        control.showInfoMessage("DeleteRequirements: Finish computing " + organization + " " + responseId);
     }
 
 
@@ -140,7 +140,7 @@ public class CompareServiceImpl implements CompareService {
 
     @Override
     public void simReqOrganization(String responseId, String organization, double threshold, List<String> requirements) throws NotFoundException, NotFinishedException, BadRequestException, InternalErrorException {
-        control.showInfoMessage("SimReqOrganization: Start computing");
+        control.showInfoMessage("SimReqOrganization: Start computing " + organization + " " + responseId);
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"SimReqOrganization");
 
@@ -172,12 +172,12 @@ public class CompareServiceImpl implements CompareService {
 
         databaseOperations.finishComputation(organization, responseId);
 
-        control.showInfoMessage("SimReqOrganization: Finish computing");
+        control.showInfoMessage("SimReqOrganization: Finish computing " + organization + " " + responseId);
     }
 
     @Override
     public void simNewReqOrganization(String responseId, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, NotFinishedException, BadRequestException, InternalErrorException {
-        control.showInfoMessage("SimReqOrganization: Start computing");
+        control.showInfoMessage("SimReqOrganization: Start computing " + organization + " " + responseId);
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"SimReqOrganization");
 
@@ -211,12 +211,12 @@ public class CompareServiceImpl implements CompareService {
 
         databaseOperations.finishComputation(organization, responseId);
 
-        control.showInfoMessage("SimReqOrganization: Finish computing");
+        control.showInfoMessage("SimReqOrganization: Finish computing " + organization + " " + responseId);
     }
 
     @Override
     public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements) throws NotFoundException, InternalErrorException, BadRequestException {
-        control.showInfoMessage("SimReqProject: Start computing");
+        control.showInfoMessage("SimReqProject: Start computing " + organization + " " + responseId);
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
         databaseOperations.generateResponse(organization,responseId,"SimReqProject");
@@ -229,12 +229,12 @@ public class CompareServiceImpl implements CompareService {
         reqProject(projectRequirements.getReqsToCompare(), projectRequirements.getProjectReqs(), model, threshold, organization, responseId);
 
         databaseOperations.finishComputation(organization, responseId);
-        control.showInfoMessage("SimReqProject: Finish computing");
+        control.showInfoMessage("SimReqProject: Finish computing " + organization + " " + responseId);
     }
 
     @Override
     public void simProject(String responseId, String organization, double threshold, List<String> projectRequirements) throws NotFoundException, InternalErrorException {
-        control.showInfoMessage("SimProject: Start computing");
+        control.showInfoMessage("SimProject: Start computing " + organization + " " + responseId);
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
         databaseOperations.generateResponse(organization,responseId,"SimProject");
@@ -244,7 +244,7 @@ public class CompareServiceImpl implements CompareService {
         project(projectRequirements, model, threshold, responseId, organization);
 
         databaseOperations.finishComputation(organization, responseId);
-        control.showInfoMessage("SimProject: Finish computing");
+        control.showInfoMessage("SimProject: Finish computing " + organization + " " + responseId);
     }
 
 
@@ -254,7 +254,7 @@ public class CompareServiceImpl implements CompareService {
 
     @Override
     public void buildClusters(String responseId, boolean compare, double threshold, String organization, Clusters input) throws BadRequestException, NotFinishedException, InternalErrorException {
-        control.showInfoMessage("BuildClusters: Start computing; id: " + responseId + " number requirements: " + input.getRequirements().size());
+        control.showInfoMessage("BuildClusters: Start computing " + organization + " " + responseId + " " + input.getRequirements().size() + " reqs");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
@@ -279,12 +279,12 @@ public class CompareServiceImpl implements CompareService {
 
         databaseOperations.generateEmptyResponse(organization, responseId);
 
-        control.showInfoMessage("BuildClusters: Finish computing");
+        control.showInfoMessage("BuildClusters: Finish computing " + organization + " " + responseId);
     }
 
     @Override
     public void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, int maxNumber, Clusters input) throws BadRequestException, NotFinishedException, InternalErrorException {
-        control.showInfoMessage("BuildClustersAndCompute: Start computing; id: " + responseId + " number requirements: " + input.getRequirements().size());
+        control.showInfoMessage("BuildClustersAndCompute: Start computing " + organization + " " + responseId + " " + input.getRequirements().size() + " reqs");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
@@ -346,7 +346,7 @@ public class CompareServiceImpl implements CompareService {
 
         databaseOperations.finishComputation(organization, responseId);
 
-        control.showInfoMessage("BuildClustersAndCompute: Finish computing");
+        control.showInfoMessage("BuildClustersAndCompute: Finish computing " + organization + " " + responseId);
     }
 
     @Override
@@ -418,8 +418,8 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void batchProcess(String responseId, String organization, Clusters input) throws BadRequestException, NotFoundException, NotFinishedException, InternalErrorException{
-        control.showInfoMessage("BatchProcess: Start computing");
+    public void batchProcess(String responseId, String organization, Clusters input) throws BadRequestException, NotFoundException, NotFinishedException, InternalErrorException {
+        control.showInfoMessage("BatchProcess: Start computing " + organization + " " + responseId);
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
 
@@ -436,7 +436,7 @@ public class CompareServiceImpl implements CompareService {
             Map<String,Map<String,Double>> docs = model.getDocs();
 
             List<OrderedObject> objects = new ArrayList<>();
-            List<Dependency> deletedDependencies = new ArrayList<>();
+            List<Dependency> deletedDependencies;
 
             Set<String> notRepeatedReqs = new HashSet<>();
 
@@ -494,7 +494,7 @@ public class CompareServiceImpl implements CompareService {
         }
 
         databaseOperations.generateEmptyResponse(organization, responseId);
-        control.showInfoMessage("BatchProcess: Finish computing");
+        control.showInfoMessage("BatchProcess: Finish computing " + organization + " " + responseId);
     }
 
 
@@ -735,6 +735,7 @@ public class CompareServiceImpl implements CompareService {
         return result;
     }
 
+    //is public to be accessible by tests
     public void getAccessToUpdate(String organization, String responseId) throws NotFinishedException, InternalErrorException {
         String errorMessage = "Synchronization error";
         int sleepTime = Constants.getInstance().getSleepTime();
@@ -745,24 +746,29 @@ public class CompareServiceImpl implements CompareService {
         Lock lock = organizationLocks.get(organization);
         if (lock == null) DatabaseOperations.getInstance().saveInternalException("Synchronization 1rst conditional",organization, responseId, new InternalErrorException(errorMessage));
         else {
-            boolean correct = false;
             try {
-                correct = lock.tryLock(sleepTime, TimeUnit.SECONDS);
+                if (!lock.tryLock(sleepTime, TimeUnit.SECONDS)) {
+                    Control.getInstance().showInfoMessage("The " + organization + " database is lock, another thread is using it " + organization + " " + responseId);
+                    DatabaseOperations.getInstance().saveNotFinishedException(organization, responseId, new NotFinishedException("There is another computation in the same organization with write or update rights that has not finished yet"));
+                }
             } catch (InterruptedException e) {
                 Control.getInstance().showErrorMessage(e.getMessage());
                 Thread.currentThread().interrupt();
             }
-            if (!correct) {
-                Control.getInstance().showInfoMessage("The " + organization + " database is lock, another thread is using it");
-                DatabaseOperations.getInstance().saveNotFinishedException(organization, responseId, new NotFinishedException("There is another computation in the same organization with write or update rights that has not finished yet"));
-            }
         }
     }
 
+    //is public to be accessible by tests
     public void releaseAccessToUpdate(String organization, String responseId) throws InternalErrorException {
         Lock lock = organizationLocks.get(organization);
         if (lock == null) DatabaseOperations.getInstance().saveInternalException("Synchronization 2nd conditional",organization, responseId, new InternalErrorException("Synchronization error"));
-        else lock.unlock();
+        else {
+            try {
+                lock.unlock();
+            } catch (IllegalMonitorStateException e) {
+                DatabaseOperations.getInstance().saveInternalException("Synchronization 3rd conditional: " + e.getMessage(),organization, responseId, new InternalErrorException("Synchronization error"));
+            }
+        }
     }
 
     public void removeOrganizationLock(String organization) {
