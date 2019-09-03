@@ -108,14 +108,18 @@ public class ClusterOperations {
     }
 
     public void computeProposedDependencies(String organization, String responseId, Set<String> requirements, Set<Integer> clustersIds, Model model, boolean useAuxiliaryTable) throws InternalErrorException {
-        Control control = Control.getInstance();
         CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         Map<Integer,List<String>> clusters = model.getClusters();
-        Set<String> rejectedDependencies = loadRejectedDependencies(organization, responseId, useAuxiliaryTable);
+        Set<String> rejectedDependencies = loadDependenciesByStatus(organization, responseId, "rejected", useAuxiliaryTable);
+        Set<String> acceptedDependencies = loadDependenciesByStatus(organization, responseId, "accepted", useAuxiliaryTable); //TODO delete this
         List<Dependency> proposedDependencies = new ArrayList<>();
         int cont = 0;
         int maxDeps = Constants.getInstance().getMaxDepsForPage();
+        int numProposed = 0;
+        int numPositive = 0;
+        int numMaxProposed = 0;
+        int numMaxPositive = 0;
         //TODO this is causing n*n efficiency, can be improved saving the result of the pairs and only compute half of the matrix (less memory efficiency)
         for (String req1: requirements) {
             for (int clusterId: clustersIds) {
@@ -129,10 +133,16 @@ public class ClusterOperations {
                             maxScore = score;
                             maxReq = req2;
                         }
+                        if (score > model.getThreshold()) {
+                            ++numProposed;
+                            if (acceptedDependencies.contains(req1+req2)) ++numPositive;
+                        }
                     }
                 }
                 if (maxReq != null) {
                     ++cont;
+                    ++numMaxProposed;
+                    if (acceptedDependencies.contains(req1+maxReq)) ++numMaxPositive;
                     proposedDependencies.add(new Dependency(req1,maxReq,"proposed",maxScore,clusterId));
                     if (cont >= maxDeps) {
                         cont = 0;
@@ -142,6 +152,7 @@ public class ClusterOperations {
                 }
             }
         }
+        Control.getInstance().showInfoMessage("DEBUG Clusters " + organization + " " + responseId + " " + numProposed + " " + numPositive + " " + acceptedDependencies.size() + " " + numMaxPositive + " " + numMaxProposed);
         if (!proposedDependencies.isEmpty()) databaseOperations.saveDependencies(organization, responseId, proposedDependencies, useAuxiliaryTable);
     }
 
@@ -308,11 +319,11 @@ public class ClusterOperations {
         }
     }
 
-    private Set<String> loadRejectedDependencies(String organization, String responseId, boolean useAuxiliaryTable) throws InternalErrorException {
+    private Set<String> loadDependenciesByStatus(String organization, String responseId, String status, boolean useAuxiliaryTable) throws InternalErrorException {
         Set<String> result = new HashSet<>();
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         if (databaseOperations.existsOrganization(responseId, organization)) {
-            List<Dependency> dependencies = DatabaseOperations.getInstance().getRejectedDependencies(organization, responseId, useAuxiliaryTable);
+            List<Dependency> dependencies = DatabaseOperations.getInstance().getDependenciesByStatus(organization, responseId, status, useAuxiliaryTable);
             for (Dependency dependency : dependencies) {
                 String fromId = dependency.getFromid();
                 String toId = dependency.getToid();

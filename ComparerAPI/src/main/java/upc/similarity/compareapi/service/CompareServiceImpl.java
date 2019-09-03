@@ -16,7 +16,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -428,6 +427,12 @@ public class CompareServiceImpl implements CompareService {
 
         getAccessToUpdate(organization, responseId);
 
+        long timeDeletedDependencies = 0;
+        long timeAcceptedDependencies = 0;
+        long timeAddRequirements = 0;
+        long timeAddDeletedDependencies = 0;
+        long timeUpdatedProposedDependencies = 0;
+
         try {
             Model model = databaseOperations.loadModel(organization, responseId, true);
 
@@ -469,24 +474,49 @@ public class CompareServiceImpl implements CompareService {
             HashSet<Integer> clustersChanged = new HashSet<>();
             Map<String,Integer> reqCluster = computeReqClusterMap(model.getClusters(), model.getDocs().keySet());
 
+            Time time = Time.getInstance();
+
             for (OrderedObject orderedObject: objects) {
                 if (orderedObject.isDependency()) {
                     List<Dependency> aux = new ArrayList<>();
                     Dependency dependency = orderedObject.getDependency();
                     aux.add(dependency);
-                    if (dependency.getStatus().equals("accepted")) clusterOperations.addAcceptedDependencies(organization, responseId, aux, model, clustersChanged, reqCluster);
-                    else clusterOperations.addDeletedDependencies(organization, responseId, aux, model, clustersChanged, reqCluster);
+                    if (dependency.getStatus().equals("accepted")) {
+                        long auxTime = time.getCurrentMillis();
+                        clusterOperations.addAcceptedDependencies(organization, responseId, aux, model, clustersChanged, reqCluster);
+                        auxTime = time.getCurrentMillis() - auxTime;
+                        timeAcceptedDependencies += auxTime;
+                    }
+                    else {
+                        long auxTime = time.getCurrentMillis();
+                        clusterOperations.addDeletedDependencies(organization, responseId, aux, model, clustersChanged, reqCluster);
+                        auxTime = time.getCurrentMillis() - auxTime;
+                        timeDeletedDependencies += auxTime;
+                    }
                 } else {
                     List<Requirement> aux = new ArrayList<>();
                     Requirement requirement = orderedObject.getRequirement();
                     aux.add(requirement);
+                    long auxTime = time.getCurrentMillis();
                     clusterOperations.addRequirementsToClusters(organization, responseId, aux, model, clustersChanged, reqCluster);
                     addRequirementsToModel(aux, model);
+                    auxTime = time.getCurrentMillis() - auxTime;
+                    timeAddRequirements += auxTime;
                 }
             }
 
+            long auxTime = time.getCurrentMillis();
             clusterOperations.addDeletedDependencies(organization, responseId, deletedDependencies, model, clustersChanged, reqCluster);
+            auxTime = time.getCurrentMillis() - auxTime;
+            timeAddDeletedDependencies += auxTime;
+
+            auxTime = time.getCurrentMillis();
             clusterOperations.updateProposedDependencies(organization, responseId, model, clustersChanged, true);
+            auxTime = time.getCurrentMillis() - auxTime;
+            timeUpdatedProposedDependencies += auxTime;
+
+
+
             databaseOperations.updateModelClustersAndDependencies(organization, responseId, model, null, true);
 
         } finally {
@@ -494,7 +524,7 @@ public class CompareServiceImpl implements CompareService {
         }
 
         databaseOperations.generateEmptyResponse(organization, responseId);
-        control.showInfoMessage("BatchProcess: Finish computing " + organization + " " + responseId);
+        control.showInfoMessage("BatchProcess: Finish computing " + organization + " " + responseId + " " + timeAcceptedDependencies + " " + timeDeletedDependencies + " " + timeAddRequirements + " " + timeAddDeletedDependencies + " " + timeUpdatedProposedDependencies);
     }
 
 
@@ -747,8 +777,8 @@ public class CompareServiceImpl implements CompareService {
         if (lock == null) DatabaseOperations.getInstance().saveInternalException("Synchronization 1rst conditional",organization, responseId, new InternalErrorException(errorMessage));
         else {
             try {
-                if (!lock.tryLock(sleepTime, TimeUnit.SECONDS)) {
-                    Control.getInstance().showInfoMessage("The " + organization + " database is lock, another thread is using it " + organization + " " + responseId);
+                if (!lock.tryLock(sleepTime, TimeUnit.SECONDS)) { //NOSONAR
+                    Control.getInstance().showInfoMessage("The " + organization + " database is locked, another thread is using it " + organization + " " + responseId);
                     DatabaseOperations.getInstance().saveNotFinishedException(organization, responseId, new NotFinishedException("There is another computation in the same organization with write or update rights that has not finished yet"));
                 }
             } catch (InterruptedException e) {

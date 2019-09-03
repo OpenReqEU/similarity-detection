@@ -7,6 +7,7 @@ import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.test.context.junit4.SpringRunner;
+import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.config.Control;
 import upc.similarity.compareapi.dao.DatabaseModel;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
@@ -34,8 +35,12 @@ import static org.junit.Assert.*;
 @SpringBootTest()
 public class SyncTests {
 
+    private static int sleepTime;
+
     @BeforeClass
     public static void createTestDB() throws Exception {
+        sleepTime = Constants.getInstance().getSleepTime();
+        Constants.getInstance().setSleepTime(1);
         SQLiteDatabase.setDbPath("../testing/integration/test_database/");
         SQLiteDatabase db = new SQLiteDatabase();
         db.clearDatabase();
@@ -44,6 +49,7 @@ public class SyncTests {
 
     @AfterClass
     public static void deleteTestDB() throws Exception {
+        Constants.getInstance().setSleepTime(sleepTime);
         SQLiteDatabase db = new SQLiteDatabase();
         db.clearDatabase();
         File file = new File("../testing/integration/test_database/main.db");

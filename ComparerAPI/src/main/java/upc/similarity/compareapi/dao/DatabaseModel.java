@@ -44,7 +44,7 @@ public interface DatabaseModel {
 
     void deleteProposedClusterDependencies(String organizationId, int clusterId, boolean useAuxiliaryTable) throws SQLException;
 
-    List<Dependency> getRejectedDependencies(String organizationId, boolean useAuxiliaryTable) throws SQLException;
+    List<Dependency> getDependenciesByStatus(String organizationId, String status, boolean useAuxiliaryTable) throws SQLException;
 
     List<Dependency> getReqDependencies(String organizationId, String requirementId, String status, boolean useAuxiliaryTable) throws SQLException;
 

@@ -70,8 +70,8 @@ public class Requirement implements Serializable {
         this.text = text;
     }
 
-    public void setCreatedAt(long created_at) {
-        this.createdAt = created_at;
+    public void setCreatedAt(long createdAt) {
+        this.createdAt = createdAt;
     }
 
     public void setModifiedAt(long modifiedAt) {

@@ -21,7 +21,6 @@ import java.nio.file.Paths;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
@@ -37,7 +36,7 @@ public class SQLiteDatabase implements DatabaseModel {
     public void getAccessToMainDb() throws InternalErrorException {
         int sleepTime = Constants.getInstance().getSleepTime();
         try {
-            if (!mainDbLock.tryLock(sleepTime, TimeUnit.SECONDS)) throw new InternalErrorException("The main database is lock, another thread is using it");
+            if (!mainDbLock.tryLock(sleepTime, TimeUnit.SECONDS)) throw new InternalErrorException("The main database is locked, another thread is using it");
         } catch (InterruptedException e) {
             Control.getInstance().showErrorMessage(e.getMessage());
             Thread.currentThread().interrupt();
@@ -552,7 +551,7 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public List<Dependency> getRejectedDependencies(String organizationId, boolean useAuxiliaryTable) throws SQLException {
+    public List<Dependency> getDependenciesByStatus(String organizationId, String status, boolean useAuxiliaryTable) throws SQLException {
         List<Dependency> result = new ArrayList<>();
 
         try (Connection conn = getConnection(organizationId)) {
@@ -561,7 +560,7 @@ public class SQLiteDatabase implements DatabaseModel {
             if (useAuxiliaryTable) sql = "SELECT fromid, toid FROM aux_dependencies WHERE status = ?";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, "rejected");
+                ps.setString(1, status);
 
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {

@@ -13,7 +13,7 @@ public class Constants {
     private String internalErrorMessage = "Internal Error";
     private String sqlErrorMessage = "Database error";
     private String dependenciesArrayName = "dependencies";
-    private int sleepTime = 5; //seconds
+    private int sleepTime = 10; //seconds
 
     private Constants(){}
 
@@ -63,5 +63,9 @@ public class Constants {
 
     public int getSleepTime() {
         return sleepTime;
+    }
+
+    public void setSleepTime(int sleepTime) {
+        this.sleepTime = sleepTime;
     }
 }

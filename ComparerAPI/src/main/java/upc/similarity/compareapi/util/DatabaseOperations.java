@@ -124,7 +124,7 @@ public class DatabaseOperations {
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(),organization,responseId,"Error while saving a not finished exception response to the database");
         } catch (InternalErrorException e2) {
-            Control.getInstance().showWarnMessage("The main database is lock, another thread is using it 2 " + organization + " " + responseId);
+            Control.getInstance().showWarnMessage("The main database is locked, another thread is using it 2 " + organization + " " + responseId);
             throw e2;
         }
     }
@@ -320,10 +320,10 @@ public class DatabaseOperations {
         return result;
     }
 
-    public List<Dependency> getRejectedDependencies(String organizationId, String responseId, boolean useAuxiliaryTable) throws InternalErrorException {
+    public List<Dependency> getDependenciesByStatus(String organizationId, String responseId, String status, boolean useAuxiliaryTable) throws InternalErrorException {
         List<Dependency> result = new ArrayList<>();
         try {
-            result = databaseModel.getRejectedDependencies(organizationId, useAuxiliaryTable);
+            result = databaseModel.getDependenciesByStatus(organizationId, status,useAuxiliaryTable);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organizationId, responseId, "Error while loading the rejected dependencies from the database");
         }
