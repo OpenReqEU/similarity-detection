@@ -239,7 +239,7 @@ public class SQLiteDatabase implements DatabaseModel {
             organizationInfo = getOrganizationInfo(organizationId, conn);
         }
         try(Connection conn = getConnection(dbMainName)) {
-            String sql = "SELECT responseId, maxPages, finished, startTime, finalTime, methodName FROM responses WHERE organizationId = ?";
+            String sql = "SELECT responseId, maxPages, actualPage, finished, startTime, finalTime, methodName FROM responses WHERE organizationId = ?";
             try(PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, organizationId);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -249,13 +249,15 @@ public class SQLiteDatabase implements DatabaseModel {
                         long startTime = rs.getLong("startTime");
                         long finalTime = rs.getLong("finalTime");
                         String methodName = rs.getString("methodName");
-                        Integer maxPages = null;
+                        Integer pagesLeft = null;
                         Execution execution = null;
                         if (finished) {
-                            maxPages = rs.getInt("maxPages");
-                            execution = new Execution(responseId, methodName, maxPages, startTime, finalTime);
+                            int maxPages = rs.getInt("maxPages");
+                            int actualPage = rs.getInt("actualPage");
+                            pagesLeft = maxPages - actualPage;
+                            execution = new Execution(responseId, methodName, pagesLeft, startTime, finalTime);
                         } else {
-                            execution = new Execution(responseId, methodName, maxPages, startTime, null);
+                            execution = new Execution(responseId, methodName, pagesLeft, startTime, null);
                         }
                         if (finished) pendingResponses.add(execution);
                         else currentExecutions.add(execution);
