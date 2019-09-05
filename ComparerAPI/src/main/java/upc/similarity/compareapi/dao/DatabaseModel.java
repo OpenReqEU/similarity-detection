@@ -25,6 +25,8 @@ public interface DatabaseModel {
 
     void saveModel(String organizationId, Model model, List<Dependency> dependencies) throws IOException, InternalErrorException, SQLException;
 
+    boolean existReqInOrganizationModel(String organizationId, String requirement) throws NotFoundException, SQLException;
+
 
     /*
     Cluster operations

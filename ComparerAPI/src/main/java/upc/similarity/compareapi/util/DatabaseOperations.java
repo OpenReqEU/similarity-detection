@@ -340,6 +340,18 @@ public class DatabaseOperations {
         return result;
     }
 
+    public boolean existReqInOrganizationModel(String organizationId, String responseId, String requirement) throws InternalErrorException, NotFoundException {
+        boolean result = false;
+        try {
+            result = databaseModel.existReqInOrganizationModel(organizationId,requirement);
+        } catch (NotFoundException e) {
+            saveNotFoundException(organizationId, null, e);
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(), organizationId, null, "Error while checking existence of a requirement");
+        }
+        return result;
+    }
+
     public Organization getOrganizationInfo(String organizationId) throws NotFoundException, InternalErrorException {
         Organization organization = null;
         try {

@@ -267,6 +267,17 @@ public class MethodsTests {
     }
 
     @Test
+    public void simReqClustersReqNotExist() throws Exception {
+        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "0")
+                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"simReqClusters/input_model.json")))
+                .andExpect(status().isOk());
+        ++id;
+        this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("maxValue", "-1")
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqClusters/input_operation_not_exist.json")))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     public void treatDependencies() throws Exception {
         this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "1.1")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"treatDependencies/input_model.json")))

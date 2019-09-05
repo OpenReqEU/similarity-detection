@@ -359,6 +359,7 @@ public class CompareServiceImpl implements CompareService {
         HashSet<String> repeated = new HashSet<>();
 
         for (String id: requirements) {
+            if (!databaseOperations.existReqInOrganizationModel(organization, null, id)) throw new NotFoundException("The requirement with id " + id + " is not inside the organization's model");
             List<Dependency> dependencies = databaseOperations.getReqDepedencies(organization, null, id, "accepted", false);
             List<Dependency> proposedDependencies = databaseOperations.getReqDepedencies(organization, null, id, "proposed", false);
             proposedDependencies.sort(Comparator.comparing(Dependency::getDependencyScore).reversed());

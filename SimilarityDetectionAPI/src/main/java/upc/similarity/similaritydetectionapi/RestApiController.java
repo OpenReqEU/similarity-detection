@@ -24,8 +24,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping(value = "upc/similarity-detection")
 public class RestApiController {
 
-    //TODO update README and yaml file
-
     @Autowired
     SimilarityService similarityService;
 
@@ -279,6 +277,7 @@ public class RestApiController {
             "dependencies of the requirement received as input are returned.</p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
+            @ApiResponse(code=404, message = "Not found"),
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity simReqClusters(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                          @ApiParam(value="Requirement id", required = true, example = "UPC-1") @RequestParam(value = "requirementId") String requirementId,

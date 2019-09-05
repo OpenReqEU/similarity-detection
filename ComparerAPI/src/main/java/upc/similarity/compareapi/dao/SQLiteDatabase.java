@@ -122,7 +122,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
         boolean result = true;
         try (Connection conn = getConnection(dbMainName);
-             PreparedStatement ps = conn.prepareStatement("SELECT* FROM organizations WHERE id = ?")) {
+             PreparedStatement ps = conn.prepareStatement("SELECT id FROM organizations WHERE id = ?")) {
             ps.setString(1, organizationId);
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -721,6 +721,21 @@ public class SQLiteDatabase implements DatabaseModel {
             releaseAccessToMainDb();
         }
     }
+
+    @Override
+    public boolean existReqInOrganizationModel(String organizationId, String requirement) throws NotFoundException, SQLException {
+        String sql = "SELECT id FROM docs WHERE id = ?";
+        if (!existsOrganization(organizationId)) throw new NotFoundException("The organization " + organizationId + " does not exist");
+        try (Connection conn = getConnection(organizationId)) {
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, requirement);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next();
+                }
+            }
+        }
+    }
+
 
 
     /*
