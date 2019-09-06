@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiModelProperty;
 import org.json.JSONObject;
 import upc.similarity.similaritydetectionapi.config.Control;
+import upc.similarity.similaritydetectionapi.exception.InternalErrorException;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -129,13 +130,13 @@ public class Dependency implements Serializable {
     Auxiliary operations
      */
 
-    public JSONObject toJSON() {
+    public JSONObject toJSON() throws InternalErrorException {
         String jsonInString = "";
         try {
             jsonInString = mapper.writeValueAsString(this);
         } catch (Exception e) {
             Control.getInstance().showErrorMessage(e.getMessage());
-            throw new InternalError("Error while converting dependency to jsonObject");
+            throw new InternalErrorException("Error while converting dependency to jsonObject");
         }
         return new JSONObject(jsonInString);
     }

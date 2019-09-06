@@ -1,6 +1,8 @@
 package upc.similarity.similaritydetectionapi;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.*;
+import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,6 +16,10 @@ import upc.similarity.similaritydetectionapi.entity.input_output.*;
 import upc.similarity.similaritydetectionapi.exception.*;
 import upc.similarity.similaritydetectionapi.service.SimilarityService;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
@@ -427,6 +433,16 @@ public class RestApiController {
         TestConfig testConfig = TestConfig.getInstance();
         testConfig.setResult(json);
         testConfig.setComputationFinished(true);
+    }
+
+    @CrossOrigin
+    @PostMapping(value = "/TestDeleteBatchProcessFiles", produces = MediaType.APPLICATION_JSON_VALUE)
+    public void test() {
+        try {
+            FileUtils.cleanDirectory(new File("../testing/output/batch_process"));
+        } catch (IOException e) {
+            Control.getInstance().showErrorMessage(e.getMessage());
+        }
     }
 
 

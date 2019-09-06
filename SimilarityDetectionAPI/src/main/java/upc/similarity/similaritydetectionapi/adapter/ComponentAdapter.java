@@ -127,7 +127,7 @@ public abstract class ComponentAdapter {
         return jsonRequirements;
     }
 
-    protected JSONArray listDependenciesToJson(List<Dependency> dependencies) {
+    protected JSONArray listDependenciesToJson(List<Dependency> dependencies) throws InternalErrorException {
 
         JSONArray jsonDeps = new JSONArray();
 

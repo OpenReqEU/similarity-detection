@@ -1,5 +1,6 @@
 package upc.similarity.similaritydetectionapi.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -324,6 +325,7 @@ public class SimilarityServiceImpl implements SimilarityService {
 
         checkInput(input);
         ResultId id = getId();
+        saveInputToFile(input,id.getId());
 
         //New thread
         Thread thread = new Thread(() -> {
@@ -385,6 +387,22 @@ public class SimilarityServiceImpl implements SimilarityService {
     /*
     Private operations
      */
+
+    private void saveInputToFile(ProjectWithDependencies input, String responseId) throws InternalErrorException {
+        String jsonInString = "";
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            jsonInString = mapper.writeValueAsString(input);
+        } catch (Exception e) {
+            Control.getInstance().showErrorMessage(e.getMessage());
+            throw new InternalErrorException("Error while converting input to jsonObject");
+        }
+        try(BufferedWriter writer = new BufferedWriter(new FileWriter("../testing/output/batch_process/" + responseId + ".json"))) {
+            writer.write(jsonInString);
+        } catch (IOException e) {
+            throw new InternalErrorException("Error while writing input to file");
+        }
+    }
 
 
     private ResultId getId() {
