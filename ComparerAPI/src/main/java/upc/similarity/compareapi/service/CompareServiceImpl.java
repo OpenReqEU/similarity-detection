@@ -404,7 +404,7 @@ public class CompareServiceImpl implements CompareService {
                     if (status.equals("accepted")) {
                         clusterOperations.addAcceptedDependencies(organization, null, aux, model, clustersChanged, reqCluster);
                     } else if (status.equals("rejected")) {
-                        clusterOperations.addDeletedDependencies(organization, null, aux, model, clustersChanged, reqCluster);
+                        clusterOperations.addRejectedDependencies(organization, null, aux, model, clustersChanged, reqCluster);
                     }
                 }
             }
@@ -431,7 +431,6 @@ public class CompareServiceImpl implements CompareService {
         long timeDeletedDependencies = 0;
         long timeAcceptedDependencies = 0;
         long timeAddRequirements = 0;
-        long timeAddDeletedDependencies = 0;
         long timeUpdatedProposedDependencies = 0;
 
         try {
@@ -442,7 +441,6 @@ public class CompareServiceImpl implements CompareService {
             Map<String,Map<String,Double>> docs = model.getDocs();
 
             List<OrderedObject> objects = new ArrayList<>();
-            List<Dependency> deletedDependencies;
 
             Set<String> notRepeatedReqs = new HashSet<>();
 
@@ -456,21 +454,17 @@ public class CompareServiceImpl implements CompareService {
                 }
             }
 
-            HashSet<String> inputDependencies = new HashSet<>();
-
             for (Dependency dependency : input.getDependencies()) {
                 String status = dependency.getStatus();
-                if (dependency.getDependencyType() != null && dependency.getStatus() != null && dependency.getFromid() != null && dependency.getToid() != null && dependency.getDependencyType().equals("similar")) {
-                    String fromId = dependency.getFromid();
-                    String toId = dependency.getToid();
-                    inputDependencies.add(fromId+toId);
-                    inputDependencies.add(toId+fromId);
-                    if (status.equals("accepted") || status.equals("rejected")) objects.add(new OrderedObject(dependency, null, dependency.computeTime()));
+                if (dependency.getDependencyType() != null && dependency.getStatus() != null
+                        && dependency.getFromid() != null && dependency.getToid() != null
+                        && dependency.getDependencyType().equals("similar")
+                        && (status.equals("accepted") || status.equals("rejected"))) {
+                    objects.add(new OrderedObject(dependency, null, dependency.computeTime()));
                 }
             }
-            databaseOperations.createDepsAuxiliaryTable(organization, null);
 
-            deletedDependencies = databaseOperations.getNotInDependencies(organization,responseId,inputDependencies,true);
+            databaseOperations.createDepsAuxiliaryTable(organization, null);
             objects.sort(Comparator.comparing(OrderedObject::getTime));
             HashSet<Integer> clustersChanged = new HashSet<>();
             Map<String,Integer> reqCluster = computeReqClusterMap(model.getClusters(), model.getDocs().keySet());
@@ -490,7 +484,7 @@ public class CompareServiceImpl implements CompareService {
                     }
                     else {
                         long auxTime = time.getCurrentMillis();
-                        clusterOperations.addDeletedDependencies(organization, responseId, aux, model, clustersChanged, reqCluster);
+                        clusterOperations.addRejectedDependencies(organization, responseId, aux, model, clustersChanged, reqCluster);
                         auxTime = time.getCurrentMillis() - auxTime;
                         timeDeletedDependencies += auxTime;
                     }
@@ -507,16 +501,9 @@ public class CompareServiceImpl implements CompareService {
             }
 
             long auxTime = time.getCurrentMillis();
-            clusterOperations.addDeletedDependencies(organization, responseId, deletedDependencies, model, clustersChanged, reqCluster);
-            auxTime = time.getCurrentMillis() - auxTime;
-            timeAddDeletedDependencies += auxTime;
-
-            auxTime = time.getCurrentMillis();
             clusterOperations.updateProposedDependencies(organization, responseId, model, clustersChanged, true);
             auxTime = time.getCurrentMillis() - auxTime;
             timeUpdatedProposedDependencies += auxTime;
-
-
 
             databaseOperations.updateModelClustersAndDependencies(organization, responseId, model, null, true);
 
@@ -525,7 +512,7 @@ public class CompareServiceImpl implements CompareService {
         }
 
         databaseOperations.generateEmptyResponse(organization, responseId);
-        control.showInfoMessage("BatchProcess: Finish computing " + organization + " " + responseId + " " + timeAcceptedDependencies + " " + timeDeletedDependencies + " " + timeAddRequirements + " " + timeAddDeletedDependencies + " " + timeUpdatedProposedDependencies);
+        control.showInfoMessage("BatchProcess: Finish computing " + organization + " " + responseId + " " + timeAcceptedDependencies + " " + timeDeletedDependencies + " " + timeAddRequirements + " " + timeUpdatedProposedDependencies);
     }
 
 

@@ -60,8 +60,6 @@ public interface DatabaseModel {
 
     void deleteReqDependencies(String organizationId, String reqId, boolean useAuxiliaryTable) throws SQLException;
 
-    List<Dependency> getNotInDependencies(String organizationId, Set<String> dependencies, boolean useAuxiliaryTable) throws SQLException;
-
 
     /*
     Auxiliary operations

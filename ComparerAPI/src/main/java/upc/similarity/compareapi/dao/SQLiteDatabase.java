@@ -512,35 +512,6 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public List<Dependency> getNotInDependencies(String organizationId, Set<String> dependencies, boolean useAuxiliaryTable) throws SQLException {
-        List<Dependency> result = new ArrayList<>();
-
-        Set<String> repeated = new HashSet<>();
-
-        try (Connection conn = getConnection(organizationId)) {
-
-            String sql = "SELECT fromid, toid FROM dependencies WHERE status = ?";
-            if (useAuxiliaryTable) sql = "SELECT fromid, toid FROM aux_dependencies WHERE status = ?";
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, "accepted");
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        String fromid = rs.getString("fromid");
-                        String toid = rs.getString("toid");
-                        if (!dependencies.contains(fromid+toid) && !repeated.contains(fromid+toid)) {
-                            result.add(new Dependency(fromid, toid, "rejected", 0, -1));
-                            repeated.add(fromid+toid);
-                            repeated.add(toid+fromid);
-                        }
-                    }
-                }
-            }
-        }
-        return result;
-    }
-
-    @Override
     public void deleteProposedClusterDependencies(String organizationId, int clusterId, boolean useAuxiliaryTable) throws SQLException {
         String sql = "DELETE FROM dependencies WHERE clusterId = ? AND status = ?";
         if (useAuxiliaryTable) sql = "DELETE FROM aux_dependencies WHERE clusterId = ? AND status = ?";

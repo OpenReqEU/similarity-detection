@@ -1,6 +1,10 @@
-[{"toid":"UPC-9","score":0,"clusterId":8,"fromid":"UPC-2","status":"accepted"},
-{"toid":"UPC-2","score":0,"clusterId":8,"fromid":"UPC-9","status":"accepted"},
-{"toid":"UPC-9","score":0,"clusterId":8,"fromid":"UPC-6","status":"accepted"},
-{"toid":"UPC-6","score":0,"clusterId":8,"fromid":"UPC-9","status":"accepted"},
-{"toid":"UPC-2","score":0,"clusterId":-1,"fromid":"UPC-1","status":"rejected"},
-{"toid":"UPC-1","score":0,"clusterId":-1,"fromid":"UPC-2","status":"rejected"}]
+[{"toid":"UPC-2","score":0,"clusterId":2,"fromid":"UPC-1","status":"accepted"},
+{"toid":"UPC-1","score":0,"clusterId":2,"fromid":"UPC-2","status":"accepted"},
+{"toid":"UPC-9","score":0,"clusterId":2,"fromid":"UPC-2","status":"accepted"},
+{"toid":"UPC-2","score":0,"clusterId":2,"fromid":"UPC-9","status":"accepted"},
+{"toid":"UPC-9","score":0,"clusterId":2,"fromid":"UPC-6","status":"accepted"},
+{"toid":"UPC-6","score":0,"clusterId":2,"fromid":"UPC-9","status":"accepted"},
+{"toid":"UPC-2","score":0,"clusterId":-1,"fromid":"UPC-4","status":"rejected"},
+{"toid":"UPC-4","score":0,"clusterId":-1,"fromid":"UPC-2","status":"rejected"},
+{"toid":"UPC-1","score":0,"clusterId":-1,"fromid":"UPC-6","status":"rejected"},
+{"toid":"UPC-6","score":0,"clusterId":-1,"fromid":"UPC-1","status":"rejected"}]

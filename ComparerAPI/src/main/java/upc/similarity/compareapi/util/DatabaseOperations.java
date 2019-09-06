@@ -243,16 +243,6 @@ public class DatabaseOperations {
         return result;
     }
 
-    public List<Dependency> getNotInDependencies(String organizationId, String responseId, Set<String> dependencies, boolean useAuxiliaryTable) throws InternalErrorException {
-        List<Dependency> result = null;
-        try {
-            result = databaseModel.getNotInDependencies(organizationId, dependencies, useAuxiliaryTable);
-        } catch (SQLException sq) {
-            treatSQLException(sq.getMessage(), organizationId, responseId, "Error while checking rejected dependencies from the database");
-        }
-        return result;
-    }
-
     public void updateModelClustersAndDependencies(String organization, String responseId, Model model, List<Dependency> dependencies, boolean useDepsAuxiliaryTable) throws InternalErrorException {
         String errorMessage = "Error while saving the new model to the database";
         try {

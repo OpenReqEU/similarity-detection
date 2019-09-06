@@ -9,13 +9,12 @@
         {"id":"UPC-9","text":"UAB","name":"","created_at":"1"}
     ],
     "dependencies":[
-        {"dependency_type":"similar","status":"accepted","fromid":"UPC-1","toid":"UPC-3","created_at":"0"},
-        {"dependency_type":"similar","status":"accepted","fromid":"UPC-2","toid":"UPC-3","created_at":"0"},
-        {"dependency_type":"similar","status":"accepted","fromid":"UPC-4","toid":"UPC-3","created_at":"0"},
         {"dependency_type":"similar","status":"accepted","fromid":"UPC-4","toid":"UPC-5","created_at":"9"},
         {"dependency_type":"similar","status":"accepted","fromid":"UPC-2","toid":"UPC-9","created_at":"10"},
         {"dependency_type":"similar","status":"accepted","fromid":"UPC-6","toid":"UPC-9","created_at":"3"},
         {"dependency_type":"similar","status":"rejected","fromid":"UPC-4","toid":"UPC-5","created_at":"4"},
-        {"dependency_type":"similar","status":"rejected","fromid":"UPC-6","toid":"UPC-5","created_at":"8"}
+        {"dependency_type":"similar","status":"rejected","fromid":"UPC-6","toid":"UPC-5","created_at":"8"},
+        {"dependency_type":"similar","status":"rejected","fromid":"UPC-2","toid":"UPC-9","created_at":"11"},
+        {"dependency_type":"similar","status":"accepted","fromid":"UPC-6","toid":"UPC-3","created_at":"12"}
     ]
 }

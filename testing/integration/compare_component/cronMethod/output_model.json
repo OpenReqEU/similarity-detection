@@ -1,12 +1,12 @@
 {
 	"compare": true,
-	"lastClusterId": 8,
+	"lastClusterId": 7,
 	"corpus": [],
 	"corpusFrequency": [],
 	"threshold": 1.1,
 	"isCluster": true,
 	"clusters": [{
-		"clusterRequirements": ["UPC-1"],
+		"clusterRequirements": ["UPC-1", "UPC-2", "UPC-9", "UPC-6"],
 		"clusterId": 2
 	}, {
 		"clusterRequirements": ["UPC-4"],
@@ -17,8 +17,5 @@
 	}, {
 		"clusterRequirements": ["UPC-5"],
 		"clusterId": 7
-	}, {
-		"clusterRequirements": ["UPC-2", "UPC-9", "UPC-6"],
-		"clusterId": 8
 	}]
 }

@@ -317,7 +317,6 @@ public class RestApiController {
             "<li>New requirements: The input requirements that do not pertain to the organization's model are considered to be new requirements. The method stores the pre-processing of the new requirements, adds them to the tf-idf model, and puts the new requirements as clusters of one requirement.</li>" +
             "<li>Updated requirements: The input requirements with a title or text different from the one stored in the database are considered updated requirements. The method updates their pre-processing in the database and updates the organization clusters accordingly.</li>" +
             "<li>New dependencies: The input similarity dependencies that do not pertain to the organization's model are considered to be new dependencies. The method uses the accepted and rejected dependencies to update the organization clusters.</li>" +
-            "<li>Removed dependencies: The organization dependencies that do not appear in the input similarity dependencies are considered removed dependencies. The method updates them as rejected and changes the clusters accordingly.</li>" +
             "</ul></p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),

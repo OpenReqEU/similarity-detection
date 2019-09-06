@@ -206,7 +206,7 @@ public class ClusterOperations {
         model.setLastClusterId(lastClusterId);
     }
 
-    public void addDeletedDependencies(String organization, String responseId, List<Dependency> deletedDependencies, Model model, Set<Integer> clustersChanged, Map<String,Integer> reqCluster) throws InternalErrorException {
+    public void addRejectedDependencies(String organization, String responseId, List<Dependency> deletedDependencies, Model model, Set<Integer> clustersChanged, Map<String,Integer> reqCluster) throws InternalErrorException {
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
         Map<String,Map<String,Double>> docs = model.getDocs();
