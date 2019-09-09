@@ -1,18 +1,13 @@
 package upc.similarity.compareapi.util;
 
-import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
-import org.deeplearning4j.models.word2vec.VocabWord;
-import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
-import org.deeplearning4j.text.documentiterator.LabelsSource;
-import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
-import org.deeplearning4j.text.sentenceiterator.CollectionSentenceIterator;
-import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
-import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import edu.ucla.sspace.matrix.Matrices;
+import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.SVD;
+import edu.ucla.sspace.matrix.SparseHashMatrix;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import upc.similarity.compareapi.config.Control;
+import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.entity.input.Clusters;
@@ -39,69 +34,79 @@ public class TestMethods {
         return instance;
     }
 
-    public void machineLearning() {
-        List<String> requirements = new ArrayList<>();
-        requirements.add("This is my way .");
-        requirements.add("This is my case .");
-        requirements.add("This is my world .");
-        requirements.add("We now have one .");
-        SentenceIterator iter = new CollectionSentenceIterator(requirements);
+    public void testSvd(boolean compare, int dimensions, Clusters input) {
+        Thread thread = new Thread(() ->{
+            Control.getInstance().showInfoMessage("DEBUG: LSA test. Start initialization");
+            CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
+            Model model = null;
+            try {
+                model = generateModel(compare, deleteDuplicates(input.getRequirements(), null, null));
+            } catch (Exception e) {
+                control.showInfoMessage(e.getMessage());
+            }
 
-        AbstractCache<VocabWord> cache = new AbstractCache<>();
+            Map<String, Map<String, Double>> docs = model.getDocs();
+            Map<String, Integer> corpus = model.getCorpusFrequency();
+            Map<String, Integer> docIndex = new HashMap<>();
+            Map<String, Integer> wordIndex = new HashMap<>();
 
-        TokenizerFactory t = new DefaultTokenizerFactory();
-        t.setTokenPreProcessor(new CommonPreprocessor());
+            int wordId = 0;
+            for (String word : corpus.keySet()) {
+                wordIndex.put(word, wordId);
+                ++wordId;
+            }
 
-        /*
-             if you don't have LabelAwareIterator handy, you can use synchronized labels generator
-              it will be used to label each document/sequence/line with it's own label.
-              But if you have LabelAwareIterator ready, you can can provide it, for your in-house labels
-        */
-        LabelsSource source = new LabelsSource("DOC_");
+            SVD.Algorithm algorithm = SVD.Algorithm.SVDLIBC;
+            Matrix matrix = new SparseHashMatrix(corpus.size(), docs.size());
 
-        ParagraphVectors vec = new ParagraphVectors.Builder()
-                .minWordFrequency(1)
-                .iterations(5)
-                .epochs(1)
-                .layerSize(100)
-                .learningRate(0.025)
-                .labelsSource(source)
-                .windowSize(5)
-                .iterate(iter)
-                .trainWordVectors(false)
-                .vocabCache(cache)
-                .tokenizerFactory(t)
-                .sampling(0)
-                .build();
+            int docId = 0;
+            for (Map.Entry<String, Map<String, Double>> entry : docs.entrySet()) {
+                docIndex.put(entry.getKey(), docId);
+                for (Map.Entry<String, Double> word : entry.getValue().entrySet()) {
+                    int index = wordIndex.get(word.getKey());
+                    matrix.set(index, docId, word.getValue());
+                }
+                ++docId;
+            }
 
-        vec.fit();
+            Control.getInstance().showInfoMessage("DEBUG: LSA test. Start svd computation");
 
-        /*
-            In training corpus we have few lines that contain pretty close words invloved.
-            These sentences should be pretty close to each other in vector space
-            line 3721: This is my way .
-            line 6348: This is my case .
-            line 9836: This is my house .
-            line 12493: This is my world .
-            line 16393: This is my work .
-            this is special sentence, that has nothing common with previous sentences
-            line 9853: We now have one .
-            Note that docs are indexed from 0
-         */
+            Matrix[] matrices = SVD.svd(matrix, algorithm, dimensions);
 
-        double similarity1 = vec.similarity("DOC_9835", "DOC_12492");
-        control.showInfoMessage("9836/12493 ('This is my house .'/'This is my world .') similarity: " + similarity1);
+            //Matrix S = matrices[0];
+            Matrix Z = matrices[1];
+            Matrix U = matrices[2];
 
-        double similarity2 = vec.similarity("DOC_3720", "DOC_16392");
-        control.showInfoMessage("3721/16393 ('This is my way .'/'This is my work .') similarity: " + similarity2);
+            Matrix result = Matrices.multiply(Z, U);
 
-        double similarity3 = vec.similarity("DOC_6347", "DOC_3720");
-        control.showInfoMessage("6348/3721 ('This is my case .'/'This is my way .') similarity: " + similarity3);
+            Control.getInstance().showInfoMessage("DEBUG: LSA test. Start accuracy computation");
 
-        // likelihood in this case should be significantly lower
-        double similarityX = vec.similarity("DOC_3720", "DOC_9852");
-        control.showInfoMessage("3721/9853 ('This is my way .'/'We now have one .') similarity: " + similarityX +
-                "(should be significantly lower)");
+            int countNans = 0;
+
+            JSONArray scoresArray = new JSONArray();
+            for (Dependency dependency : input.getDependencies()) {
+                String fromId = dependency.getFromid();
+                String toId = dependency.getToid();
+                int indexFromId = docIndex.get(fromId);
+                int indexToId = docIndex.get(toId);
+                double value = cosineSimilarity.compute(result.getColumn(indexFromId), result.getColumn(indexToId));
+                if (value >= 0 || value <= 0) scoresArray.put(value);
+                else {
+                    ++countNans;
+                    scoresArray.put(0);
+                }
+            }
+
+            Control.getInstance().showInfoMessage("DEBUG: LSA test. Start writing to file " + countNans);
+
+            for (int i = 0; i < scoresArray.length(); ++i) {
+                double value = scoresArray.getDouble(i);
+                appendToFile("../testing/output/lsa_test.txt", value + "");
+            }
+
+            Control.getInstance().showInfoMessage("DEBUG: LSA test. Finish computing");
+        });
+        thread.start();
     }
 
     public void TestAccuracy(boolean compare, Clusters input) {
@@ -201,7 +206,7 @@ public class TestMethods {
         return result.toString();
     }
 
-    private void writeToFile(String fileName, String text) {
+    private void appendToFile(String fileName, String text) {
         try (FileWriter fw = new FileWriter(fileName, true);
              BufferedWriter bw = new BufferedWriter(fw)) {
             bw.write(text);

@@ -556,8 +556,8 @@ public class CompareServiceImpl implements CompareService {
      */
 
     @Override
-    public void testAccuracy(boolean compare, Clusters input) {
-        TestMethods.getInstance().TestAccuracy(compare, input);
+    public void testAccuracy(boolean compare, int dimensions, Clusters input) {
+        TestMethods.getInstance().testSvd(compare,dimensions,input);
     }
 
     @Override
