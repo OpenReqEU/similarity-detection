@@ -17,6 +17,8 @@ import upc.similarity.compareapi.exception.InternalErrorException;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 
@@ -37,6 +39,12 @@ public class TestMethods {
     public void testSvd(boolean compare, int dimensions, Clusters input) {
         Thread thread = new Thread(() ->{
             Control.getInstance().showInfoMessage("DEBUG: LSA test. Start initialization");
+            try {
+                Files.deleteIfExists(Paths.get("../testing/output/lsa_test.txt"));
+                Files.createFile(Paths.get("../testing/output/lsa_test.txt"));
+            } catch (IOException e) {
+                Control.getInstance().showErrorMessage(e.getMessage());
+            }
             CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
             Model model = null;
             try {
