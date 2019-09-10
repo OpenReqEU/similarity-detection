@@ -8,6 +8,7 @@ import upc.similarity.compareapi.entity.*;
 import upc.similarity.compareapi.entity.auxiliary.ClusterAndDeps;
 import upc.similarity.compareapi.entity.auxiliary.OrderedObject;
 import upc.similarity.compareapi.entity.input.Clusters;
+import upc.similarity.compareapi.entity.input.ProjectProject;
 import upc.similarity.compareapi.entity.input.ReqProject;
 import upc.similarity.compareapi.entity.output.Dependencies;
 import upc.similarity.compareapi.exception.*;
@@ -162,7 +163,7 @@ public class CompareServiceImpl implements CompareService {
             if (!repeatedHash.contains(id)) projectRequirements.add(id);
         }
 
-        reqProject(requirementsToCompare, projectRequirements, model, threshold, organization, responseId);
+        reqProject(requirementsToCompare, projectRequirements, model, threshold, organization, responseId,true);
         databaseOperations.finishComputation(organization, responseId);
 
         control.showInfoMessage("SimReqOrganization: Finish computing " + organization + " " + responseId);
@@ -197,7 +198,7 @@ public class CompareServiceImpl implements CompareService {
                 if (!repeatedHash.contains(id)) projectRequirements.add(id);
             }
 
-            reqProject(requirementsToCompare, projectRequirements, model, threshold, organization, responseId);
+            reqProject(requirementsToCompare, projectRequirements, model, threshold, organization, responseId, true);
             databaseOperations.saveModel(organization, responseId, model, null);
         } finally {
             releaseAccessToUpdate(organization, responseId);
@@ -220,7 +221,7 @@ public class CompareServiceImpl implements CompareService {
             if (projectRequirements.getProjectReqs().contains(req)) databaseOperations.saveBadRequestException(organization, responseId, new BadRequestException("The requirement with id " + req + " is already inside the project"));
         }
 
-        reqProject(projectRequirements.getReqsToCompare(), projectRequirements.getProjectReqs(), model, threshold, organization, responseId);
+        reqProject(projectRequirements.getReqsToCompare(), projectRequirements.getProjectReqs(), model, threshold, organization, responseId, true);
 
         databaseOperations.finishComputation(organization, responseId);
         control.showInfoMessage("SimReqProject: Finish computing " + organization + " " + responseId);
@@ -239,6 +240,24 @@ public class CompareServiceImpl implements CompareService {
 
         databaseOperations.finishComputation(organization, responseId);
         control.showInfoMessage("SimProject: Finish computing " + organization + " " + responseId);
+    }
+
+    @Override
+    public void simProjectProject(String responseId, String organization, double threshold, ProjectProject projects) throws NotFoundException, InternalErrorException {
+        control.showInfoMessage("SimProjectProject: Start computing " + organization + " " + responseId);
+        DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
+
+        databaseOperations.generateResponse(organization,responseId,"SimProjectProject");
+
+        List<String> project1NotRepeated = deleteListDuplicates(projects.getFirstProjectRequirements());
+        List<String> project2NotRepeated = deleteListDuplicates(projects.getSecondProjectRequirements());
+
+        Model model = databaseOperations.loadModel(organization, responseId, false);
+
+        reqProject(project1NotRepeated,project2NotRepeated,model,threshold,organization,responseId, false);
+
+        databaseOperations.finishComputation(organization, responseId);
+        control.showInfoMessage("SimProjectProject: Finish computing " + organization + " " + responseId);
     }
 
 
@@ -565,6 +584,11 @@ public class CompareServiceImpl implements CompareService {
     Private methods
      */
 
+    private List<String> deleteListDuplicates(List<String> inputList) {
+        HashSet<String> notRepeated = new HashSet<>(inputList);
+        return new ArrayList<>(notRepeated);
+    }
+
     private HashMap<String, Integer> computeReqClusterMap(Map<Integer,List<String>> clusters, Set<String> requirements) {
         HashMap<String,Integer> reqCluster = new HashMap<>();
         for (String requirement: requirements) {
@@ -589,7 +613,7 @@ public class CompareServiceImpl implements CompareService {
         return !oldRequirement.equals(newRequirement);
     }
 
-    private void reqProject(List<String> reqsToCompare, List<String> projectRequirements, Model model, double threshold, String organization, String responseId) throws InternalErrorException {
+    private void reqProject(List<String> reqsToCompare, List<String> projectRequirements, Model model, double threshold, String organization, String responseId, boolean include) throws InternalErrorException {
         CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         Constants constants = Constants.getInstance();
@@ -616,7 +640,7 @@ public class CompareServiceImpl implements CompareService {
                         }
                     }
                 }
-                projectRequirements.add(req1);
+                if (include) projectRequirements.add(req1);
             }
         }
 

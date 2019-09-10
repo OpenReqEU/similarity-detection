@@ -31,6 +31,8 @@ public interface SimilarityService {
 
     ResultId simProject(String url, String organization, String project, double threshold, ProjectsModel input) throws NotFoundException, BadRequestException;
 
+    ResultId simProjectProject(String url, String organization, String firstProject, String secondProject, double threshold, ProjectsModel input) throws NotFoundException, BadRequestException;
+
 
     /*
     Cluster operations

@@ -217,6 +217,29 @@ public class RestApiController {
         }
     }
 
+    @CrossOrigin
+    @PostMapping(value = "/ProjectProject", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Similarity comparison between two projects.", notes = "<p><i>Asynchronous</i> method.</p><p>Returns an array of similarity dependencies with a score above the specified threshold" +
+            " between each requirement of the first project and all the requirements of the second one. The similarity score is computed with the tf-idf model assigned to the indicated organization. The input ids that do not belong to any organization requirement are ignored" +
+            ".</p>", tags = "Similarity without clusters")
+    @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
+            @ApiResponse(code=400, message = "Bad request"),
+            @ApiResponse(code=404, message = "Not found"),
+            @ApiResponse(code=500, message = "Internal error")})
+    public ResponseEntity simProjectProject(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
+                                     @ApiParam(value="Id of the first project to compare", required = true, example = "UPC-P1") @RequestParam("firstProject") String firstProject,
+                                     @ApiParam(value="Id of the second project to compare", required = true, example = "UPC-P2") @RequestParam("secondProject") String secondProject,
+                                     @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
+                                     @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
+                                     @ApiParam(value="OpenReq JSON with the input projects and their requirements", required = true) @RequestBody ProjectsModel input) {
+        try {
+            if(url != null) urlOk(url);
+            return new ResponseEntity<>(similarityService.simProjectProject(url,organization,firstProject,secondProject,threshold,input), HttpStatus.OK);
+        } catch (ComponentException e) {
+            return getComponentError(e);
+        }
+    }
+
 
     /*
     Similarity with clusters

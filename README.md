@@ -22,6 +22,7 @@ There are three types of operations (each method has a more extensive descriptio
     - ReqReq: Compares two requirements.
     - ReqProject: Compares all the requirements in the input list with a set of requirements given in the input.
     - Project: Compares all possible pairs of requirements from a set of requirements.
+    - ProjectProject: Compares each requirement of a project with all the requirements of another project
     - ReqOrganization: Compares a set of requirements with all the requirements of an organization.
     - NewReqOrganization: Pre-processes the input requirements and adds them to an organization's tf-idf model. It also compares the input requirements with all the requirements of the organization.
 - Similarity with clusters: These methods work with a set of input requirements and dependencies. The clusters are considered as graphs connected by similarity dependencies accepted by the user where the nodes are the requirements of the model. We denominate orphans to the clusters with only one requirement.

@@ -226,6 +226,29 @@ public class ControllerTests {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    public void projectProject() throws Exception {
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/SimProjectProject"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("")));
+        MvcResult result = this.mockMvc.perform(post("/upc/similarity-detection/ProjectProject").param("organization", "UPC").param("url", callback).param("threshold", "0")
+                .param("firstProject", "UPC-P1").param("secondProject", "UPC-P2").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"projectProject/input_project.json")))
+                .andExpect(status().isOk()).andReturn();
+        TestConfig testConfig = TestConfig.getInstance();
+        while(!testConfig.isComputationFinished()) {Thread.sleep(1000);}
+        testConfig.setComputationFinished(false);
+        assertEquals(createJsonResult(200, aux_getResponseId(result), "ProjectProject"), testConfig.getResult().toString());
+    }
+
+    @Test
+    public void projectProjectSame() throws Exception {
+        this.mockMvc.perform(post("/upc/similarity-detection/ProjectProject").param("organization", "UPC").param("url", callback).param("threshold", "0")
+                .param("firstProject", "UPC-P1").param("secondProject", "UPC-P1").contentType(MediaType.APPLICATION_JSON).content(read_file(path+"projectProject/input_project.json")))
+                .andExpect(status().isBadRequest());
+    }
+
 
     /*
     Similarity with clusters

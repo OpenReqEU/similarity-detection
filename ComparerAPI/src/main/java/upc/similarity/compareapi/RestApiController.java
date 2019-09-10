@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.entity.input.Clusters;
+import upc.similarity.compareapi.entity.input.ProjectProject;
 import upc.similarity.compareapi.entity.input.ReqProject;
 import upc.similarity.compareapi.exception.*;
 import upc.similarity.compareapi.service.CompareService;
@@ -133,6 +134,19 @@ public class RestApiController {
                                      @RequestBody List<String> projectRequirements) {
         try {
             compareService.simProject(responseId,organization,threshold,projectRequirements);
+            return new ResponseEntity<>(null,HttpStatus.OK);
+        } catch (ComponentException e) {
+            return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
+        }
+    }
+
+    @PostMapping(value = "/SimProjectProject")
+    public ResponseEntity simProjectProject(@RequestParam("organization") String organization,
+                                     @RequestParam("responseId") String responseId,
+                                     @RequestParam("threshold") double threshold,
+                                     @RequestBody ProjectProject projects) {
+        try {
+            compareService.simProjectProject(responseId,organization,threshold,projects);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));

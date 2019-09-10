@@ -249,6 +249,35 @@ public class SimilarityServiceImpl implements SimilarityService {
         return id;
     }
 
+    @Override
+    public ResultId simProjectProject(String url, String organization, String firstProjectId, String secondProjectId, double threshold, ProjectsModel input) throws NotFoundException, BadRequestException {
+        checkInput(input);
+        checkThreshold(threshold);
+        if (firstProjectId.equals(secondProjectId)) throw new BadRequestException("The two input projects have the same id.");
+        Project firstProject = searchProject(firstProjectId,input.getProjects());
+        Project secondProject = searchProject(secondProjectId,input.getProjects());
+        ResultId id = getId();
+
+        //New thread
+        Thread thread = new Thread(() -> {
+            ResultJson result = new ResultJson(id.getId(),"ProjectProject");
+            try {
+                ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
+                componentAdapter.simProjectProject(id.getId(),organization,threshold,firstProject.getSpecifiedRequirements(),secondProject.getSpecifiedRequirements());
+                result.setCode(200);
+            } catch (ComponentException e) {
+                result.setException(e.getStatus(),e.getError(),e.getMessage());
+            }
+            finally {
+                updateClient(result,url);
+            }
+        });
+
+        thread.start();
+        return id;
+    }
+
+
 
 
     /*

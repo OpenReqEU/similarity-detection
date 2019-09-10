@@ -1,0 +1,16 @@
+{
+  "projects": [
+    {
+      "id": "UPC-P1",
+      "specifiedRequirements": [
+        "UPC-1","UPC-2","UPC-3","UPC-5","UPC-6","UPC-7","UPC-8"
+      ]
+    },
+    {
+      "id": "UPC-P2",
+      "specifiedRequirements": [
+        "UPC-6","UPC-7","UPC-8"
+      ]
+    }
+  ]
+}

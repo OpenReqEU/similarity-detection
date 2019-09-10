@@ -7,6 +7,7 @@ import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Organization;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.entity.input.Clusters;
+import upc.similarity.compareapi.entity.input.ProjectProject;
 import upc.similarity.compareapi.entity.input.ReqProject;
 import upc.similarity.compareapi.entity.output.Dependencies;
 import upc.similarity.compareapi.exception.BadRequestException;
@@ -38,6 +39,8 @@ public interface CompareService {
     void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements) throws NotFoundException, InternalErrorException, BadRequestException;
 
     void simProject(String responseId, String organization, double threshold, List<String> projectRequirements) throws NotFoundException, InternalErrorException;
+
+    void simProjectProject(String responseId, String organization, double threshold, ProjectProject projects) throws NotFoundException, InternalErrorException;
 
 
     /*

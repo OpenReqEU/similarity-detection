@@ -37,6 +37,7 @@ public class SwaggerConfig {
             "<li>ReqReq: Compares two requirements.</li>" +
             "<li>ReqProject: Compares all the requirements in the input list with a set of requirements given in the input.</li>" +
             "<li>Project: Compares all possible pairs of requirements of an organization.</li>" +
+            "<li>ProjectProject: Compares each requirement of a project with all the requirements of another project.</li>" +
             "<li>ReqOrganization: Compares a set of requirements with all the requirements of an organization.</li>" +
             "<li>NewReqOrganization: Pre-processes the input requirements and adds them to an organization's tf-idf model. It also compares the input requirements with all the requirements of the organization.</li>" +
             "</ul>"+
@@ -80,8 +81,8 @@ public class SwaggerConfig {
                 .useDefaultResponseMessages(false)
                 .apiInfo(apiInfo())
                 .pathMapping("/")
-                //.host("api.openreq.eu/similarity-detection")
-                //.protocols(protocols)
+                .host("api.openreq.eu/similarity-detection")
+                .protocols(protocols)
                 .select()
                 .paths(PathSelectors.regex("^((?!Test).)*$"))
                 .apis(RequestHandlerSelectors.basePackage("upc.similarity.similaritydetectionapi")).paths(PathSelectors.regex("/upc.*"))

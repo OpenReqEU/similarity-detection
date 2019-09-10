@@ -44,6 +44,8 @@ public abstract class ComponentAdapter {
 
     public abstract void simProject(String responseId, String organization, double threshold, List<String> reqs) throws ComponentException;
 
+    public abstract void simProjectProject(String responseId, String organization, double threshold, List<String> firstProjectRequirements, List<String> secondProjectRequirements) throws ComponentException;
+
 
     /*
     Similarity with clusters
@@ -117,25 +119,25 @@ public abstract class ComponentAdapter {
     protected abstract void checkExceptions(int status, String response) throws ComponentException;
 
     protected JSONArray listRequirementsToJson(List<Requirement> requirements) {
-
         JSONArray jsonRequirements = new JSONArray();
-
         for (Requirement req: requirements) {
             jsonRequirements.put(req.toJSON());
         }
-
         return jsonRequirements;
     }
 
     protected JSONArray listDependenciesToJson(List<Dependency> dependencies) throws InternalErrorException {
-
         JSONArray jsonDeps = new JSONArray();
-
         for (Dependency dep: dependencies) {
             jsonDeps.put(dep.toJSON());
         }
-
         return jsonDeps;
+    }
+
+    protected JSONArray listStringToJson(List<String> inputList) {
+        JSONArray jsonList = new JSONArray();
+        for (String entry: inputList) jsonList.put(entry);
+        return jsonList;
     }
 
 }

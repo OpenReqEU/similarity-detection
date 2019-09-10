@@ -77,10 +77,8 @@ public class CompareAdapter extends ComponentAdapter{
     @Override
     public void simReqProject(String responseId, String organization, double threshold, List<String> req, List<String> requirements) throws ComponentException {
 
-        JSONArray requirementsToCompare = new JSONArray();
-        for (String aux: req) requirementsToCompare.put(aux);
-        JSONArray projectRequirements = new JSONArray();
-        for (String aux: requirements) projectRequirements.put(aux);
+        JSONArray requirementsToCompare = listStringToJson(req);
+        JSONArray projectRequirements = listStringToJson(requirements);
 
         JSONObject jsonToSend = new JSONObject();
         jsonToSend.put("reqs_to_compare",requirementsToCompare);
@@ -96,6 +94,19 @@ public class CompareAdapter extends ComponentAdapter{
         for (String aux: requirements) jsonToSend.put(aux);
 
         connectionComponentPost(URL + "SimProject?organization=" + organization + "&responseId=" + responseId + "&threshold=" + threshold, jsonToSend);
+    }
+
+    @Override
+    public void simProjectProject(String responseId, String organization, double threshold, List<String> firstProjectRequirements, List<String> secondProjectRequirements) throws ComponentException {
+
+        JSONArray firstList = listStringToJson(firstProjectRequirements);
+        JSONArray secondList = listStringToJson(secondProjectRequirements);
+
+        JSONObject jsonToSend = new JSONObject();
+        jsonToSend.put("first_project_requirements",firstList);
+        jsonToSend.put("second_project_requirements",secondList);
+
+        connectionComponentPost(URL + "SimProjectProject?organization=" + organization + "&responseId=" + responseId + "&threshold=" + threshold, jsonToSend);
     }
 
 

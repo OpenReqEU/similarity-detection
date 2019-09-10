@@ -218,6 +218,20 @@ public class MethodsTests {
         ++id;
     }
 
+    @Test
+    public void simProjectProject() throws Exception {
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simProjectProject/input_model.json")))
+                .andExpect(status().isOk());
+        ++id;
+        this.mockMvc.perform(post(url + "SimProjectProject").param("organization", "UPC").param("threshold", "0")
+                .param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"simProjectProject/input_operation.json")))
+                .andExpect(status().isOk());
+        this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "simProjectProject/output.json")));
+        ++id;
+    }
+
 
     /*
     Similarity with clusters
