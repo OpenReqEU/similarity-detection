@@ -87,6 +87,7 @@ public class CompareServiceImpl implements CompareService {
 
         try {
             Model model = databaseOperations.loadModel(organization, responseId, true);
+            if (model.hasClusters()) databaseOperations.saveBadRequestException(organization,responseId,new BadRequestException("The model has clusters. Use the similarity with clusters methods instead."));
             List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements, organization, responseId);
             addRequirementsToModel(notDuplicatedRequirements, model);
             databaseOperations.saveModel(organization, responseId, model, null);
@@ -110,6 +111,7 @@ public class CompareServiceImpl implements CompareService {
 
         try {
             Model model = databaseOperations.loadModel(organization, responseId, true);
+            if (model.hasClusters()) databaseOperations.saveBadRequestException(organization,responseId,new BadRequestException("The model has clusters. Use the similarity with clusters methods instead."));
             List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements, organization, responseId);
             List<String> requirementsIds = new ArrayList<>();
             for (Requirement requirement : notDuplicatedRequirements) requirementsIds.add(requirement.getId());
@@ -143,32 +145,24 @@ public class CompareServiceImpl implements CompareService {
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"SimReqOrganization");
 
-        getAccessToUpdate(organization, responseId);
+        Model model = databaseOperations.loadModel(organization, responseId, true);
 
-        try {
-            Model model = databaseOperations.loadModel(organization, responseId, true);
-
-            HashSet<String> repeatedHash = new HashSet<>();
-            List<String> projectRequirements = new ArrayList<>();
-            List<String> requirementsToCompare = new ArrayList<>();
-            for (String requirement : requirements) {
-                requirementsToCompare.add(requirement);
-                repeatedHash.add(requirement);
-            }
-
-            Iterator it = model.getDocs().entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry pair = (Map.Entry) it.next();
-                String id = (String) pair.getKey();
-                if (!repeatedHash.contains(id)) projectRequirements.add(id);
-            }
-
-            reqProject(requirementsToCompare, projectRequirements, model, threshold, organization, responseId);
-            databaseOperations.saveModel(organization, responseId, model, null);
-        } finally {
-            releaseAccessToUpdate(organization, responseId);
+        HashSet<String> repeatedHash = new HashSet<>();
+        List<String> projectRequirements = new ArrayList<>();
+        List<String> requirementsToCompare = new ArrayList<>();
+        for (String requirement : requirements) {
+            requirementsToCompare.add(requirement);
+            repeatedHash.add(requirement);
         }
 
+        Iterator it = model.getDocs().entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry) it.next();
+            String id = (String) pair.getKey();
+            if (!repeatedHash.contains(id)) projectRequirements.add(id);
+        }
+
+        reqProject(requirementsToCompare, projectRequirements, model, threshold, organization, responseId);
         databaseOperations.finishComputation(organization, responseId);
 
         control.showInfoMessage("SimReqOrganization: Finish computing " + organization + " " + responseId);
@@ -184,6 +178,7 @@ public class CompareServiceImpl implements CompareService {
 
         try {
             Model model = databaseOperations.loadModel(organization, responseId, true);
+            if (model.hasClusters()) databaseOperations.saveBadRequestException(organization,responseId,new BadRequestException("The model has clusters. Use the similarity with clusters methods instead."));
 
             List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements, organization, responseId);
 
