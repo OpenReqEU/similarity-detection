@@ -17,17 +17,17 @@ public class Tfidf {
     //TODO improve exception handling
 
     private static Tfidf instance = new Tfidf();
-    private static boolean cutOffDummy = false;
+    private boolean cutOffDummy = false;
 
-    public static void setCutOffDummy(boolean cutOffDummy) {
-        Tfidf.cutOffDummy = cutOffDummy;
+    public void setCutOffDummy(boolean cutOffDummy) {
+        this.cutOffDummy = cutOffDummy;
     }
 
     private Tfidf() {}
 
     private double computeCutOffParameter(long totalSize) {
         if (cutOffDummy) return -1;
-        else return (totalSize > 100) ? 10 : (-9 + 3.51*Math.log(totalSize));
+        else return 0.0001;
     }
 
     public Map<String,Double> computeTfIdf(String organization, String responseId, String requirement, Model model) throws InternalErrorException {

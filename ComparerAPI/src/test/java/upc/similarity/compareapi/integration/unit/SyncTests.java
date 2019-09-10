@@ -44,7 +44,7 @@ public class SyncTests {
         SQLiteDatabase.setDbPath("../testing/integration/test_database/");
         SQLiteDatabase db = new SQLiteDatabase();
         db.clearDatabase();
-        Tfidf.setCutOffDummy(true);
+        Tfidf.getInstance().setCutOffDummy(true);
     }
 
     @AfterClass
