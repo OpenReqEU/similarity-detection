@@ -14,7 +14,7 @@ public class Constants {
     private String forbiddenErrorMessage = "The organization already has a model created. Please use the method called DeleteOrganizationData to delete the organization's model";
     private String sqlErrorMessage = "Database error";
     private String dependenciesArrayName = "dependencies";
-    private int sleepTime = 30*60; //seconds
+    private int sleepTime = 5*60; //seconds
 
     private Constants(){}
 
