@@ -42,8 +42,8 @@ public class RestApiController {
     @PostMapping(value = "/BuildModel", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Builds a tf-idf model with the input requirements.", notes = "<p><i>Asynchronous</i> method.</p><p>Builds a tf-idf model with the requirements specified in the JSON object. " +
             "The generated model is assigned to the specified organization and stored in an internal database. Each organization" +
-            " can have only one model. If at the time of generating a new model the corresponding organization already has" +
-            " an existing model, it is replaced by the new one. The user can choose whether to use only the name of the requirements for constructing the model, or to use also the text of the requirements.</p>", tags = "Similarity without clusters")
+            " only can have one model. The service throws a forbidden exception if at the time of generating a new model the corresponding organization already has" +
+            " an existing one. The user can choose whether to use only the name of the requirements for constructing the model, or to use also the text of the requirements.</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -62,10 +62,9 @@ public class RestApiController {
     @CrossOrigin
     @PostMapping(value = "/BuildModelAndCompute", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Builds a tf-idf model with the input requirements and returns the similarity scores among all the possible pairs of requirements.", notes = "<p><i>Asynchronous</i> method.</p><p>Builds a tf-idf model with the requirements specified in the JSON object." +
-            "The generated model is assigned to the specified organization and stored in an internal database. Each organization" +
-            " can have only one model. If at the time of generating a new model the corresponding organization already has" +
-            " an existing model, it is replaced by the new one. The user can choose whether to use only the name of the requirements for constructing the model, or to use also the text of the requirements. </p><br><p>This method returns an array of dependencies containing the similarities that are greater than the established threshold between all possible pairs of " +
-            " requirements received as input.</p>", tags = "Similarity without clusters")
+            "The generated model is assigned to the specified organization and stored in an internal database. Each organization only can have one model. The service throws a forbidden exception if at the time of generating a new model the corresponding organization already has " +
+            "an existing one. The user can choose whether to use only the name of the requirements for constructing the model, or to use also the text of the requirements. </p><br><p>This method returns an array of dependencies containing the similarities that are greater than the " +
+            "established threshold between all possible pairs of requirements received as input.</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -251,7 +250,8 @@ public class RestApiController {
     @ApiOperation(value = "Generates the clusters using the input requirements and dependencies.", notes = "<p><i>Asynchronous</i> method.</p><p>This method computes the clusters using the existing duplicates. These duplicates relations are defined by " +
             "the dependencies with type equal to <i>similar</i> or <i>duplicates</i> and status equal to <i>accepted</i>. All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one " +
             "requirement. All the requirements are pre-processed and stored in the database, together with their corresponding tf-idf model and the clusters information. The user can choose whether to use only the name of the requirements for constructing the tf-idf model," +
-            " or to use also the text of the requirements. Finally, all the requirements are compared with all the requirements of other clusters of the organization, and those similarities with score greater than the established threshold for each requirement are stored in the database.</p>", tags = "Similarity with clusters")
+            " or to use also the text of the requirements. Finally, all the requirements are compared with all the requirements of other clusters of the organization, and those similarities with score greater than the established threshold for each requirement are stored in the database.</p>" +
+            "<br><p>Each organization can only have one model at the same time. The service throws a forbidden exception if at the time of generating a new model the corresponding organization already has an existing one</p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -277,7 +277,8 @@ public class RestApiController {
                     "requirements of other clusters of the organization, and those similarities with score greater than the established threshold for each requirement are stored in the database. It returns for each requirement the highest similarity score for each cluster " +
                     "(only if they are greater than the established threshold). If the number of maximum dependencies to be returned is received as parameter (maxNumber), the method only returns the <i>maxNumber</i>" +
                     " of dependencies with highest score for each requirement. When <i>maxNumber</i> is equal to 0 only the accepted dependencies are returned and when maxNumber is lower than 0 or not specified, all the accepted and proposed" +
-                    " dependencies of each requirement are returned.</p>", tags = "Similarity with clusters")
+                    " dependencies of each requirement are returned.</p>" +
+                    "<br><p>Each organization can only have one model at the same time. The service throws a forbidden exception if at the time of generating a new model the corresponding organization already has an existing one</p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})

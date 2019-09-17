@@ -11,6 +11,7 @@ public class Constants {
     private String notFoundMessage = "Not found";
     private String notFinishedMessage = "Not finished";
     private String internalErrorMessage = "Internal Error";
+    private String forbiddenErrorMessage = "The organization already has a model created. Please use the method called DeleteOrganizationData to delete the organization's model";
     private String sqlErrorMessage = "Database error";
     private String dependenciesArrayName = "dependencies";
     private int sleepTime = 30*60; //seconds
@@ -55,6 +56,10 @@ public class Constants {
 
     public String getSqlErrorMessage() {
         return sqlErrorMessage;
+    }
+
+    public String getForbiddenErrorMessage() {
+        return forbiddenErrorMessage;
     }
 
     public String getDependenciesArrayName() {

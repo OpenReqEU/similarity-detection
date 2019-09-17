@@ -91,6 +91,17 @@ public class DatabaseOperations {
         }
     }
 
+    public void saveForbiddenException(String organization, String responseId, ForbiddenException e) throws ForbiddenException, InternalErrorException {
+        try {
+            if (organization != null && responseId != null) {
+                databaseModel.saveExceptionAndFinishComputation(organization, responseId, createJsonException(403, "Forbidden", e.getMessage()));
+            }
+            throw e;
+        } catch (SQLException sq) {
+            treatSQLException(sq.getMessage(),organization,responseId,"Error while saving a forbidden exception response to the database");
+        }
+    }
+
     public void saveInternalException(String console, String organization, String responseId, InternalErrorException e) throws InternalErrorException {
         if (console.contains("The main database is lock")) Control.getInstance().showWarnMessage(console + " " + organization + " " + responseId);
         else Control.getInstance().showErrorMessage(console + " " + organization + " " + responseId);

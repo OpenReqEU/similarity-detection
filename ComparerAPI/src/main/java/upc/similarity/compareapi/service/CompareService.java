@@ -10,10 +10,7 @@ import upc.similarity.compareapi.entity.input.Clusters;
 import upc.similarity.compareapi.entity.input.ProjectProject;
 import upc.similarity.compareapi.entity.input.ReqProject;
 import upc.similarity.compareapi.entity.output.Dependencies;
-import upc.similarity.compareapi.exception.BadRequestException;
-import upc.similarity.compareapi.exception.InternalErrorException;
-import upc.similarity.compareapi.exception.NotFinishedException;
-import upc.similarity.compareapi.exception.NotFoundException;
+import upc.similarity.compareapi.exception.*;
 
 public interface CompareService {
 
@@ -22,9 +19,9 @@ public interface CompareService {
     Similarity without clusters
      */
 
-    void buildModel(String responseId, boolean compare, String organization, List<Requirement> requirements) throws BadRequestException, NotFinishedException, InternalErrorException;
+    void buildModel(String responseId, boolean compare, String organization, List<Requirement> requirements) throws BadRequestException, ForbiddenException, NotFinishedException, InternalErrorException;
 
-    void buildModelAndCompute(String responseId, boolean compare, String organization, double threshold, List<Requirement> requirements) throws NotFinishedException, BadRequestException, InternalErrorException;
+    void buildModelAndCompute(String responseId, boolean compare, String organization, double threshold, List<Requirement> requirements) throws ForbiddenException, NotFinishedException, BadRequestException, InternalErrorException;
 
     void addRequirements(String responseId, String organization, List<Requirement> requirements) throws InternalErrorException, BadRequestException, NotFoundException, NotFinishedException;
 
@@ -47,9 +44,9 @@ public interface CompareService {
     Similarity with clusters
      */
 
-    void buildClusters(String responseId, boolean compare, double threshold, String organization, Clusters requirements) throws BadRequestException, NotFinishedException, InternalErrorException;
+    void buildClusters(String responseId, boolean compare, double threshold, String organization, Clusters requirements) throws BadRequestException, ForbiddenException, NotFinishedException, InternalErrorException;
 
-    void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, int maxNumber, Clusters requirements) throws BadRequestException, NotFinishedException, InternalErrorException;
+    void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, int maxNumber, Clusters requirements) throws BadRequestException, ForbiddenException, NotFinishedException, InternalErrorException;
 
     Dependencies simReqClusters(String organization, List<String> requirements, int maxNumber) throws NotFoundException, InternalErrorException;
 

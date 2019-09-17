@@ -3,6 +3,7 @@ package upc.similarity.compareapi.integration.integration;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -68,6 +69,10 @@ public class MethodsTests {
         boolean result = file.delete();
     }
 
+    @Before
+    public void deleteUPCModel() throws Exception {
+        this.mockMvc.perform(delete(url + "ClearOrganization").param("organization", "UPC"));
+    }
 
     /*
     Similarity without clusters
@@ -80,6 +85,18 @@ public class MethodsTests {
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "buildModel/output.json")));
+        ++id;
+    }
+
+    @Test
+    public void buildModelForbidden() throws Exception {
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"buildModel/input.json")))
+                .andExpect(status().isOk());
+        ++id;
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"buildModel/input.json")))
+                .andExpect(status().isForbidden());
         ++id;
     }
 
@@ -399,6 +416,7 @@ public class MethodsTests {
         Time.getInstance().setClock(Clock.fixed(ofEpochMilli(40), ZoneId.systemDefault()));
         this.mockMvc.perform(get(url + "GetOrganizationInfo").param("organization", "UPCTest"))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "getOrganizationInfo/output_with_clusters.json")));
+        this.mockMvc.perform(delete(url + "ClearOrganization").param("organization", "UPCTest"));
         this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPCTest")
                 .param("compare", "false").param("responseId", "Test1").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"getOrganizationInfo/input_model_without.json")))
                 .andExpect(status().isOk());

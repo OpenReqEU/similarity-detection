@@ -137,7 +137,6 @@ public class SQLiteDatabase implements DatabaseModel {
     public void clearOrganization(String organizationId) throws NotFoundException, SQLException, InternalErrorException, IOException {
         if (!existsOrganization(organizationId)) throw new NotFoundException("The organization " + organizationId + " does not exist");
         deleteOrganization(organizationId);
-        deleteDataFiles(buildFileName(organizationId));
     }
 
     @Override
@@ -713,11 +712,13 @@ public class SQLiteDatabase implements DatabaseModel {
     Auxiliary operations
      */
 
-    private void deleteOrganization(String organizationId) throws SQLException, InternalErrorException {
+    private void deleteOrganization(String organizationId) throws SQLException, NotFoundException, IOException, InternalErrorException {
 
         getAccessToMainDb();
+        if (!existsOrganization(organizationId)) throw new NotFoundException("The organization " + organizationId + " does not exist");
         try (Connection conn = getConnection(dbMainName);
              PreparedStatement ps = conn.prepareStatement("DELETE FROM organizations WHERE id = ?")) {
+            deleteDataFiles(buildFileName(organizationId));
             ps.setString(1, organizationId);
             ps.executeUpdate();
         } finally {

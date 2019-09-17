@@ -32,15 +32,18 @@ public class CompareServiceImpl implements CompareService {
      */
 
     @Override
-    public void buildModel(String responseId, boolean compare, String organization, List<Requirement> requirements) throws BadRequestException, NotFinishedException, InternalErrorException {
+    public void buildModel(String responseId, boolean compare, String organization, List<Requirement> requirements) throws ForbiddenException, BadRequestException, NotFinishedException, InternalErrorException {
         control.showInfoMessage("BuildModel: Start computing " + organization + " " + responseId);
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"BuildModel");
+        if (databaseOperations.existsOrganization(responseId,organization)) databaseOperations.saveForbiddenException(organization,responseId,new ForbiddenException(Constants.getInstance().getForbiddenErrorMessage()));
+
+        Model model = generateModel(compare, 0, deleteDuplicates(requirements, organization, responseId));
         getAccessToUpdate(organization, responseId);
         try {
             //threshold is never used in other methods
-            databaseOperations.saveModel(organization, responseId, generateModel(compare, 0, deleteDuplicates(requirements, organization, responseId)), null);
+            databaseOperations.saveModel(organization, responseId, model, null);
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
@@ -50,11 +53,12 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void buildModelAndCompute(String responseId, boolean compare, String organization, double threshold, List<Requirement> requirements) throws BadRequestException, NotFinishedException, InternalErrorException {
+    public void buildModelAndCompute(String responseId, boolean compare, String organization, double threshold, List<Requirement> requirements) throws BadRequestException, ForbiddenException, NotFinishedException, InternalErrorException {
         control.showInfoMessage("BuildModelAndCompute: Start computing " + organization + " " + responseId);
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"BuildModelAndCompute");
+        if (databaseOperations.existsOrganization(responseId,organization)) databaseOperations.saveForbiddenException(organization,responseId,new ForbiddenException(Constants.getInstance().getForbiddenErrorMessage()));
 
         //threshold is never used in other methods
         Model model = generateModel(compare, 0, deleteDuplicates(requirements,organization,responseId));
@@ -266,7 +270,7 @@ public class CompareServiceImpl implements CompareService {
      */
 
     @Override
-    public void buildClusters(String responseId, boolean compare, double threshold, String organization, Clusters input) throws BadRequestException, NotFinishedException, InternalErrorException {
+    public void buildClusters(String responseId, boolean compare, double threshold, String organization, Clusters input) throws ForbiddenException, BadRequestException, NotFinishedException, InternalErrorException {
         control.showInfoMessage("BuildClusters: Start computing " + organization + " " + responseId + " " + input.getRequirements().size() + " reqs");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
@@ -274,6 +278,8 @@ public class CompareServiceImpl implements CompareService {
         if (!input.inputOk()) databaseOperations.saveBadRequestException(organization, responseId, new BadRequestException("The input requirements array is empty"));
 
         databaseOperations.generateResponse(organization,responseId,"BuildClusters");
+        if (databaseOperations.existsOrganization(responseId,organization)) databaseOperations.saveForbiddenException(organization,responseId,new ForbiddenException(Constants.getInstance().getForbiddenErrorMessage()));
+
         List<Requirement> requirements = deleteDuplicates(input.getRequirements(),organization,responseId);
         Model model = generateModel(compare, threshold, requirements);
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
@@ -296,7 +302,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, int maxNumber, Clusters input) throws BadRequestException, NotFinishedException, InternalErrorException {
+    public void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, int maxNumber, Clusters input) throws ForbiddenException, BadRequestException, NotFinishedException, InternalErrorException {
         control.showInfoMessage("BuildClustersAndCompute: Start computing " + organization + " " + responseId + " " + input.getRequirements().size() + " reqs");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
@@ -304,6 +310,8 @@ public class CompareServiceImpl implements CompareService {
         if (!input.inputOk()) databaseOperations.saveBadRequestException(organization, responseId, new BadRequestException("The input requirements array is empty"));
 
         databaseOperations.generateResponse(organization,responseId,"BuildClustersAndCompute");
+        if (databaseOperations.existsOrganization(responseId,organization)) databaseOperations.saveForbiddenException(organization,responseId,new ForbiddenException(Constants.getInstance().getForbiddenErrorMessage()));
+
         List<Requirement> requirements = deleteDuplicates(input.getRequirements(),organization,responseId);
 
         Model model = generateModel(compare, threshold, requirements);
