@@ -5,8 +5,7 @@ import org.springframework.stereotype.Service;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.config.Control;
 import upc.similarity.compareapi.entity.*;
-import upc.similarity.compareapi.entity.auxiliary.ClusterAndDeps;
-import upc.similarity.compareapi.entity.auxiliary.OrderedObject;
+import upc.similarity.compareapi.entity.auxiliary.*;
 import upc.similarity.compareapi.entity.input.Clusters;
 import upc.similarity.compareapi.entity.input.ProjectProject;
 import upc.similarity.compareapi.entity.input.ReqProject;
@@ -53,7 +52,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void buildModelAndCompute(String responseId, boolean compare, String organization, double threshold, List<Requirement> requirements) throws BadRequestException, ForbiddenException, NotFinishedException, InternalErrorException {
+    public void buildModelAndCompute(String responseId, boolean compare, String organization, double threshold, List<Requirement> requirements, int maxNumDeps) throws BadRequestException, ForbiddenException, NotFinishedException, InternalErrorException {
         control.showInfoMessage("BuildModelAndCompute: Start computing " + organization + " " + responseId);
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
@@ -74,7 +73,7 @@ public class CompareServiceImpl implements CompareService {
             releaseAccessToUpdate(organization, responseId);
         }
 
-        project(requirementsIds, model, threshold, responseId, organization);
+        project(requirementsIds, model, threshold, responseId, organization, maxNumDeps);
 
         databaseOperations.finishComputation(organization, responseId);
 
@@ -145,7 +144,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void simReqOrganization(String responseId, String organization, double threshold, List<String> requirements) throws NotFoundException, NotFinishedException, BadRequestException, InternalErrorException {
+    public void simReqOrganization(String responseId, String organization, double threshold, List<String> requirements, int maxNumDeps) throws NotFoundException, InternalErrorException {
         control.showInfoMessage("SimReqOrganization: Start computing " + organization + " " + responseId);
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"SimReqOrganization");
@@ -167,14 +166,14 @@ public class CompareServiceImpl implements CompareService {
             if (!repeatedHash.contains(id)) projectRequirements.add(id);
         }
 
-        reqProject(requirementsToCompare, projectRequirements, model, threshold, organization, responseId,true);
+        reqProject(requirementsToCompare, projectRequirements, model, threshold, organization, responseId,true, maxNumDeps);
         databaseOperations.finishComputation(organization, responseId);
 
         control.showInfoMessage("SimReqOrganization: Finish computing " + organization + " " + responseId);
     }
 
     @Override
-    public void simNewReqOrganization(String responseId, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, NotFinishedException, BadRequestException, InternalErrorException {
+    public void simNewReqOrganization(String responseId, String organization, double threshold, List<Requirement> requirements, int maxNumDeps) throws NotFoundException, NotFinishedException, BadRequestException, InternalErrorException {
         control.showInfoMessage("SimReqOrganization: Start computing " + organization + " " + responseId);
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"SimReqOrganization");
@@ -202,7 +201,7 @@ public class CompareServiceImpl implements CompareService {
                 if (!repeatedHash.contains(id)) projectRequirements.add(id);
             }
 
-            reqProject(requirementsToCompare, projectRequirements, model, threshold, organization, responseId, true);
+            reqProject(requirementsToCompare, projectRequirements, model, threshold, organization, responseId, true, maxNumDeps);
             databaseOperations.saveModel(organization, responseId, model, null);
         } finally {
             releaseAccessToUpdate(organization, responseId);
@@ -214,7 +213,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements) throws NotFoundException, InternalErrorException, BadRequestException {
+    public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements, int maxNumDeps) throws NotFoundException, InternalErrorException, BadRequestException {
         control.showInfoMessage("SimReqProject: Start computing " + organization + " " + responseId);
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
@@ -225,14 +224,14 @@ public class CompareServiceImpl implements CompareService {
             if (projectRequirements.getProjectReqs().contains(req)) databaseOperations.saveBadRequestException(organization, responseId, new BadRequestException("The requirement with id " + req + " is already inside the project"));
         }
 
-        reqProject(projectRequirements.getReqsToCompare(), projectRequirements.getProjectReqs(), model, threshold, organization, responseId, true);
+        reqProject(projectRequirements.getReqsToCompare(), projectRequirements.getProjectReqs(), model, threshold, organization, responseId, true, maxNumDeps);
 
         databaseOperations.finishComputation(organization, responseId);
         control.showInfoMessage("SimReqProject: Finish computing " + organization + " " + responseId);
     }
 
     @Override
-    public void simProject(String responseId, String organization, double threshold, List<String> projectRequirements) throws NotFoundException, InternalErrorException {
+    public void simProject(String responseId, String organization, double threshold, List<String> projectRequirements, int maxNumDeps) throws NotFoundException, InternalErrorException {
         control.showInfoMessage("SimProject: Start computing " + organization + " " + responseId);
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
@@ -240,14 +239,14 @@ public class CompareServiceImpl implements CompareService {
 
         Model model = databaseOperations.loadModel(organization, responseId, false);
 
-        project(projectRequirements, model, threshold, responseId, organization);
+        project(projectRequirements, model, threshold, responseId, organization, maxNumDeps);
 
         databaseOperations.finishComputation(organization, responseId);
         control.showInfoMessage("SimProject: Finish computing " + organization + " " + responseId);
     }
 
     @Override
-    public void simProjectProject(String responseId, String organization, double threshold, ProjectProject projects) throws NotFoundException, InternalErrorException {
+    public void simProjectProject(String responseId, String organization, double threshold, ProjectProject projects, int maxNumDeps) throws NotFoundException, InternalErrorException {
         control.showInfoMessage("SimProjectProject: Start computing " + organization + " " + responseId);
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
@@ -258,7 +257,7 @@ public class CompareServiceImpl implements CompareService {
 
         Model model = databaseOperations.loadModel(organization, responseId, false);
 
-        reqProject(project1NotRepeated,project2NotRepeated,model,threshold,organization,responseId, false);
+        reqProject(project1NotRepeated,project2NotRepeated,model,threshold,organization,responseId, false, maxNumDeps);
 
         databaseOperations.finishComputation(organization, responseId);
         control.showInfoMessage("SimProjectProject: Finish computing " + organization + " " + responseId);
@@ -621,57 +620,41 @@ public class CompareServiceImpl implements CompareService {
         return !oldRequirement.equals(newRequirement);
     }
 
-    private void reqProject(List<String> reqsToCompare, List<String> projectRequirements, Model model, double threshold, String organization, String responseId, boolean include) throws InternalErrorException {
+    private void reqProject(List<String> reqsToCompare, List<String> projectRequirements, Model model, double threshold, String organization, String responseId, boolean include, int maxNumDeps) throws InternalErrorException {
+        boolean memoryDeps = maxNumDeps > 0;
+        ResponseDependencies responseDependencies;
+        if (memoryDeps) responseDependencies = new SizeFixedDependenciesQueue(organization,responseId,maxNumDeps,Comparator.comparing(Dependency::getDependencyScore).thenComparing(Dependency::getToid).thenComparing(Dependency::getFromid).reversed());
+        else responseDependencies = new DiskDependencies(organization,responseId);
+
         CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
-        DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         Constants constants = Constants.getInstance();
 
-        int cont = 0;
-        long numberDependencies = 0;
-
-        JSONArray array = new JSONArray();
         for (String req1: reqsToCompare) {
             if (model.getDocs().containsKey(req1)) {
                 for (String req2 : projectRequirements) {
                     if (!req1.equals(req2) && model.getDocs().containsKey(req2)) {
                         double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
                         if (score >= threshold) {
-                            ++numberDependencies;
                             Dependency dependency = new Dependency(score, req1, req2, constants.getStatus(), constants.getDependencyType(), constants.getComponent());
-                            array.put(dependency.toJSON());
-                            ++cont;
-                            if (cont >= constants.getMaxDepsForPage()) {
-                                databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
-                                array = new JSONArray();
-                                cont = 0;
-                            }
+                            responseDependencies.addDependency(dependency);
                         }
                     }
                 }
                 if (include) projectRequirements.add(req1);
             }
         }
-
-        if (array.length() == 0 && numberDependencies == 0) databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
-
-        if (array.length() > 0) {
-            databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
-        }
-
-        control.showInfoMessage("Number dependencies: " + numberDependencies);
+        responseDependencies.finish();
     }
 
 
-    private void project(List<String> projectRequirements, Model model, double threshold, String responseId, String organization) throws InternalErrorException {
+    private void project(List<String> projectRequirements, Model model, double threshold, String responseId, String organization, int maxNumDeps) throws InternalErrorException {
+        boolean memoryDeps = maxNumDeps > 0;
+        ResponseDependencies responseDependencies;
+        if (memoryDeps) responseDependencies = new SizeFixedDependenciesQueue(organization,responseId,maxNumDeps,Comparator.comparing(Dependency::getDependencyScore).thenComparing(Dependency::getToid).thenComparing(Dependency::getFromid).reversed());
+        else responseDependencies = new DiskDependencies(organization,responseId);
+
         CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
-        DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         Constants constants = Constants.getInstance();
-        int cont = 0;
-        long numberDependencies = 0;
-
-        control.showInfoMessage("Number requirements: " + projectRequirements.size());
-
-        JSONArray array = new JSONArray();
 
         for (int i = 0; i < projectRequirements.size(); ++i) {
             String req1 = projectRequirements.get(i);
@@ -681,28 +664,14 @@ public class CompareServiceImpl implements CompareService {
                     if (!req2.equals(req1) && model.getDocs().containsKey(req2)) {
                         double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
                         if (score >= threshold) {
-                            ++numberDependencies;
                             Dependency dependency = new Dependency(score, req1, req2, constants.getStatus(), constants.getDependencyType(), constants.getComponent());
-                            array.put(dependency.toJSON());
-                            ++cont;
-                            if (cont >= constants.getMaxDepsForPage()) {
-                                databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
-                                array = new JSONArray();
-                                cont = 0;
-                            }
+                            responseDependencies.addDependency(dependency);
                         }
                     }
                 }
             }
         }
-
-        if (array.length() == 0 && numberDependencies == 0) databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
-
-        if (array.length() > 0) {
-            databaseOperations.generateResponsePage(responseId, organization, array, constants.getDependenciesArrayName());
-        }
-
-        control.showInfoMessage("Number dependencies: " + numberDependencies);
+        responseDependencies.finish();
     }
 
     private void addRequirementsToModel(List<Requirement> requirements, Model model) throws InternalErrorException {

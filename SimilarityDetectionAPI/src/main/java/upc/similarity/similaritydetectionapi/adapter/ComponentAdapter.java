@@ -28,7 +28,7 @@ public abstract class ComponentAdapter {
 
     public abstract void buildModel(String responseId, String organization, boolean compare, List<Requirement> requirements) throws ComponentException;
 
-    public abstract void buildModelAndCompute(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements) throws ComponentException;
+    public abstract void buildModelAndCompute(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements, int maxNumDeps) throws ComponentException;
 
     public abstract void addRequirements(String responseId, String organization, List<Requirement> requirements) throws ComponentException;
 
@@ -36,15 +36,15 @@ public abstract class ComponentAdapter {
 
     public abstract String simReqReq(String responseId, String organization, String req1, String req2) throws ComponentException;
 
-    public abstract void simReqOrganization(String responseId, String organization, double threshold, List<String> requirements) throws ComponentException;
+    public abstract void simReqOrganization(String responseId, String organization, double threshold, List<String> requirements, int maxNumDeps) throws ComponentException;
 
-    public abstract void simNewReqOrganization(String responseId, String organization, double threshold, List<Requirement> requirements) throws ComponentException;
+    public abstract void simNewReqOrganization(String responseId, String organization, double threshold, List<Requirement> requirements, int maxNumDeps) throws ComponentException;
 
-    public abstract void simReqProject(String responseId, String organization, double threshold, List<String> req, List<String> reqs) throws ComponentException;
+    public abstract void simReqProject(String responseId, String organization, double threshold, List<String> req, List<String> reqs, int maxNumDeps) throws ComponentException;
 
-    public abstract void simProject(String responseId, String organization, double threshold, List<String> reqs) throws ComponentException;
+    public abstract void simProject(String responseId, String organization, double threshold, List<String> reqs, int maxNumDeps) throws ComponentException;
 
-    public abstract void simProjectProject(String responseId, String organization, double threshold, List<String> firstProjectRequirements, List<String> secondProjectRequirements) throws ComponentException;
+    public abstract void simProjectProject(String responseId, String organization, double threshold, List<String> firstProjectRequirements, List<String> secondProjectRequirements, int maxNumDeps) throws ComponentException;
 
 
     /*

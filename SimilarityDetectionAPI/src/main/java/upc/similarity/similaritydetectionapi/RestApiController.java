@@ -64,7 +64,7 @@ public class RestApiController {
     @ApiOperation(value = "Builds a tf-idf model with the input requirements and returns the similarity scores among all the possible pairs of requirements.", notes = "<p><i>Asynchronous</i> method.</p><p>Builds a tf-idf model with the requirements specified in the JSON object." +
             "The generated model is assigned to the specified organization and stored in an internal database. Each organization only can have one model. The service throws a forbidden exception if at the time of generating a new model the corresponding organization already has " +
             "an existing one. The user can choose whether to use only the name of the requirements for constructing the model, or to use also the text of the requirements. </p><br><p>This method returns an array of dependencies containing the similarities that are greater than the " +
-            "established threshold between all possible pairs of requirements received as input.</p>", tags = "Similarity without clusters")
+            "established threshold between all possible pairs of requirements received as input. The method can be set to return the dependencies with the higher score thanks to the parameter named maxNumber (with a negative number or a zero in this parameter, the method works as explained before).</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -72,10 +72,12 @@ public class RestApiController {
                                                @ApiParam(value="Use the text field of the requirements to construct the model", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
                                                @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                                @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
+                                               @ApiParam(value="Max number of dependencies to return", required = false, example = "0") @RequestParam(value = "maxNumber", required = false) Integer maxNumber,
                                                @ApiParam(value="OpenReq JSON with requirements", required = true) @RequestBody RequirementsModel input) {
         try {
             if(url != null) urlOk(url);
-            return new ResponseEntity<>(similarityService.buildModelAndCompute(url,organization,compare,threshold,input),HttpStatus.OK);
+            if (maxNumber == null) maxNumber = 0;
+            return new ResponseEntity<>(similarityService.buildModelAndCompute(url,organization,compare,threshold,input,maxNumber),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }
@@ -139,17 +141,21 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/ReqOrganization", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Similarity comparison between a set of requirements and all the requirements of the specified organization. ", notes = "<p><i>Asynchronous</i> method.</p><p>Compares the existing organization's requirements that appear in the input array of ids with all the organization's requirements. Returns an array with all the similarity dependencies that are above the specified threshold. The input ids that do not belong to the requirements of the organization are ignored.</p>", tags = "Similarity without clusters")
+    @ApiOperation(value = "Similarity comparison between a set of requirements and all the requirements of the specified organization. ", notes = "<p><i>Asynchronous</i> method.</p><p>Compares the existing organization's requirements that appear" +
+            " in the input array of ids with all the organization's requirements. Returns an array with all the similarity dependencies that are above the specified threshold. The input ids that do not belong to the requirements of the organization " +
+            "are ignored. The method can be set to return the dependencies with the higher score thanks to the parameter named maxNumber (with a negative number or a zero in this parameter, the method works as explained before).</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity simReqOrganization(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                              @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
                                              @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
+                                             @ApiParam(value="Max number of dependencies to return", required = false, example = "0") @RequestParam(value = "maxNumber", required = false) Integer maxNumber,
                                              @ApiParam(value="OpenReq JSON with requirements", required = true, example = "UPC-1") @RequestParam("req") List<String> input) {
         try {
             if(url != null) urlOk(url);
-            return new ResponseEntity<>(similarityService.simReqOrganization(url,organization,threshold,input),HttpStatus.OK);
+            if (maxNumber == null) maxNumber = 0;
+            return new ResponseEntity<>(similarityService.simReqOrganization(url,organization,threshold,input,maxNumber),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }
@@ -157,17 +163,21 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/NewReqOrganization", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Similarity comparison between a set of input requirements and all the requirements of the specified organization. ", notes = "<p><i>Asynchronous</i> method.</p><p>Adds the input requirements to the organization's tf-idf model and returns an array of similarity dependencies with a score above the specified threshold between them and all the requirements of the specified organization Also the requirements of the input list are compared between each other. If any input requirement is already part of the organization's model, it will be overwritten with the new information.</p>", tags = "Similarity without clusters")
+    @ApiOperation(value = "Similarity comparison between a set of input requirements and all the requirements of the specified organization. ", notes = "<p><i>Asynchronous</i> method.</p><p>Adds the input requirements to the organization's tf-idf model and " +
+            "returns an array of similarity dependencies with a score above the specified threshold between them and all the requirements of the specified organization Also the requirements of the input list are compared between each other. If any input requirement " +
+            "is already part of the organization's model, it will be overwritten with the new information. The method can be set to return the dependencies with the higher score thanks to the parameter named maxNumber (with a negative number or a zero in this parameter, the method works as explained before).</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity simNewReqOrganization(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                                 @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
                                                 @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
+                                                @ApiParam(value="Max number of dependencies to return", required = false, example = "0") @RequestParam(value = "maxNumber", required = false) Integer maxNumber,
                                                 @ApiParam(value="OpenReq JSON with requirements", required = true) @RequestBody RequirementsModel input) {
         try {
             if(url != null) urlOk(url);
-            return new ResponseEntity<>(similarityService.simNewReqOrganization(url,organization,threshold,input),HttpStatus.OK);
+            if (maxNumber == null) maxNumber = 0;
+            return new ResponseEntity<>(similarityService.simNewReqOrganization(url,organization,threshold,input,maxNumber),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }
@@ -175,7 +185,9 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/ReqProject", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Similarity comparison between a list of requirements and all the requirements of an specific project.", notes = "<p><i>Asynchronous</i> method.</p><p>Returns an array of similarity dependencies with a score above the specified threshold between the list of requirements and the project's requirements received as input. Also the requirements of the input list are compared between each other. The similarity score is computed with the tf-idf model assigned to the specified organization. The input ids that do not belong to any organization requirement are ignored.</p>", tags = "Similarity without clusters")
+    @ApiOperation(value = "Similarity comparison between a list of requirements and all the requirements of an specific project.", notes = "<p><i>Asynchronous</i> method.</p><p>Returns an array of similarity dependencies with a score above the specified threshold between the list " +
+            "of requirements and the project's requirements received as input. Also the requirements of the input list are compared between each other. The similarity score is computed with the tf-idf model assigned to the specified organization. The input ids that do not belong to any " +
+            "organization requirement are ignored. The method can be set to return the dependencies with the higher score thanks to the parameter named maxNumber (with a negative number or a zero in this parameter, the method works as explained before).</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=404, message = "Not found"),
@@ -185,10 +197,12 @@ public class RestApiController {
                                         @ApiParam(value="Id of the project to compare", required = true, example = "UPC-P1") @RequestParam("project") String project,
                                         @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                         @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
+                                        @ApiParam(value="Max number of dependencies to return", required = false, example = "0") @RequestParam(value = "maxNumber", required = false) Integer maxNumber,
                                         @ApiParam(value="OpenReq JSON with the project", required = true) @RequestBody ProjectsModel input) {
         try {
             if(url != null) urlOk(url);
-            return new ResponseEntity<>(similarityService.simReqProject(url,organization,req,project,threshold,input), HttpStatus.OK);
+            if (maxNumber == null) maxNumber = 0;
+            return new ResponseEntity<>(similarityService.simReqProject(url,organization,req,project,threshold,input,maxNumber), HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }
@@ -198,7 +212,7 @@ public class RestApiController {
     @PostMapping(value = "/Project", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Similarity comparison between the requirements of one project.", notes = "<p><i>Asynchronous</i> method.</p><p>Returns an array of similarity dependencies with a score above the specified threshold" +
             " between all possible pairs of requirements from the project received as input. The similarity score is computed with the tf-idf model assigned to the specified organization. The input ids that do not belong to any organization requirement are ignored" +
-            ".</p>", tags = "Similarity without clusters")
+            ". The method can be set to return the dependencies with the higher score thanks to the parameter named maxNumber (with a negative number or a zero in this parameter, the method works as explained before).</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=404, message = "Not found"),
@@ -207,10 +221,12 @@ public class RestApiController {
                                      @ApiParam(value="Id of the project to compare", required = true, example = "UPC-P1") @RequestParam("project") String project,
                                      @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                      @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
+                                     @ApiParam(value="Max number of dependencies to return", required = false, example = "0") @RequestParam(value = "maxNumber", required = false) Integer maxNumber,
                                      @ApiParam(value="OpenReq JSON with the project specifying the id of the requirements the project has", required = true) @RequestBody ProjectsModel input) {
         try {
             if(url != null) urlOk(url);
-            return new ResponseEntity<>(similarityService.simProject(url,organization,project,threshold,input), HttpStatus.OK);
+            if (maxNumber == null) maxNumber = 0;
+            return new ResponseEntity<>(similarityService.simProject(url,organization,project,threshold,input,maxNumber), HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }
@@ -220,7 +236,7 @@ public class RestApiController {
     @PostMapping(value = "/ProjectProject", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Similarity comparison between two projects.", notes = "<p><i>Asynchronous</i> method.</p><p>Returns an array of similarity dependencies with a score above the specified threshold" +
             " between each requirement of the first project and all the requirements of the second one. The similarity score is computed with the tf-idf model assigned to the indicated organization. The input ids that do not belong to any organization requirement are ignored" +
-            ".</p>", tags = "Similarity without clusters")
+            ". The method can be set to return the dependencies with the higher score thanks to the parameter named maxNumber (with a negative number or a zero in this parameter, the method works as explained before).</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=404, message = "Not found"),
@@ -230,10 +246,12 @@ public class RestApiController {
                                      @ApiParam(value="Id of the second project to compare", required = true, example = "UPC-P2") @RequestParam("secondProject") String secondProject,
                                      @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                      @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
+                                     @ApiParam(value="Max number of dependencies to return", required = false, example = "0") @RequestParam(value = "maxNumber", required = false) Integer maxNumber,
                                      @ApiParam(value="OpenReq JSON with the input projects and their requirements", required = true) @RequestBody ProjectsModel input) {
         try {
             if(url != null) urlOk(url);
-            return new ResponseEntity<>(similarityService.simProjectProject(url,organization,firstProject,secondProject,threshold,input), HttpStatus.OK);
+            if (maxNumber == null) maxNumber = 0;
+            return new ResponseEntity<>(similarityService.simProjectProject(url,organization,firstProject,secondProject,threshold,input,maxNumber), HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }

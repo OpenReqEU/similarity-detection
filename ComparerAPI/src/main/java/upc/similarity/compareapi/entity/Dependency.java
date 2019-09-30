@@ -7,6 +7,7 @@ import upc.similarity.compareapi.config.Control;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static java.lang.Long.max;
 
@@ -165,6 +166,16 @@ public class Dependency implements Serializable {
             throw new InternalError("Error while converting dependency to jsonObject");
         }
         return new JSONObject(jsonInString);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(fromid, toid, status);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return false;
     }
 
     @Override

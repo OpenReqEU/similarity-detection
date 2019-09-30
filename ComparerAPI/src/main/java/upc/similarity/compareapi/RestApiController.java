@@ -44,9 +44,10 @@ public class RestApiController {
                                                @RequestParam("compare") boolean compare,
                                                @RequestParam("responseId") String responseId,
                                                @RequestParam("threshold") double threshold,
+                                               @RequestParam("maxDeps") int maxNumDeps,
                                                @RequestBody List<Requirement> input) {
         try {
-            compareService.buildModelAndCompute(responseId,compare,organization,threshold,input);
+            compareService.buildModelAndCompute(responseId,compare,organization,threshold,input,maxNumDeps);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
@@ -92,9 +93,10 @@ public class RestApiController {
     public ResponseEntity simReqOrganization(@RequestParam("organization") String organization,
                                              @RequestParam("responseId") String responseId,
                                              @RequestParam("threshold") double threshold,
+                                             @RequestParam("maxDeps") int maxNumDeps,
                                              @RequestBody List<String> requirements) {
         try {
-            compareService.simReqOrganization(responseId,organization,threshold,requirements);
+            compareService.simReqOrganization(responseId,organization,threshold,requirements,maxNumDeps);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
@@ -105,9 +107,10 @@ public class RestApiController {
     public ResponseEntity simNewReqOrganization(@RequestParam("organization") String organization,
                                              @RequestParam("responseId") String responseId,
                                              @RequestParam("threshold") double threshold,
+                                             @RequestParam("maxDeps") int maxNumDeps,
                                              @RequestBody List<Requirement> requirements) {
         try {
-            compareService.simNewReqOrganization(responseId,organization,threshold,requirements);
+            compareService.simNewReqOrganization(responseId,organization,threshold,requirements,maxNumDeps);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
@@ -118,9 +121,10 @@ public class RestApiController {
     public ResponseEntity simReqProject(@RequestParam("organization") String organization,
                                         @RequestParam("responseId") String responseId,
                                         @RequestParam("threshold") double threshold,
+                                        @RequestParam("maxDeps") int maxNumDeps,
                                         @RequestBody ReqProject projectRequirements) {
         try {
-            compareService.simReqProject(responseId,organization,threshold,projectRequirements);
+            compareService.simReqProject(responseId,organization,threshold,projectRequirements,maxNumDeps);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
@@ -131,9 +135,10 @@ public class RestApiController {
     public ResponseEntity simProject(@RequestParam("organization") String organization,
                                      @RequestParam("responseId") String responseId,
                                      @RequestParam("threshold") double threshold,
+                                     @RequestParam("maxDeps") int maxNumDeps,
                                      @RequestBody List<String> projectRequirements) {
         try {
-            compareService.simProject(responseId,organization,threshold,projectRequirements);
+            compareService.simProject(responseId,organization,threshold,projectRequirements,maxNumDeps);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
@@ -144,9 +149,10 @@ public class RestApiController {
     public ResponseEntity simProjectProject(@RequestParam("organization") String organization,
                                      @RequestParam("responseId") String responseId,
                                      @RequestParam("threshold") double threshold,
+                                     @RequestParam("maxDeps") int maxNumDeps,
                                      @RequestBody ProjectProject projects) {
         try {
-            compareService.simProjectProject(responseId,organization,threshold,projects);
+            compareService.simProjectProject(responseId,organization,threshold,projects,maxNumDeps);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));

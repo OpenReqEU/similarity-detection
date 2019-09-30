@@ -21,7 +21,7 @@ public interface CompareService {
 
     void buildModel(String responseId, boolean compare, String organization, List<Requirement> requirements) throws BadRequestException, ForbiddenException, NotFinishedException, InternalErrorException;
 
-    void buildModelAndCompute(String responseId, boolean compare, String organization, double threshold, List<Requirement> requirements) throws ForbiddenException, NotFinishedException, BadRequestException, InternalErrorException;
+    void buildModelAndCompute(String responseId, boolean compare, String organization, double threshold, List<Requirement> requirements, int maxNumDeps) throws ForbiddenException, NotFinishedException, BadRequestException, InternalErrorException;
 
     void addRequirements(String responseId, String organization, List<Requirement> requirements) throws InternalErrorException, BadRequestException, NotFoundException, NotFinishedException;
 
@@ -29,15 +29,15 @@ public interface CompareService {
 
     Dependency simReqReq(String organization, String req1, String req2) throws NotFoundException, InternalErrorException;
 
-    void simReqOrganization(String responseId, String organization, double threshold, List<String> requirements) throws NotFoundException, NotFinishedException, InternalErrorException, BadRequestException;
+    void simReqOrganization(String responseId, String organization, double threshold, List<String> requirements, int maxNumDeps) throws NotFoundException, InternalErrorException;
 
-    void simNewReqOrganization(String responseId, String organization, double threshold, List<Requirement> requirements) throws NotFoundException, NotFinishedException, InternalErrorException, BadRequestException;
+    void simNewReqOrganization(String responseId, String organization, double threshold, List<Requirement> requirements, int maxNumDeps) throws NotFoundException, NotFinishedException, InternalErrorException, BadRequestException;
 
-    void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements) throws NotFoundException, InternalErrorException, BadRequestException;
+    void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements, int maxNumDeps) throws NotFoundException, InternalErrorException, BadRequestException;
 
-    void simProject(String responseId, String organization, double threshold, List<String> projectRequirements) throws NotFoundException, InternalErrorException;
+    void simProject(String responseId, String organization, double threshold, List<String> projectRequirements, int maxNumDeps) throws NotFoundException, InternalErrorException;
 
-    void simProjectProject(String responseId, String organization, double threshold, ProjectProject projects) throws NotFoundException, InternalErrorException;
+    void simProjectProject(String responseId, String organization, double threshold, ProjectProject projects, int maxNumDeps) throws NotFoundException, InternalErrorException;
 
 
     /*
