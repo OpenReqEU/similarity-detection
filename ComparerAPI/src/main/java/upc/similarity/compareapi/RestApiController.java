@@ -281,23 +281,4 @@ public class RestApiController {
         }
     }
 
-    /*
-    Test methods
-     */
-
-    @PostMapping(value = "/TestAccuracy")
-    public ResponseEntity testAccuracy(@RequestParam("compare") boolean compare,
-                                       @RequestParam("dimensions") int dimensions,
-                                     @RequestBody Clusters input) {
-        compareService.testAccuracy(compare,dimensions,input);
-        return new ResponseEntity<>(null,HttpStatus.OK);
-    }
-
-    @PostMapping(value = "/ExtractModel")
-    public ResponseEntity extractModel(@RequestParam("organization") String organization,
-                                     @RequestParam("compare") boolean compare,
-                                     @RequestBody Clusters input) {
-        return new ResponseEntity<>(compareService.extractModel(compare,organization,input),HttpStatus.OK);
-    }
-
 }

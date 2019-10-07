@@ -446,13 +446,7 @@ public class CompareServiceImpl implements CompareService {
 
         databaseOperations.generateResponse(organization,responseId,"BatchProcess");
 
-
         getAccessToUpdate(organization, responseId);
-
-        long timeDeletedDependencies = 0;
-        long timeAcceptedDependencies = 0;
-        long timeAddRequirements = 0;
-        long timeUpdatedProposedDependencies = 0;
 
         try {
             Model model = databaseOperations.loadModel(organization, responseId, true);
@@ -498,33 +492,20 @@ public class CompareServiceImpl implements CompareService {
                     Dependency dependency = orderedObject.getDependency();
                     aux.add(dependency);
                     if (dependency.getStatus().equals("accepted")) {
-                        long auxTime = time.getCurrentMillis();
                         clusterOperations.addAcceptedDependencies(organization, responseId, aux, model, clustersChanged, reqCluster);
-                        auxTime = time.getCurrentMillis() - auxTime;
-                        timeAcceptedDependencies += auxTime;
                     }
                     else {
-                        long auxTime = time.getCurrentMillis();
                         clusterOperations.addRejectedDependencies(organization, responseId, aux, model, clustersChanged, reqCluster);
-                        auxTime = time.getCurrentMillis() - auxTime;
-                        timeDeletedDependencies += auxTime;
                     }
                 } else {
                     List<Requirement> aux = new ArrayList<>();
                     Requirement requirement = orderedObject.getRequirement();
                     aux.add(requirement);
-                    long auxTime = time.getCurrentMillis();
                     clusterOperations.addRequirementsToClusters(organization, responseId, aux, model, clustersChanged, reqCluster);
                     addRequirementsToModel(aux, model);
-                    auxTime = time.getCurrentMillis() - auxTime;
-                    timeAddRequirements += auxTime;
                 }
             }
-
-            long auxTime = time.getCurrentMillis();
             clusterOperations.updateProposedDependencies(organization, responseId, model, clustersChanged, true);
-            auxTime = time.getCurrentMillis() - auxTime;
-            timeUpdatedProposedDependencies += auxTime;
 
             databaseOperations.updateModelClustersAndDependencies(organization, responseId, model, null, true);
 
@@ -533,7 +514,7 @@ public class CompareServiceImpl implements CompareService {
         }
 
         databaseOperations.generateEmptyResponse(organization, responseId);
-        control.showInfoMessage("BatchProcess: Finish computing " + organization + " " + responseId + " " + timeAcceptedDependencies + " " + timeDeletedDependencies + " " + timeAddRequirements + " " + timeUpdatedProposedDependencies);
+        control.showInfoMessage("BatchProcess: Finish computing " + organization + " " + responseId);
     }
 
 
@@ -571,20 +552,6 @@ public class CompareServiceImpl implements CompareService {
         DatabaseOperations.getInstance().clearDatabase();
     }
 
-
-    /*
-    Test methods
-     */
-
-    @Override
-    public void testAccuracy(boolean compare, int dimensions, Clusters input) {
-        TestMethods.getInstance().testSvd(compare,dimensions,input);
-    }
-
-    @Override
-    public String extractModel(boolean compare, String organization, Clusters input) {
-        return TestMethods.getInstance().extractModel(compare, organization, input);
-    }
 
 
     /*

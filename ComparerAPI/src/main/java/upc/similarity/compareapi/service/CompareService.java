@@ -69,13 +69,4 @@ public interface CompareService {
 
     void clearDatabase() throws InternalErrorException;
 
-
-    /*
-    Test methods
-     */
-
-    void testAccuracy(boolean compare, int dimensions, Clusters input);
-
-    String extractModel(boolean compare, String organization, Clusters input);
-
 }
