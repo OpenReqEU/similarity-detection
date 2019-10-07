@@ -54,6 +54,7 @@ public class SyncTests {
         db.clearDatabase();
         File file = new File("../testing/integration/test_database/main.db");
         boolean result = file.delete();
+        DatabaseOperations.getInstance().setDatabaseModel(db);
     }
 
     @Test

@@ -75,14 +75,10 @@ public class SwaggerConfig {
 
     @Bean
     public Docket api() {
-        HashSet<String> protocols = new HashSet<>();
-        protocols.add("https");
         return new Docket(DocumentationType.SWAGGER_2)
                 .useDefaultResponseMessages(false)
                 .apiInfo(apiInfo())
                 .pathMapping("/")
-                .host("api.openreq.eu/similarity-detection")
-                .protocols(protocols)
                 .select()
                 .paths(PathSelectors.regex("^((?!Test).)*$"))
                 .apis(RequestHandlerSelectors.basePackage("upc.similarity.similaritydetectionapi")).paths(PathSelectors.regex("/upc.*"))
