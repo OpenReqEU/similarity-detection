@@ -57,7 +57,7 @@ All operations except ReqReq, ReqClusters, TreatAcceptedAndRejectedDependencies 
     
 ### Concurrency control
 
-The service uses locks to control the concurrency of the different operations in each organization. To guarantee the ACID properties the methods which write or update data can't be parallelized. For example, the BuildClusters and BatchProcess methods cannot be parallelized, one has to wait for the other before starting. The service has a small queue of about 5 seconds to solve the small deviations. However, if one method has to wait for more than 5 seconds it will return an error with code 423. This only happens with methods using the same organization. The methods like ReqClusters that only read data from the database are not affected.
+The service uses locks to control the concurrency of the different operations in each organization. To guarantee the ACID properties the methods which write or update data can't be parallelized. For example, the BuildClusters and BatchProcess methods cannot be parallelized, one has to wait for the other before starting. The service has a small queue of about 5 minutes to solve the small deviations. However, if one method has to wait for more than 5 minutes it will return an error with code 423. This only happens with methods using the same organization. The methods like ReqClusters that only read data from the database are not affected.
 
 
 ### Files structure
