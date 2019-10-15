@@ -59,6 +59,7 @@ public class MethodsTests {
         SQLiteDatabase db = new SQLiteDatabase();
         db.clearDatabase();
         Tfidf.getInstance().setCutOffDummy(true);
+        Tfidf.getInstance().setSmoothingActive(false);
     }
 
     @AfterClass
