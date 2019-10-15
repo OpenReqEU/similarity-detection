@@ -18,22 +18,29 @@ public class Tfidf {
 
     private static Tfidf instance = new Tfidf();
     private boolean cutOffDummy = false;
+    private boolean smoothingActive = true;
 
     public void setCutOffDummy(boolean cutOffDummy) {
         this.cutOffDummy = cutOffDummy;
     }
 
+    public void setSmoothingActive(boolean smoothingActive) {
+        this.smoothingActive = smoothingActive;
+    }
+
     private Tfidf() {}
 
     private double computeCutOffParameter(long totalSize) {
-        if (cutOffDummy) return -1;
-        else return (totalSize > 100) ? 0.2 : 0.01;
+        if (cutOffDummy || totalSize < 100) return -1;
+        else return 2.0;
     }
 
     public Map<String,Double> computeTfIdf(String organization, String responseId, String requirement, Model model) throws InternalErrorException {
         Map<String, Map<String, Double>> docs = model.getDocs();
         Map<String, Integer> corpusFrequency = model.getCorpusFrequency();
         double cutOffParameter = computeCutOffParameter(docs.size());
+
+        boolean smoothing = (docs.size() < 100);
 
         List<String> preprocessRequirement = new ArrayList<>();
         try {
@@ -51,7 +58,7 @@ public class Tfidf {
         HashMap<String, Double> tfIdf = new HashMap<>();
         for (String s : preprocessRequirement) {
             double idf = 0;
-            if (corpusFrequency.containsKey(s)) idf = idf(docs.size(), corpusFrequency.get(s));
+            if (corpusFrequency.containsKey(s)) idf = idf(docs.size(), corpusFrequency.get(s), smoothing);
             Integer tf = tfRequirement.get(s);
             double tfidf = idf * tf;
             if (tfidf>=cutOffParameter) tfIdf.put(s, tfidf);
@@ -109,6 +116,8 @@ public class Tfidf {
         int finalSize = oldSize+newRequirements.size();
         double cutOffParameter = computeCutOffParameter(finalSize);
 
+        boolean smoothing = (finalSize < 100);
+
         //preprocess new requirements
         List<List<String>> newDocs = new ArrayList<>();
         for (String s : newRequirements) {
@@ -137,8 +146,7 @@ public class Tfidf {
         for (List<String> doc : newDocs) {
             HashMap<String, Double> aux = new HashMap<>();
             for (String s : doc) {
-                double idf = idf(finalSize, newCorpusFrequency.get(s));
-                if (idf < 0) idf = 0.0;
+                double idf = idf(finalSize, newCorpusFrequency.get(s),smoothing);
                 Integer tf = wordBagArray.get(i).get(s);
                 double tfidf = idf * tf;
                 if (tfidf>=cutOffParameter) aux.put(s, tfidf);
@@ -191,6 +199,7 @@ public class Tfidf {
         double cutOffParameter = computeCutOffParameter(docs.size());
         Control.getInstance().showInfoMessage("Cutoff: " + cutOffParameter);
         Map<String,Map<String, Double>> tfidfComputed = new HashMap<>();
+        boolean smoothing = (docs.size() < 100);
         List<Map<String, Integer>> wordBag = new ArrayList<>();
         for (List<String> doc : docs) {
             wordBag.add(tf(doc,corpusFrequency));
@@ -199,8 +208,7 @@ public class Tfidf {
         for (List<String> doc : docs) {
             HashMap<String, Double> aux = new HashMap<>();
             for (String s : doc) {
-                double idf = idf(docs.size(), corpusFrequency.get(s));
-                if (idf < 0) idf = 0.0;
+                double idf = idf(docs.size(), corpusFrequency.get(s), smoothing);
                 Integer tf = wordBag.get(i).get(s);
                 double tfidf = idf * tf;
                 if (tfidf>=cutOffParameter) aux.put(s, tfidf);
@@ -211,8 +219,10 @@ public class Tfidf {
         return tfidfComputed;
     }
 
-    private double idf(int size, int frequency) {
-        return Math.log(size / (frequency + 1.0));
+    private double idf(int size, int frequency, boolean smoothing) {
+        double value = Math.log(size / (frequency + 1.0));
+        if (value < 0) value = 0;
+        return (smoothing && smoothingActive) ? (value + 0.1) : value;
     }
 
     private Map<String, Integer> tf(List<String> doc, Map<String, Integer> corpusFrequency) {
