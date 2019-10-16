@@ -1,0 +1,63 @@
+{
+	"compare": true,
+	"lastClusterId": 2,
+	"corpus": [{
+		"words": [{
+			"tfIdf": 0.4054651081081644,
+			"word": "uab"
+		}],
+		"id": "UPC-6"
+	}, {
+		"words": [{
+			"tfIdf": 0.6931471805599453,
+			"word": "alon"
+		}, {
+			"tfIdf": 0.6931471805599453,
+			"word": "ub"
+		}],
+		"id": "UPC-5"
+	}, {
+		"words": [{
+			"tfIdf": 0.4054651081081644,
+			"word": "uab"
+		}],
+		"id": "UPC-4"
+	}, {
+		"words": [{
+			"tfIdf": 0.6931471805599453,
+			"word": "think"
+		}, {
+			"tfIdf": 0.6931471805599453,
+			"word": "alon"
+		}],
+		"id": "UPC-3"
+	}, {
+		"words": [{
+			"tfIdf": 0.6931471805599453,
+			"word": "ub"
+		}],
+		"id": "UPC-2"
+	}, {
+		"words": [{
+			"tfIdf": 0.6931471805599453,
+			"word": "think"
+		}, {
+			"tfIdf": 0.4054651081081644,
+			"word": "uab"
+		}],
+		"id": "UPC-1"
+	}],
+	"corpusFrequency": [],
+	"threshold": 0,
+	"isCluster": true,
+	"clusters": [{
+		"clusterRequirements": ["UPC-1", "UPC-2", "UPC-3"],
+		"clusterId": 0
+	}, {
+		"clusterRequirements": ["UPC-5", "UPC-4"],
+		"clusterId": 1
+	}, {
+		"clusterRequirements": ["UPC-6"],
+		"clusterId": 2
+	}]
+}

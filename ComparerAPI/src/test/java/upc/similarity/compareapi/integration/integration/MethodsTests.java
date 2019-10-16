@@ -287,27 +287,29 @@ public class MethodsTests {
     @Test
     public void buildClusters() throws Exception {
         this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"generateClusters/input.json")))
+                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"buildClusters/input.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
-                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "generateClusters/output_build.json")));
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "buildClusters/output_build.json")));
         ++id;
         SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
         List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
-        assertEquals(read_file_array(path+"generateClusters/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
+        assertEquals(read_file_array(path+"buildClusters/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
+        assertEquals(read_file_json(path+"buildClusters/output_model.json"), extractModel("UPC",true, false));
     }
 
     @Test
     public void buildClustersAndCompute() throws Exception {
         this.mockMvc.perform(post(url + "BuildClustersAndCompute").param("organization", "UPC").param("threshold", "0.2")
-                .param("compare", "true").param("responseId", id+"").param("maxNumber", "-1").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"generateClustersAndCompute/input.json")))
+                .param("compare", "true").param("responseId", id+"").param("maxNumber", "-1").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"buildClustersAndCompute/input.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
-                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "generateClustersAndCompute/output.json")));
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "buildClustersAndCompute/output.json")));
         ++id;
         SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
         List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
-        assertEquals(read_file_array(path+"generateClustersAndCompute/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
+        assertEquals(read_file_array(path+"buildClustersAndCompute/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
+        assertEquals(read_file_json(path+"buildClustersAndCompute/output_model.json"), extractModel("UPC",true, false));
     }
 
     @Test
@@ -386,49 +388,49 @@ public class MethodsTests {
     @Test
     public void batchProcess() throws Exception {
         this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "1.1")
-                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"cronMethod/input_model.json")))
+                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"batchProcess/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "BatchProcess").param("organization", "UPC").param("responseId", id+"")
-                .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"cronMethod/input_cron.json")))
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"batchProcess/input_cron.json")))
                 .andExpect(status().isOk());
         ++id;
         SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
         List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
-        assertEquals(read_file_array(path+"cronMethod/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
-        assertEquals(read_file_json(path+"cronMethod/output_model.json"), extractModel("UPC",false, false));
+        assertEquals(read_file_array(path+"batchProcess/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
+        assertEquals(read_file_json(path+"batchProcess/output_model.json"), extractModel("UPC",true, false));
     }
 
     @Test
     public void batchProcessLoop() throws Exception {
         this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "1.1")
-                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"cronMethod/input_model.json")))
+                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"batchProcess/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "BatchProcess").param("organization", "UPC").param("responseId", id+"")
-                .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"cronMethod/input_cron_loop.json")))
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"batchProcess/input_cron_loop.json")))
                 .andExpect(status().isOk());
         ++id;
         SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
         List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
-        assertEquals(read_file_array(path+"cronMethod/output_dependencies_loop.json"),listDependenciesToJson(dependencies).toString());
-        assertEquals(read_file_json(path+"cronMethod/output_model_loop.json"), extractModel("UPC",false, false));
+        assertEquals(read_file_array(path+"batchProcess/output_dependencies_loop.json"),listDependenciesToJson(dependencies).toString());
+        assertEquals(read_file_json(path+"batchProcess/output_model_loop.json"), extractModel("UPC",true, false));
     }
 
     @Test
     public void batchProcessWithProposed() throws Exception {
         this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"cronMethod/input_model.json")))
+                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"batchProcess/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "BatchProcess").param("organization", "UPC").param("responseId", id+"")
-                .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"cronMethod/input_cron.json")))
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"batchProcess/input_cron.json")))
                 .andExpect(status().isOk());
         ++id;
         SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
         List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
-        assertEquals(read_file_array(path+"cronMethod/output_dependencies_proposed.json"),listDependenciesToJson(dependencies).toString());
-        assertEquals(read_file_json(path+"cronMethod/output_model_proposed.json"), extractModel("UPC",false, false));
+        assertEquals(read_file_array(path+"batchProcess/output_dependencies_proposed.json"),listDependenciesToJson(dependencies).toString());
+        assertEquals(read_file_json(path+"batchProcess/output_model_proposed.json"), extractModel("UPC",true, false));
     }
 
 

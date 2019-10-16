@@ -1,0 +1,84 @@
+{
+	"compare": true,
+	"lastClusterId": 7,
+	"corpus": [{
+		"words": [{
+			"tfIdf": 1.252762968495368,
+			"word": "calm"
+		}, {
+			"tfIdf": 1.252762968495368,
+			"word": "work"
+		}, {
+			"tfIdf": 1.252762968495368,
+			"word": "keep"
+		}, {
+			"tfIdf": 0.8472978603872037,
+			"word": "alon"
+		}, {
+			"tfIdf": 1.252762968495368,
+			"word": "just"
+		}],
+		"id": "UPC-6"
+	}, {
+		"words": [{
+			"tfIdf": 1.252762968495368,
+			"word": "love"
+		}, {
+			"tfIdf": 1.252762968495368,
+			"word": "all"
+		}, {
+			"tfIdf": 0.8472978603872037,
+			"word": "alon"
+		}, {
+			"tfIdf": 1.252762968495368,
+			"word": "them"
+		}],
+		"id": "UPC-5"
+	}, {
+		"words": [{
+			"tfIdf": 0.33647223662121295,
+			"word": "uab"
+		}],
+		"id": "UPC-9"
+	}, {
+		"words": [{
+			"tfIdf": 0.33647223662121295,
+			"word": "uab"
+		}],
+		"id": "UPC-4"
+	}, {
+		"words": [{
+			"tfIdf": 0.3364722366212129,
+			"word": "uab"
+		}],
+		"id": "UPC-3"
+	}, {
+		"words": [{
+			"tfIdf": 1.252762968495368,
+			"word": "ub"
+		}],
+		"id": "UPC-2"
+	}, {
+		"words": [{
+			"tfIdf": 0.33647223662121295,
+			"word": "uab"
+		}],
+		"id": "UPC-1"
+	}],
+	"corpusFrequency": [],
+	"threshold": 0,
+	"isCluster": true,
+	"clusters": [{
+		"clusterRequirements": ["UPC-1", "UPC-2", "UPC-9", "UPC-6"],
+		"clusterId": 2
+	}, {
+		"clusterRequirements": ["UPC-4"],
+		"clusterId": 5
+	}, {
+		"clusterRequirements": ["UPC-3"],
+		"clusterId": 6
+	}, {
+		"clusterRequirements": ["UPC-5"],
+		"clusterId": 7
+	}]
+}

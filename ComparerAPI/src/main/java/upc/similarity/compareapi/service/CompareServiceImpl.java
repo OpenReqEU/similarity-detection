@@ -484,8 +484,6 @@ public class CompareServiceImpl implements CompareService {
             HashSet<Integer> clustersChanged = new HashSet<>();
             Map<String,Integer> reqCluster = computeReqClusterMap(model.getClusters(), model.getDocs().keySet());
 
-            Time time = Time.getInstance();
-
             for (OrderedObject orderedObject: objects) {
                 if (orderedObject.isDependency()) {
                     List<Dependency> aux = new ArrayList<>();
@@ -506,7 +504,7 @@ public class CompareServiceImpl implements CompareService {
                 }
             }
             clusterOperations.updateProposedDependencies(organization, responseId, model, clustersChanged, true);
-
+            databaseOperations.saveModel(organization, responseId, model, new ArrayList<>());
             databaseOperations.updateModelClustersAndDependencies(organization, responseId, model, null, true);
 
         } finally {
