@@ -32,7 +32,7 @@ public class Tfidf {
 
     private double computeCutOffParameter(long totalSize) {
         if (cutOffDummy || totalSize < 100) return -1;
-        else return 2.0;
+        else return 10;
     }
 
     public Map<String,Double> computeTfIdf(String organization, String responseId, String requirement, Model model) throws InternalErrorException {
