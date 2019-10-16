@@ -10,7 +10,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.exception.NotFoundException;
 import upc.similarity.compareapi.service.ScheduledTasks;
-import upc.similarity.compareapi.util.DatabaseOperations;
+import upc.similarity.compareapi.dao.DatabaseOperations;
 import upc.similarity.compareapi.util.Tfidf;
 import upc.similarity.compareapi.util.Time;
 

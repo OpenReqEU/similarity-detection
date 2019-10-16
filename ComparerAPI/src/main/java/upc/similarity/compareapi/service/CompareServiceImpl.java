@@ -3,7 +3,11 @@ package upc.similarity.compareapi.service;
 import org.json.JSONArray;
 import org.springframework.stereotype.Service;
 import upc.similarity.compareapi.config.Constants;
-import upc.similarity.compareapi.config.Control;
+import upc.similarity.compareapi.dao.DatabaseOperations;
+import upc.similarity.compareapi.preprocess.PreprocessPipeline;
+import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
+import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
+import upc.similarity.compareapi.util.Logger;
 import upc.similarity.compareapi.entity.*;
 import upc.similarity.compareapi.entity.auxiliary.*;
 import upc.similarity.compareapi.entity.input.Clusters;
@@ -22,45 +26,101 @@ import java.util.concurrent.locks.ReentrantLock;
 @Service("comparerService")
 public class CompareServiceImpl implements CompareService {
 
-    private Control control = Control.getInstance();
+    private Logger logger = Logger.getInstance();
+    private SimilarityAlgorithm similarityAlgorithm = Constants.getInstance().getSimilarityAlgorithm();
+    private PreprocessPipeline preprocessPipeline = Constants.getInstance().getPreprocessPipeline();
     private ConcurrentHashMap<String, Lock> organizationLocks = new ConcurrentHashMap<>();
+    private int sleepTime = Constants.getInstance().getMaxWaitingTime();
 
 
     /*
+    Sync methods
+     */
+
+    //is public to be accessible by tests
+    public void getAccessToUpdate(String organization, String responseId) throws NotFinishedException, InternalErrorException {
+        String errorMessage = "Synchronization error";
+        if (!organizationLocks.containsKey(organization)) {
+            Lock aux = organizationLocks.putIfAbsent(organization, new ReentrantLock(true));
+            //aux not used
+        }
+        Lock lock = organizationLocks.get(organization);
+        if (lock == null) DatabaseOperations.getInstance().saveInternalException("Synchronization 1rst conditional",organization, responseId, new InternalErrorException(errorMessage));
+        else {
+            try {
+                if (!lock.tryLock(sleepTime, TimeUnit.SECONDS)) { //NOSONAR
+                    Logger.getInstance().showInfoMessage("The " + organization + " database is locked, another thread is using it " + organization + " " + responseId);
+                    DatabaseOperations.getInstance().saveNotFinishedException(organization, responseId, new NotFinishedException("There is another computation in the same organization with write or update rights that has not finished yet"));
+                }
+            } catch (InterruptedException e) {
+                Logger.getInstance().showErrorMessage(e.getMessage());
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    //is public to be accessible by tests
+    public void releaseAccessToUpdate(String organization, String responseId) throws InternalErrorException {
+        Lock lock = organizationLocks.get(organization);
+        if (lock == null) DatabaseOperations.getInstance().saveInternalException("Synchronization 2nd conditional",organization, responseId, new InternalErrorException("Synchronization error"));
+        else {
+            try {
+                lock.unlock();
+            } catch (IllegalMonitorStateException e) {
+                DatabaseOperations.getInstance().saveInternalException("Synchronization 3rd conditional: " + e.getMessage(),organization, responseId, new InternalErrorException("Synchronization error"));
+            }
+        }
+    }
+
+    public void removeOrganizationLock(String organization) {
+        organizationLocks.remove(organization);
+    }
+
+    public ConcurrentMap<String, Lock> getConcurrentMap() {
+        return organizationLocks;
+    }
+
+
+    /*
+    Public methods
     Similarity without clusters
      */
 
     @Override
     public void buildModel(String responseId, boolean compare, String organization, List<Requirement> requirements) throws ForbiddenException, BadRequestException, NotFinishedException, InternalErrorException {
-        control.showInfoMessage("BuildModel: Start computing " + organization + " " + responseId);
+        logger.showInfoMessage("BuildModel: Start computing " + organization + " " + responseId);
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"BuildModel");
         if (databaseOperations.existsOrganization(responseId,organization)) databaseOperations.saveForbiddenException(organization,responseId,new ForbiddenException(Constants.getInstance().getForbiddenErrorMessage()));
 
-        Model model = generateModel(compare, 0, deleteDuplicates(requirements, organization, responseId));
+        SimilarityModel similarityModel = generateModel(compare, deleteDuplicates(requirements, organization, responseId));
+        //threshold is never used in other without cluster methods
+        OrganizationModels organizationModels = new OrganizationModels(0,compare,false, similarityModel);
+
         getAccessToUpdate(organization, responseId);
         try {
-            //threshold is never used in other methods
-            databaseOperations.saveModel(organization, responseId, model, null);
+            databaseOperations.saveOrganizationModels(organization, responseId, organizationModels);
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
         databaseOperations.generateEmptyResponse(organization, responseId);
 
-        control.showInfoMessage("BuildModel: Finish computing " + organization + " " + responseId);
+        logger.showInfoMessage("BuildModel: Finish computing " + organization + " " + responseId);
     }
 
     @Override
     public void buildModelAndCompute(String responseId, boolean compare, String organization, double threshold, List<Requirement> requirements, int maxNumDeps) throws BadRequestException, ForbiddenException, NotFinishedException, InternalErrorException {
-        control.showInfoMessage("BuildModelAndCompute: Start computing " + organization + " " + responseId);
+        logger.showInfoMessage("BuildModelAndCompute: Start computing " + organization + " " + responseId);
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"BuildModelAndCompute");
         if (databaseOperations.existsOrganization(responseId,organization)) databaseOperations.saveForbiddenException(organization,responseId,new ForbiddenException(Constants.getInstance().getForbiddenErrorMessage()));
 
         //threshold is never used in other methods
-        Model model = generateModel(compare, 0, deleteDuplicates(requirements,organization,responseId));
+        SimilarityModel similarityModel = generateModel(compare, deleteDuplicates(requirements, organization, responseId));
+        //threshold is never used in other without cluster methods
+        OrganizationModels organizationModels = new OrganizationModels(0,compare,false, similarityModel);
         List<String> requirementsIds = new ArrayList<>();
         for (Requirement requirement: requirements) {
             requirementsIds.add(requirement.getId());
@@ -68,21 +128,21 @@ public class CompareServiceImpl implements CompareService {
 
         getAccessToUpdate(organization, responseId);
         try {
-            databaseOperations.saveModel(organization, responseId, model, null);
+            databaseOperations.saveOrganizationModels(organization, responseId, organizationModels);
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
 
-        project(requirementsIds, model, threshold, responseId, organization, maxNumDeps);
+        project(requirementsIds, organizationModels.getSimilarityModel(), threshold, responseId, organization, maxNumDeps);
 
         databaseOperations.finishComputation(organization, responseId);
 
-        control.showInfoMessage("BuildModelAndCompute: Finish computing " + organization + " " + responseId);
+        logger.showInfoMessage("BuildModelAndCompute: Finish computing " + organization + " " + responseId);
     }
 
     @Override
     public void addRequirements(String responseId, String organization, List<Requirement> requirements) throws BadRequestException, NotFoundException, NotFinishedException, InternalErrorException {
-        control.showInfoMessage("AddRequirements: Start computing " + organization + " " + responseId);
+        logger.showInfoMessage("AddRequirements: Start computing " + organization + " " + responseId);
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"AddRequirements");
@@ -90,23 +150,23 @@ public class CompareServiceImpl implements CompareService {
         getAccessToUpdate(organization, responseId);
 
         try {
-            Model model = databaseOperations.loadModel(organization, responseId, true);
-            if (model.hasClusters()) databaseOperations.saveBadRequestException(organization,responseId,new BadRequestException("The model has clusters. Use the similarity with clusters methods instead."));
+            OrganizationModels organizationModels = databaseOperations.loadOrganizationModels(organization, responseId, false);
+            if (organizationModels.hasClusters()) databaseOperations.saveBadRequestException(organization,responseId,new BadRequestException("The model has clusters. Use the similarity with clusters methods instead."));
             List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements, organization, responseId);
-            addRequirementsToModel(notDuplicatedRequirements, model);
-            databaseOperations.saveModel(organization, responseId, model, null);
+            addRequirementsToModel(organizationModels, notDuplicatedRequirements);
+            databaseOperations.saveOrganizationModels(organization, responseId, organizationModels);
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
 
         databaseOperations.generateEmptyResponse(organization, responseId);
 
-        control.showInfoMessage("AddRequirements: Finish computing " + organization + " " + responseId);
+        logger.showInfoMessage("AddRequirements: Finish computing " + organization + " " + responseId);
     }
 
     @Override
     public void deleteRequirements(String responseId, String organization, List<Requirement> requirements) throws BadRequestException, NotFoundException, NotFinishedException, InternalErrorException  {
-        control.showInfoMessage("DeleteRequirements: Start computing " + organization + " " + responseId);
+        logger.showInfoMessage("DeleteRequirements: Start computing " + organization + " " + responseId);
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"DeleteRequirements");
@@ -114,42 +174,42 @@ public class CompareServiceImpl implements CompareService {
         getAccessToUpdate(organization, responseId);
 
         try {
-            Model model = databaseOperations.loadModel(organization, responseId, true);
-            if (model.hasClusters()) databaseOperations.saveBadRequestException(organization,responseId,new BadRequestException("The model has clusters. Use the similarity with clusters methods instead."));
+            OrganizationModels organizationModels = databaseOperations.loadOrganizationModels(organization, responseId, false);
+            if (organizationModels.hasClusters()) databaseOperations.saveBadRequestException(organization,responseId,new BadRequestException("The model has clusters. Use the similarity with clusters methods instead."));
             List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements, organization, responseId);
-            List<String> requirementsIds = new ArrayList<>();
-            for (Requirement requirement : notDuplicatedRequirements) requirementsIds.add(requirement.getId());
-            Tfidf.getInstance().deleteReqsAndRecomputeModel(requirementsIds, model);
-            databaseOperations.saveModel(organization, responseId, model, null);
+            SimilarityModel similarityModel = organizationModels.getSimilarityModel();
+            deleteRequirementsFromModel(similarityModel,notDuplicatedRequirements);
+            databaseOperations.saveOrganizationModels(organization, responseId, organizationModels);
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
 
         databaseOperations.generateEmptyResponse(organization, responseId);
 
-        control.showInfoMessage("DeleteRequirements: Finish computing " + organization + " " + responseId);
+        logger.showInfoMessage("DeleteRequirements: Finish computing " + organization + " " + responseId);
     }
 
 
     @Override
     public Dependency simReqReq(String organization, String req1, String req2) throws NotFoundException, InternalErrorException {
-        CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         Constants constants = Constants.getInstance();
-        Model model = databaseOperations.loadModel(organization,null, false);
-        if (!model.getDocs().containsKey(req1)) throw new NotFoundException("The requirement with id " + req1 + " is not present in the model loaded form the database");
-        if (!model.getDocs().containsKey(req2)) throw new NotFoundException("The requirement with id " + req2 + " is not present in the model loaded form the database");
-        double score = cosineSimilarity.compute(model.getDocs(),req1,req2);
+        OrganizationModels organizationModels = databaseOperations.loadOrganizationModels(organization,null,true);
+        SimilarityModel similarityModel = organizationModels.getSimilarityModel();
+        if (!similarityModel.containsRequirement(req1)) throw new NotFoundException("The requirement with id " + req1 + " is not present in the model loaded form the database");
+        if (!similarityModel.containsRequirement(req2)) throw new NotFoundException("The requirement with id " + req2 + " is not present in the model loaded form the database");
+        double score = similarityAlgorithm.computeSimilarity(similarityModel,req1,req2);
         return new Dependency(score,req1,req2,constants.getStatus(),constants.getDependencyType(),constants.getComponent());
     }
 
     @Override
     public void simReqOrganization(String responseId, String organization, double threshold, List<String> requirements, int maxNumDeps) throws NotFoundException, InternalErrorException {
-        control.showInfoMessage("SimReqOrganization: Start computing " + organization + " " + responseId);
+        logger.showInfoMessage("SimReqOrganization: Start computing " + organization + " " + responseId);
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"SimReqOrganization");
 
-        Model model = databaseOperations.loadModel(organization, responseId, true);
+        OrganizationModels organizationModels = databaseOperations.loadOrganizationModels(organization,responseId,true);
+        SimilarityModel similarityModel = organizationModels.getSimilarityModel();
 
         HashSet<String> repeatedHash = new HashSet<>();
         List<String> projectRequirements = new ArrayList<>();
@@ -159,34 +219,33 @@ public class CompareServiceImpl implements CompareService {
             repeatedHash.add(requirement);
         }
 
-        Iterator it = model.getDocs().entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry) it.next();
-            String id = (String) pair.getKey();
-            if (!repeatedHash.contains(id)) projectRequirements.add(id);
+        List<String> modelRequirements = similarityModel.getRequirementsIds();
+        for (String requirement: modelRequirements) {
+            if (!repeatedHash.contains(requirement)) projectRequirements.add(requirement);
         }
 
-        reqProject(requirementsToCompare, projectRequirements, model, threshold, organization, responseId,true, maxNumDeps);
+        reqProject(requirementsToCompare, projectRequirements, similarityModel, threshold, organization, responseId,true, maxNumDeps);
         databaseOperations.finishComputation(organization, responseId);
 
-        control.showInfoMessage("SimReqOrganization: Finish computing " + organization + " " + responseId);
+        logger.showInfoMessage("SimReqOrganization: Finish computing " + organization + " " + responseId);
     }
 
     @Override
     public void simNewReqOrganization(String responseId, String organization, double threshold, List<Requirement> requirements, int maxNumDeps) throws NotFoundException, NotFinishedException, BadRequestException, InternalErrorException {
-        control.showInfoMessage("SimReqOrganization: Start computing " + organization + " " + responseId);
+        logger.showInfoMessage("SimReqOrganization: Start computing " + organization + " " + responseId);
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         databaseOperations.generateResponse(organization,responseId,"SimReqOrganization");
 
         getAccessToUpdate(organization, responseId);
 
         try {
-            Model model = databaseOperations.loadModel(organization, responseId, true);
-            if (model.hasClusters()) databaseOperations.saveBadRequestException(organization,responseId,new BadRequestException("The model has clusters. Use the similarity with clusters methods instead."));
+            OrganizationModels organizationModels = databaseOperations.loadOrganizationModels(organization,responseId,false);
+            if (organizationModels.hasClusters()) databaseOperations.saveBadRequestException(organization,responseId,new BadRequestException("The model has clusters. Use the similarity with clusters methods instead."));
 
             List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements, organization, responseId);
 
-            addRequirementsToModel(notDuplicatedRequirements, model);
+            SimilarityModel similarityModel = organizationModels.getSimilarityModel();
+            addRequirementsToModel(organizationModels, notDuplicatedRequirements);
             HashSet<String> repeatedHash = new HashSet<>();
             for (Requirement requirement : notDuplicatedRequirements) repeatedHash.add(requirement.getId());
 
@@ -194,60 +253,58 @@ public class CompareServiceImpl implements CompareService {
             List<String> requirementsToCompare = new ArrayList<>();
             for (Requirement requirement : notDuplicatedRequirements) requirementsToCompare.add(requirement.getId());
 
-            Iterator it = model.getDocs().entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry pair = (Map.Entry) it.next();
-                String id = (String) pair.getKey();
-                if (!repeatedHash.contains(id)) projectRequirements.add(id);
+            List<String> modelRequirements = similarityModel.getRequirementsIds();
+            for (String requirement: modelRequirements) {
+                if (!repeatedHash.contains(requirement)) projectRequirements.add(requirement);
             }
 
-            reqProject(requirementsToCompare, projectRequirements, model, threshold, organization, responseId, true, maxNumDeps);
-            databaseOperations.saveModel(organization, responseId, model, null);
+            reqProject(requirementsToCompare, projectRequirements, similarityModel, threshold, organization, responseId, true, maxNumDeps);
+            databaseOperations.saveOrganizationModels(organization,responseId,organizationModels);
         } finally {
             releaseAccessToUpdate(organization, responseId);
         }
 
         databaseOperations.finishComputation(organization, responseId);
 
-        control.showInfoMessage("SimReqOrganization: Finish computing " + organization + " " + responseId);
+        logger.showInfoMessage("SimReqOrganization: Finish computing " + organization + " " + responseId);
     }
 
     @Override
     public void simReqProject(String responseId, String organization, double threshold, ReqProject projectRequirements, int maxNumDeps) throws NotFoundException, InternalErrorException, BadRequestException {
-        control.showInfoMessage("SimReqProject: Start computing " + organization + " " + responseId);
+        logger.showInfoMessage("SimReqProject: Start computing " + organization + " " + responseId);
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
         databaseOperations.generateResponse(organization,responseId,"SimReqProject");
 
-        Model model = databaseOperations.loadModel(organization, responseId, false);
+        SimilarityModel similarityModel = databaseOperations.loadOrganizationModels(organization,responseId,true).getSimilarityModel();
         for (String req: projectRequirements.getReqsToCompare()) {
             if (projectRequirements.getProjectReqs().contains(req)) databaseOperations.saveBadRequestException(organization, responseId, new BadRequestException("The requirement with id " + req + " is already inside the project"));
         }
 
-        reqProject(projectRequirements.getReqsToCompare(), projectRequirements.getProjectReqs(), model, threshold, organization, responseId, true, maxNumDeps);
+        reqProject(projectRequirements.getReqsToCompare(), projectRequirements.getProjectReqs(), similarityModel, threshold, organization, responseId, true, maxNumDeps);
 
         databaseOperations.finishComputation(organization, responseId);
-        control.showInfoMessage("SimReqProject: Finish computing " + organization + " " + responseId);
+        logger.showInfoMessage("SimReqProject: Finish computing " + organization + " " + responseId);
     }
 
     @Override
     public void simProject(String responseId, String organization, double threshold, List<String> projectRequirements, int maxNumDeps) throws NotFoundException, InternalErrorException {
-        control.showInfoMessage("SimProject: Start computing " + organization + " " + responseId);
+        logger.showInfoMessage("SimProject: Start computing " + organization + " " + responseId);
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
         databaseOperations.generateResponse(organization,responseId,"SimProject");
 
-        Model model = databaseOperations.loadModel(organization, responseId, false);
+        SimilarityModel similarityModel = databaseOperations.loadOrganizationModels(organization,responseId,true).getSimilarityModel();
 
-        project(projectRequirements, model, threshold, responseId, organization, maxNumDeps);
+        project(projectRequirements, similarityModel, threshold, responseId, organization, maxNumDeps);
 
         databaseOperations.finishComputation(organization, responseId);
-        control.showInfoMessage("SimProject: Finish computing " + organization + " " + responseId);
+        logger.showInfoMessage("SimProject: Finish computing " + organization + " " + responseId);
     }
 
     @Override
     public void simProjectProject(String responseId, String organization, double threshold, ProjectProject projects, int maxNumDeps) throws NotFoundException, InternalErrorException {
-        control.showInfoMessage("SimProjectProject: Start computing " + organization + " " + responseId);
+        logger.showInfoMessage("SimProjectProject: Start computing " + organization + " " + responseId);
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
         databaseOperations.generateResponse(organization,responseId,"SimProjectProject");
@@ -255,22 +312,23 @@ public class CompareServiceImpl implements CompareService {
         List<String> project1NotRepeated = deleteListDuplicates(projects.getFirstProjectRequirements());
         List<String> project2NotRepeated = deleteListDuplicates(projects.getSecondProjectRequirements());
 
-        Model model = databaseOperations.loadModel(organization, responseId, false);
+        SimilarityModel similarityModel = databaseOperations.loadOrganizationModels(organization,responseId,true).getSimilarityModel();
 
-        reqProject(project1NotRepeated,project2NotRepeated,model,threshold,organization,responseId, false, maxNumDeps);
+        reqProject(project1NotRepeated,project2NotRepeated,similarityModel,threshold,organization,responseId, false, maxNumDeps);
 
         databaseOperations.finishComputation(organization, responseId);
-        control.showInfoMessage("SimProjectProject: Finish computing " + organization + " " + responseId);
+        logger.showInfoMessage("SimProjectProject: Finish computing " + organization + " " + responseId);
     }
 
 
     /*
+    Public methods
     Similarity with clusters
      */
 
     @Override
     public void buildClusters(String responseId, boolean compare, double threshold, String organization, Clusters input) throws ForbiddenException, BadRequestException, NotFinishedException, InternalErrorException {
-        control.showInfoMessage("BuildClusters: Start computing " + organization + " " + responseId + " " + input.getRequirements().size() + " reqs");
+        logger.showInfoMessage("BuildClusters: Start computing " + organization + " " + responseId + " " + input.getRequirements().size() + " reqs");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
@@ -297,12 +355,12 @@ public class CompareServiceImpl implements CompareService {
 
         databaseOperations.generateEmptyResponse(organization, responseId);
 
-        control.showInfoMessage("BuildClusters: Finish computing " + organization + " " + responseId);
+        logger.showInfoMessage("BuildClusters: Finish computing " + organization + " " + responseId);
     }
 
     @Override
     public void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, int maxNumber, Clusters input) throws ForbiddenException, BadRequestException, NotFinishedException, InternalErrorException {
-        control.showInfoMessage("BuildClustersAndCompute: Start computing " + organization + " " + responseId + " " + input.getRequirements().size() + " reqs");
+        logger.showInfoMessage("BuildClustersAndCompute: Start computing " + organization + " " + responseId + " " + input.getRequirements().size() + " reqs");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
@@ -366,12 +424,12 @@ public class CompareServiceImpl implements CompareService {
 
         databaseOperations.finishComputation(organization, responseId);
 
-        control.showInfoMessage("BuildClustersAndCompute: Finish computing " + organization + " " + responseId);
+        logger.showInfoMessage("BuildClustersAndCompute: Finish computing " + organization + " " + responseId);
     }
 
     @Override
     public Dependencies simReqClusters(String organization, List<String> requirements, int maxNumber) throws NotFoundException, InternalErrorException {
-        control.showInfoMessage("SimReqClusters: Start computing");
+        logger.showInfoMessage("SimReqClusters: Start computing");
         List<Dependency> result = new ArrayList<>();
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
@@ -397,13 +455,13 @@ public class CompareServiceImpl implements CompareService {
             }
         }
 
-        control.showInfoMessage("SimReqClusters: Finish computing");
+        logger.showInfoMessage("SimReqClusters: Finish computing");
         return new Dependencies(result);
     }
 
     @Override
     public void treatAcceptedAndRejectedDependencies(String organization, List<Dependency> dependencies) throws NotFoundException, BadRequestException, NotFinishedException, InternalErrorException {
-        control.showInfoMessage("TreatAcceptedAndRejectedDependencies: Start computing");
+        logger.showInfoMessage("TreatAcceptedAndRejectedDependencies: Start computing");
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         getAccessToUpdate(organization, null);
@@ -435,12 +493,12 @@ public class CompareServiceImpl implements CompareService {
             releaseAccessToUpdate(organization, null);
         }
 
-        control.showInfoMessage("TreatAcceptedAndRejectedDependencies: Finish computing");
+        logger.showInfoMessage("TreatAcceptedAndRejectedDependencies: Finish computing");
     }
 
     @Override
     public void batchProcess(String responseId, String organization, Clusters input) throws BadRequestException, NotFoundException, NotFinishedException, InternalErrorException {
-        control.showInfoMessage("BatchProcess: Start computing " + organization + " " + responseId);
+        logger.showInfoMessage("BatchProcess: Start computing " + organization + " " + responseId);
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
         ClusterOperations clusterOperations = ClusterOperations.getInstance();
 
@@ -512,11 +570,12 @@ public class CompareServiceImpl implements CompareService {
         }
 
         databaseOperations.generateEmptyResponse(organization, responseId);
-        control.showInfoMessage("BatchProcess: Finish computing " + organization + " " + responseId);
+        logger.showInfoMessage("BatchProcess: Finish computing " + organization + " " + responseId);
     }
 
 
     /*
+    Public methods
     Auxiliary methods
      */
 
@@ -585,20 +644,18 @@ public class CompareServiceImpl implements CompareService {
         return !oldRequirement.equals(newRequirement);
     }
 
-    private void reqProject(List<String> reqsToCompare, List<String> projectRequirements, Model model, double threshold, String organization, String responseId, boolean include, int maxNumDeps) throws InternalErrorException {
+    private void reqProject(List<String> reqsToCompare, List<String> projectRequirements, SimilarityModel similarityModel, double threshold, String organization, String responseId, boolean include, int maxNumDeps) throws InternalErrorException {
         boolean memoryDeps = maxNumDeps > 0;
         ResponseDependencies responseDependencies;
         if (memoryDeps) responseDependencies = new SizeFixedDependenciesQueue(organization,responseId,maxNumDeps,Comparator.comparing(Dependency::getDependencyScore).thenComparing(Dependency::getToid).thenComparing(Dependency::getFromid).reversed());
         else responseDependencies = new DiskDependencies(organization,responseId);
-
-        CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
         Constants constants = Constants.getInstance();
 
         for (String req1: reqsToCompare) {
-            if (model.getDocs().containsKey(req1)) {
+            if (similarityModel.containsRequirement(req1)) {
                 for (String req2 : projectRequirements) {
-                    if (!req1.equals(req2) && model.getDocs().containsKey(req2)) {
-                        double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
+                    if (!req1.equals(req2) && similarityModel.containsRequirement(req2)) {
+                        double score = similarityAlgorithm.computeSimilarity(similarityModel,req1,req2);
                         if (score >= threshold) {
                             Dependency dependency = new Dependency(score, req1, req2, constants.getStatus(), constants.getDependencyType(), constants.getComponent());
                             responseDependencies.addDependency(dependency);
@@ -612,22 +669,20 @@ public class CompareServiceImpl implements CompareService {
     }
 
 
-    private void project(List<String> projectRequirements, Model model, double threshold, String responseId, String organization, int maxNumDeps) throws InternalErrorException {
+    private void project(List<String> projectRequirements, SimilarityModel similarityModel, double threshold, String responseId, String organization, int maxNumDeps) throws InternalErrorException {
         boolean memoryDeps = maxNumDeps > 0;
         ResponseDependencies responseDependencies;
         if (memoryDeps) responseDependencies = new SizeFixedDependenciesQueue(organization,responseId,maxNumDeps,Comparator.comparing(Dependency::getDependencyScore).thenComparing(Dependency::getToid).thenComparing(Dependency::getFromid).reversed());
         else responseDependencies = new DiskDependencies(organization,responseId);
-
-        CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
         Constants constants = Constants.getInstance();
 
         for (int i = 0; i < projectRequirements.size(); ++i) {
             String req1 = projectRequirements.get(i);
-            if (model.getDocs().containsKey(req1)) {
+            if (similarityModel.containsRequirement(req1)) {
                 for (int j = i + 1; j < projectRequirements.size(); ++j) {
                     String req2 = projectRequirements.get(j);
-                    if (!req2.equals(req1) && model.getDocs().containsKey(req2)) {
-                        double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
+                    if (!req2.equals(req1) && similarityModel.containsRequirement(req2)) {
+                        double score = similarityAlgorithm.computeSimilarity(similarityModel,req1,req2);
                         if (score >= threshold) {
                             Dependency dependency = new Dependency(score, req1, req2, constants.getStatus(), constants.getDependencyType(), constants.getComponent());
                             responseDependencies.addDependency(dependency);
@@ -668,30 +723,23 @@ public class CompareServiceImpl implements CompareService {
         return result;
     }
 
-    private Model generateModel(boolean compare, double threshold, List<Requirement> requirements) throws InternalErrorException {
-        Tfidf tfidf = Tfidf.getInstance();
-        Map<String, Integer> corpusFrequency = new HashMap<>();
-        List<String> text = new ArrayList<>();
-        List<String> ids = new ArrayList<>();
-        buildCorpus(compare,requirements,text,ids);
-        Map<String, Map<String, Double>> docs = tfidf.extractKeywords(text,ids,corpusFrequency);
-        return new Model(docs,corpusFrequency,threshold,compare);
+    private SimilarityModel generateModel(boolean compare, List<Requirement> requirements) throws InternalErrorException {
+        return similarityAlgorithm.buildModel(preprocessPipeline.preprocessRequirements(compare,requirements));
     }
 
-    private void updateModel(boolean compare, List<Requirement> requirements, Model model, int oldSize) throws InternalErrorException {
-        Tfidf tfidf = Tfidf.getInstance();
-        List<String> text = new ArrayList<>();
-        List<String> ids = new ArrayList<>();
-        buildCorpus(compare,requirements,text,ids);
-        tfidf.addNewReqsAndRecomputeModel(text,ids,model,oldSize);
+    private void addRequirementsToModel(OrganizationModels organizationModels, List<Requirement> requirements) throws InternalErrorException {
+        SimilarityModel similarityModel = organizationModels.getSimilarityModel();
+        deleteRequirementsFromModel(similarityModel,requirements);
+        similarityAlgorithm.addRequirements(similarityModel,preprocessPipeline.preprocessRequirements(organizationModels.isCompare(),requirements));
     }
 
-    private void buildCorpus(boolean compare, List<Requirement> requirements, List<String> arrayText, List<String> arrayIds) {
+    private void deleteRequirementsFromModel(SimilarityModel similarityModel, List<Requirement> requirements) throws InternalErrorException {
+        List<String> requirementIds = new ArrayList<>();
         for (Requirement requirement: requirements) {
-            arrayIds.add(requirement.getId());
-            String text = buildRequirement(compare, requirement);
-            arrayText.add(text);
+            String id = requirement.getId();
+            if (similarityModel.containsRequirement(id))requirementIds.add(id);
         }
+        similarityAlgorithm.deleteRequirements(similarityModel,requirementIds);
     }
 
     private String buildRequirement(boolean compare, Requirement requirement) {
@@ -712,49 +760,5 @@ public class CompareServiceImpl implements CompareService {
             }
         }
         return result;
-    }
-
-    //is public to be accessible by tests
-    public void getAccessToUpdate(String organization, String responseId) throws NotFinishedException, InternalErrorException {
-        String errorMessage = "Synchronization error";
-        int sleepTime = Constants.getInstance().getSleepTime();
-        if (!organizationLocks.containsKey(organization)) {
-            Lock aux = organizationLocks.putIfAbsent(organization, new ReentrantLock(true));
-            //aux not used
-        }
-        Lock lock = organizationLocks.get(organization);
-        if (lock == null) DatabaseOperations.getInstance().saveInternalException("Synchronization 1rst conditional",organization, responseId, new InternalErrorException(errorMessage));
-        else {
-            try {
-                if (!lock.tryLock(sleepTime, TimeUnit.SECONDS)) { //NOSONAR
-                    Control.getInstance().showInfoMessage("The " + organization + " database is locked, another thread is using it " + organization + " " + responseId);
-                    DatabaseOperations.getInstance().saveNotFinishedException(organization, responseId, new NotFinishedException("There is another computation in the same organization with write or update rights that has not finished yet"));
-                }
-            } catch (InterruptedException e) {
-                Control.getInstance().showErrorMessage(e.getMessage());
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
-    //is public to be accessible by tests
-    public void releaseAccessToUpdate(String organization, String responseId) throws InternalErrorException {
-        Lock lock = organizationLocks.get(organization);
-        if (lock == null) DatabaseOperations.getInstance().saveInternalException("Synchronization 2nd conditional",organization, responseId, new InternalErrorException("Synchronization error"));
-        else {
-            try {
-                lock.unlock();
-            } catch (IllegalMonitorStateException e) {
-                DatabaseOperations.getInstance().saveInternalException("Synchronization 3rd conditional: " + e.getMessage(),organization, responseId, new InternalErrorException("Synchronization error"));
-            }
-        }
-    }
-
-    public void removeOrganizationLock(String organization) {
-        organizationLocks.remove(organization);
-    }
-
-    public ConcurrentMap<String, Lock> getConcurrentMap() {
-        return organizationLocks;
     }
 }

@@ -1,27 +1,25 @@
-package upc.similarity.compareapi.util;
+package upc.similarity.compareapi.dao;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import upc.similarity.compareapi.config.Constants;
-import upc.similarity.compareapi.config.Control;
-import upc.similarity.compareapi.dao.DatabaseModel;
-import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
 import upc.similarity.compareapi.entity.Organization;
+import upc.similarity.compareapi.entity.OrganizationModels;
 import upc.similarity.compareapi.exception.*;
+import upc.similarity.compareapi.util.Logger;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 public class DatabaseOperations {
 
     private static DatabaseOperations instance = new DatabaseOperations();
     private DatabaseModel databaseModel = getValue();
-    private Control control = Control.getInstance();
+    private Logger logger = Logger.getInstance();
 
     //is public to be accessible by tests
     public void setDatabaseModel(DatabaseModel databaseModel) {
@@ -33,7 +31,7 @@ public class DatabaseOperations {
             return new SQLiteDatabase();
         }
         catch (ClassNotFoundException e) {
-            control.showErrorMessage("Error loading database controller class");
+            logger.showErrorMessage("Error loading database controller class");
         }
         return null;
     }
@@ -103,8 +101,8 @@ public class DatabaseOperations {
     }
 
     public void saveInternalException(String console, String organization, String responseId, InternalErrorException e) throws InternalErrorException {
-        if (console.contains("The main database is lock")) Control.getInstance().showWarnMessage(console + " " + organization + " " + responseId);
-        else Control.getInstance().showErrorMessage(console + " " + organization + " " + responseId);
+        if (console.contains("The main database is lock")) Logger.getInstance().showWarnMessage(console + " " + organization + " " + responseId);
+        else Logger.getInstance().showErrorMessage(console + " " + organization + " " + responseId);
         try {
             if (organization != null && responseId != null) {
                 databaseModel.saveExceptionAndFinishComputation(organization, responseId, createJsonException(500, Constants.getInstance().getInternalErrorMessage(), e.getMessage()));
@@ -135,7 +133,7 @@ public class DatabaseOperations {
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(),organization,responseId,"Error while saving a not finished exception response to the database");
         } catch (InternalErrorException e2) {
-            Control.getInstance().showWarnMessage("The main database is locked, another thread is using it 2 " + organization + " " + responseId);
+            Logger.getInstance().showWarnMessage("The main database is locked, another thread is using it 2 " + organization + " " + responseId);
             throw e2;
         }
     }
@@ -170,22 +168,22 @@ public class DatabaseOperations {
         return result.toString();
     }
 
-    public Model loadModel(String organization, String responseId, boolean withFrequency) throws NotFoundException, InternalErrorException {
-        Model model = null;
+    public OrganizationModels loadOrganizationModels(String organization, String responseId, boolean readOnly) throws NotFoundException, InternalErrorException {
+        OrganizationModels organizationModels = null;
         try {
-            model =  databaseModel.getModel(organization, withFrequency);
+            organizationModels =  databaseModel.getOrganizationModels(organization, readOnly);
         } catch (NotFoundException e) {
             saveNotFoundException(organization, responseId, e);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organization, responseId, "Error while loading the model from the database");
         }
-        return model;
+        return organizationModels;
     }
 
-    public void saveModel(String organization, String responseId, Model model, List<Dependency> dependencies) throws InternalErrorException {
+    public void saveOrganizationModels(String organization, String responseId, OrganizationModels organizationModels) throws InternalErrorException {
         String errorMessage = "Error while saving the new model to the database";
         try {
-            databaseModel.saveModel(organization, model, dependencies);
+            databaseModel.saveOrganizationModels(organization, organizationModels);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organization, responseId, errorMessage);
         } catch (IOException | InternalErrorException e) {
@@ -390,13 +388,13 @@ public class DatabaseOperations {
      */
 
     private void treatSQLException(String sqlMessage, String organization, String responseId, String message) throws InternalErrorException {
-        control.showErrorMessage(sqlMessage + " " + organization + " " + responseId);
+        logger.showErrorMessage(sqlMessage + " " + organization + " " + responseId);
         try {
             if (organization != null && responseId != null) {
                 databaseModel.saveExceptionAndFinishComputation(organization, responseId, createJsonException(500, Constants.getInstance().getSqlErrorMessage(), message));
             }
         } catch (SQLException sq2) {
-            control.showErrorMessage("Error while saving SQL exception: " + sq2.getMessage());
+            logger.showErrorMessage("Error while saving SQL exception: " + sq2.getMessage());
         }
         throw new InternalErrorException(message);
     }

@@ -5,18 +5,15 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.test.context.junit4.SpringRunner;
 import upc.similarity.compareapi.config.Constants;
-import upc.similarity.compareapi.config.Control;
-import upc.similarity.compareapi.dao.DatabaseModel;
+import upc.similarity.compareapi.util.Logger;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.entity.input.Clusters;
 import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.exception.NotFinishedException;
-import upc.similarity.compareapi.exception.NotFoundException;
 import upc.similarity.compareapi.service.CompareServiceImpl;
-import upc.similarity.compareapi.util.DatabaseOperations;
+import upc.similarity.compareapi.dao.DatabaseOperations;
 import upc.similarity.compareapi.util.Tfidf;
 
 import java.io.File;
@@ -24,9 +21,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 
 import static org.junit.Assert.*;
@@ -292,7 +287,7 @@ public class SyncTests {
                 try {
                     getAccessToMainDb();
                 } catch (Exception e) {
-                    Control.getInstance().showErrorMessage("Here " + e.getMessage());
+                    Logger.getInstance().showErrorMessage("Here " + e.getMessage());
                 }
             });
             thread1.start();

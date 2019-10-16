@@ -17,7 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Model;
-import upc.similarity.compareapi.util.DatabaseOperations;
+import upc.similarity.compareapi.dao.DatabaseOperations;
 import upc.similarity.compareapi.util.Tfidf;
 import upc.similarity.compareapi.util.Time;
 

@@ -1,19 +1,22 @@
 package upc.similarity.compareapi.util;
 
 import upc.similarity.compareapi.config.Constants;
-import upc.similarity.compareapi.config.Control;
+import upc.similarity.compareapi.dao.DatabaseOperations;
+import upc.similarity.compareapi.entity.OrganizationModels;
 import upc.similarity.compareapi.entity.auxiliary.ClusterAndDeps;
 import upc.similarity.compareapi.entity.Dependency;
-import upc.similarity.compareapi.entity.Model;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.exception.NotFoundException;
+import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
+import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
 
 import java.util.*;
 
 public class ClusterOperations {
 
     private static ClusterOperations instance = new ClusterOperations();
+    private SimilarityAlgorithm similarityAlgorithm = Constants.getInstance().getSimilarityAlgorithm();
 
     private ClusterOperations(){}
 
@@ -77,14 +80,15 @@ public class ClusterOperations {
         return result;
     }
 
-    public void addRequirementsToClusters(String organization, String resonseId, List<Requirement> addRequirements, Model model, Set<Integer> clustersChanged, Map<String,Integer> reqCluster) throws InternalErrorException {
+    public void addRequirementsToClusters(String organization, String resonseId, List<Requirement> addRequirements, OrganizationModels organizationModels, Set<Integer> clustersChanged, Map<String,Integer> reqCluster) throws InternalErrorException {
+        SimilarityModel similarityModel = organizationModels.getSimilarityModel();
         for (Requirement requirement: addRequirements) {
-            if (model.getDocs().containsKey(requirement.getId())) {
-                deleteReqFromClusters(organization, resonseId, requirement.getId(), model, clustersChanged, reqCluster);
+            if (similarityModel.containsRequirement(requirement.getId())) {
+                deleteReqFromClusters(organization, resonseId, requirement.getId(), organizationModels, clustersChanged, reqCluster);
             }
         }
-        int lastClusterId = model.getLastClusterId();
-        Map<Integer,List<String>> clusters = model.getClusters();
+        int lastClusterId = organizationModels.getLastClusterId();
+        Map<Integer,List<String>> clusters = organizationModels.getClusters();
         for (Requirement requirement: addRequirements) {
             ++lastClusterId;
             List<String> aux = new ArrayList<>();
@@ -93,37 +97,37 @@ public class ClusterOperations {
             reqCluster.put(requirement.getId(), lastClusterId);
             clustersChanged.add(lastClusterId);
         }
-        model.setLastClusterId(lastClusterId);
+        organizationModels.setLastClusterId(lastClusterId);
     }
 
-    public void updateProposedDependencies(String organization, String responseId, Model model, Set<Integer> clustersChanged, boolean useAuxiliaryTable) throws InternalErrorException {
+    public void updateProposedDependencies(String organization, String responseId, OrganizationModels organizationModels, Set<Integer> clustersChanged, boolean useAuxiliaryTable) throws InternalErrorException {
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
-        Map<Integer,List<String>> clusters = model.getClusters();
+        Map<Integer,List<String>> clusters = organizationModels.getClusters();
         Set<Integer> clusterIds = new HashSet<>();
         for (int clusterId: clustersChanged) {
            if (clusters.containsKey(clusterId)) clusterIds.add(clusterId);
            databaseOperations.deleteProposedClusterDependencies(organization, responseId, clusterId, useAuxiliaryTable);
         }
-        computeProposedDependencies(organization, responseId, model.getDocs().keySet(), clusterIds, model, useAuxiliaryTable);
+        computeProposedDependencies(organization, responseId, new HashSet<>(organizationModels.getSimilarityModel().getRequirementsIds()), clusterIds, organizationModels, useAuxiliaryTable);
     }
 
-    public void computeProposedDependencies(String organization, String responseId, Set<String> requirements, Set<Integer> clustersIds, Model model, boolean useAuxiliaryTable) throws InternalErrorException {
-        CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
+    public void computeProposedDependencies(String organization, String responseId, Set<String> requirements, Set<Integer> clustersIds, OrganizationModels organizationModels, boolean useAuxiliaryTable) throws InternalErrorException {
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
-        Map<Integer,List<String>> clusters = model.getClusters();
+        Map<Integer,List<String>> clusters = organizationModels.getClusters();
         Set<String> rejectedDependencies = loadDependenciesByStatus(organization, responseId, "rejected", useAuxiliaryTable);
         List<Dependency> proposedDependencies = new ArrayList<>();
         int cont = 0;
         int maxDeps = Constants.getInstance().getMaxDepsForPage();
+        SimilarityModel similarityModel = organizationModels.getSimilarityModel();
         //TODO this is causing n*n efficiency, can be improved saving the result of the pairs and only compute half of the matrix (less memory efficiency)
         for (String req1: requirements) {
             for (int clusterId: clustersIds) {
                 List<String> clusterRequirements = clusters.get(clusterId);
-                double maxScore = model.getThreshold();
+                double maxScore = organizationModels.getThreshold();
                 String maxReq = null;
                 for (String req2: clusterRequirements) {
                     if (!rejectedDependencies.contains(req1+req2) && !req1.equals(req2)) {
-                        double score = cosineSimilarity.compute(model.getDocs(), req1, req2);
+                        double score = similarityAlgorithm.computeSimilarity(similarityModel,req1,req2);
                         if (score >= maxScore) {
                             maxScore = score;
                             maxReq = req2;
@@ -144,11 +148,11 @@ public class ClusterOperations {
         if (!proposedDependencies.isEmpty()) databaseOperations.saveDependencies(organization, responseId, proposedDependencies, useAuxiliaryTable);
     }
 
-    private void deleteReqFromClusters(String organization, String responseId, String req, Model model, Set<Integer> clustersChanged, Map<String,Integer> reqCluster) throws InternalErrorException {
+    private void deleteReqFromClusters(String organization, String responseId, String req, OrganizationModels organizationModels, Set<Integer> clustersChanged, Map<String,Integer> reqCluster) throws InternalErrorException {
 
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
-        Map<Integer,List<String>> clusters = model.getClusters();
-        int lastClusterId = model.getLastClusterId();
+        Map<Integer,List<String>> clusters = organizationModels.getClusters();
+        int lastClusterId = organizationModels.getLastClusterId();
 
         int clusterId = reqCluster.get(req);
         List<String> clusterRequirements = clusters.get(clusterId);
@@ -183,28 +187,28 @@ public class ClusterOperations {
                     }
                 }
             }
-        } else model.getClusters().remove(reqCluster.get(req));
+        } else organizationModels.getClusters().remove(reqCluster.get(req));
 
         reqCluster.remove(req);
         databaseOperations.deleteReqDependencies(organization, responseId, req, true);
 
         List<String> aux = new ArrayList<>();
         aux.add(req);
-        Tfidf.getInstance().deleteReqsAndRecomputeModel(aux,model);
-        model.setLastClusterId(lastClusterId);
+        similarityAlgorithm.deleteRequirements(organizationModels.getSimilarityModel(),aux);
+        organizationModels.setLastClusterId(lastClusterId);
     }
 
-    public void addRejectedDependencies(String organization, String responseId, List<Dependency> deletedDependencies, Model model, Set<Integer> clustersChanged, Map<String,Integer> reqCluster) throws InternalErrorException {
+    public void addRejectedDependencies(String organization, String responseId, List<Dependency> deletedDependencies, OrganizationModels organizationModels, Set<Integer> clustersChanged, Map<String,Integer> reqCluster) throws InternalErrorException {
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
+        SimilarityModel similarityModel = organizationModels.getSimilarityModel();
+        Map<Integer, List<String>> clusters = organizationModels.getClusters();
 
-        Map<String,Map<String,Double>> docs = model.getDocs();
-        Map<Integer,List<String>> clusters = model.getClusters();
-        int lastClusterId = model.getLastClusterId();
+        int lastClusterId = organizationModels.getLastClusterId();
 
         for (Dependency dependency: deletedDependencies) {
             String fromid = dependency.getFromid();
             String toid = dependency.getToid();
-            if (fromid != null && toid != null && docs.containsKey(fromid) && docs.containsKey(toid)) {
+            if (fromid != null && toid != null && similarityModel.containsRequirement(fromid) && similarityModel.containsRequirement(toid)) {
                 double score = dependency.getDependencyScore();
                 try {
                     Dependency aux = databaseOperations.getDependency(organization, responseId, fromid, toid, true);
@@ -251,20 +255,20 @@ public class ClusterOperations {
                     databaseOperations.saveDependencyOrReplace(organization, responseId, new Dependency(toid, fromid, "rejected", score, -1), true);
                 }
             }
-            model.setLastClusterId(lastClusterId);
+            organizationModels.setLastClusterId(lastClusterId);
         }
     }
 
-    public void addAcceptedDependencies(String organization, String responseId, List<Dependency> acceptedDependencies, Model model, Set<Integer> clustersChanged, Map<String,Integer> reqCluster) throws InternalErrorException {
+    public void addAcceptedDependencies(String organization, String responseId, List<Dependency> acceptedDependencies, OrganizationModels organizationModels, Set<Integer> clustersChanged, Map<String,Integer> reqCluster) throws InternalErrorException {
         DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
-        Map<String,Map<String,Double>> docs = model.getDocs();
-        Map<Integer,List<String>> clusters = model.getClusters();
+        Map<Integer,List<String>> clusters = organizationModels.getClusters();
+        SimilarityModel similarityModel = organizationModels.getSimilarityModel();
 
         for (Dependency dependency: acceptedDependencies) {
             String fromid = dependency.getFromid();
             String toid = dependency.getToid();
-            if (fromid != null && toid != null && docs.containsKey(fromid) && docs.containsKey(toid)) {
+            if (fromid != null && toid != null && similarityModel.containsRequirement(fromid) && similarityModel.containsRequirement(toid)) {
                 int oldId1 = reqCluster.get(fromid);
                 int oldId2 = reqCluster.get(toid);
                 boolean exists = false;
@@ -277,7 +281,7 @@ public class ClusterOperations {
                     //empty
                 }
                 if (!exists || status.equals("proposed") || status.equals("rejected")) {
-                    mergeClusters(clusters, reqCluster, fromid, toid, model.getLastClusterId());
+                    mergeClusters(clusters, reqCluster, fromid, toid, organizationModels.getLastClusterId());
                     int newId = reqCluster.get(fromid);
                     clustersChanged.add(newId);
                     if (oldId1 != -1) clustersChanged.add(oldId1);
