@@ -264,7 +264,7 @@ public class RestApiController {
 
 
     @CrossOrigin
-    @PostMapping(value = "/BuildClusters", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/BuildClusters", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Generates the clusters using the input requirements and dependencies.", notes = "<p><i>Asynchronous</i> method.</p><p>This method computes the clusters using the existing duplicates. These duplicates relations are defined by " +
             "the dependencies with type equal to <i>similar</i> or <i>duplicates</i> and status equal to <i>accepted</i>. All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one " +
             "requirement. All the requirements are pre-processed and stored in the database, together with their corresponding tf-idf model and the clusters information. The user can choose whether to use only the name of the requirements for constructing the tf-idf model," +
@@ -287,7 +287,7 @@ public class RestApiController {
     }
 
     @CrossOrigin
-    @PostMapping(value = "/BuildClustersAndCompute", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/BuildClustersAndCompute", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Generates the clusters using the input requirements and dependencies, and returns the similarity score between them.", notes =
             "<p><i>Asynchronous</i> method.</p><p>This method computes the clusters using the existing duplicates. These duplicates relations are defined by the dependencies with type equal to <i>similar</i> or <i>duplicates</i> and type equal to <i>accepted</i>." +
                     " All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the database, together with their corresponding " +
