@@ -12,6 +12,8 @@ public class ProjectProject implements Serializable {
     @JsonProperty(value="second_project_requirements")
     private List<String> secondProjectRequirements;
 
+    public ProjectProject() {}
+
     public ProjectProject(List<String> firstProjectRequirements, List<String> secondProjectRequirements) {
         this.firstProjectRequirements = firstProjectRequirements;
         this.secondProjectRequirements = secondProjectRequirements;

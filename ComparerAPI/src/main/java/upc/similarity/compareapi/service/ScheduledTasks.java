@@ -4,7 +4,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import upc.similarity.compareapi.util.Logger;
 import upc.similarity.compareapi.exception.InternalErrorException;
-import upc.similarity.compareapi.dao.DatabaseOperations;
 import upc.similarity.compareapi.util.Time;
 
 @Component

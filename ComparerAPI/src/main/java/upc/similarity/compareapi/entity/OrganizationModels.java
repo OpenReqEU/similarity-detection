@@ -97,4 +97,8 @@ public class OrganizationModels {
     public void setClusters(Map<Integer, List<String>> clusters) {
         this.clusters = clusters;
     }
+
+    public void setDependencies(List<Dependency> dependencies) {
+        this.dependencies = dependencies;
+    }
 }

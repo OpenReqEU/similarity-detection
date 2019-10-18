@@ -1,13 +1,13 @@
 package upc.similarity.compareapi.util;
 
 import upc.similarity.compareapi.config.Constants;
-import upc.similarity.compareapi.dao.DatabaseOperations;
 import upc.similarity.compareapi.entity.OrganizationModels;
 import upc.similarity.compareapi.entity.auxiliary.ClusterAndDeps;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.exception.NotFoundException;
+import upc.similarity.compareapi.service.DatabaseOperations;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
 
@@ -36,11 +36,9 @@ public class ClusterOperations {
 
         countIds = computeDependencies(dependencies, reqCluster, clusters, countIds);
 
-        Iterator it = reqCluster.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-            String requirementId = (String) pair.getKey();
-            int clusterId = (int) pair.getValue();
+        for (Map.Entry<String, Integer> entry : reqCluster.entrySet()) {
+            String requirementId = entry.getKey();
+            int clusterId = entry.getValue();
             if (clusterId == -1) {
                 List<String> aux = new ArrayList<>();
                 aux.add(requirementId);
@@ -169,10 +167,8 @@ public class ClusterOperations {
             //updating clusters
             if (candidateClusters.size() > 1) {
                 boolean firstOne = true;
-                Iterator it = candidateClusters.entrySet().iterator();
-                while (it.hasNext()) {
-                    Map.Entry pair = (Map.Entry) it.next();
-                    List<String> auxClusterRequirements = (List<String>) pair.getValue();
+                for (Map.Entry<Integer, List<String>> entry : candidateClusters.entrySet()) {
+                    List<String> auxClusterRequirements = entry.getValue();
                     if (firstOne) {
                         clusters.put(clusterId, auxClusterRequirements);
                         firstOne = false;
@@ -191,10 +187,6 @@ public class ClusterOperations {
 
         reqCluster.remove(req);
         databaseOperations.deleteReqDependencies(organization, responseId, req, true);
-
-        List<String> aux = new ArrayList<>();
-        aux.add(req);
-        similarityAlgorithm.deleteRequirements(organizationModels.getSimilarityModel(),aux);
         organizationModels.setLastClusterId(lastClusterId);
     }
 
@@ -226,10 +218,8 @@ public class ClusterOperations {
                         HashMap<Integer, List<String>> candidateClusters = auxClusters.candidateClusters;
                         if (candidateClusters.size() > 1) {
                             boolean firstOne = true;
-                            Iterator it = candidateClusters.entrySet().iterator();
-                            while (it.hasNext()) {
-                                Map.Entry pair = (Map.Entry) it.next();
-                                List<String> auxClusterRequirements = (List<String>) pair.getValue();
+                            for (Map.Entry<Integer, List<String>> entry : candidateClusters.entrySet()) {
+                                List<String> auxClusterRequirements = entry.getValue();
                                 if (firstOne) {
                                     clusters.put(clusterId, auxClusterRequirements);
                                     clustersChanged.add(clusterId);

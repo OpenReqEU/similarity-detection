@@ -23,7 +23,7 @@ public class CosineSimilarity {
      * @param b id of the second requirement
      * @return a double between -1 and 1
      */
-    public double compute(SimilarityTfIdfModel modelTfIdf, String a, String b) {
+    public double compute(SimilarityModelTfIdf modelTfIdf, String a, String b) {
         Map<String, Map<String, Double>> documents = modelTfIdf.getDocs();
         double cosine = 0.0;
         Map<String, Double> wordsA = documents.get(a);

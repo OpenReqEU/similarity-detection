@@ -26,14 +26,14 @@ public interface SimilarityAlgorithm {
     /**
      * Adds the input requirements to the input model
      * @param similarityModel algorithm model
-     * @param requirements requirements to add, consists of a map with each requirement id as key and the preprocessed tokens as value
+     * @param requirements requirements to add, consists of a map with each requirement id as key and the preprocessed tokens as value. Maybe the input requirements are already inside the model
      */
     void addRequirements(SimilarityModel similarityModel, Map<String, List<String>> requirements);
 
     /**
      * Deletes the input requirements from the input model
      * @param similarityModel algorithm model
-     * @param requirements ids of the requirements to delete
+     * @param requirements ids of the requirements to delete, maybe the input requirements are not inside the model
      */
     void deleteRequirements(SimilarityModel similarityModel, List<String> requirements);
 }

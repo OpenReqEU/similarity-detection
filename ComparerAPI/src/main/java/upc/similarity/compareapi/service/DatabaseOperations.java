@@ -1,10 +1,11 @@
-package upc.similarity.compareapi.dao;
+package upc.similarity.compareapi.service;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import upc.similarity.compareapi.config.Constants;
+import upc.similarity.compareapi.dao.DatabaseModel;
+import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.entity.Dependency;
-import upc.similarity.compareapi.entity.Model;
 import upc.similarity.compareapi.entity.Organization;
 import upc.similarity.compareapi.entity.OrganizationModels;
 import upc.similarity.compareapi.exception.*;
@@ -15,6 +16,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This class is used to treat the sql exceptions
+ */
 public class DatabaseOperations {
 
     private static DatabaseOperations instance = new DatabaseOperations();
@@ -252,10 +256,10 @@ public class DatabaseOperations {
         return result;
     }
 
-    public void updateModelClustersAndDependencies(String organization, String responseId, Model model, List<Dependency> dependencies, boolean useDepsAuxiliaryTable) throws InternalErrorException {
+    public void updateModelClustersAndDependencies(String organization, String responseId, OrganizationModels organizationModels, List<Dependency> dependencies, boolean useDepsAuxiliaryTable) throws InternalErrorException {
         String errorMessage = "Error while saving the new model to the database";
         try {
-            databaseModel.updateClustersAndDependencies(organization, model, dependencies, useDepsAuxiliaryTable);
+            databaseModel.updateClustersAndDependencies(organization, organizationModels, dependencies, useDepsAuxiliaryTable);
         } catch (SQLException sq) {
             treatSQLException(sq.getMessage(), organization, responseId, errorMessage);
         }

@@ -1,7 +1,6 @@
 package upc.similarity.compareapi.similarity_algorithm.tf_idf;
 
 import upc.similarity.compareapi.util.Logger;
-import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
 
@@ -15,14 +14,6 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
     private boolean cutOffDummy;
     private boolean smoothingActive;
 
-    public void setCutOffDummy(boolean cutOffDummy) {
-        this.cutOffDummy = cutOffDummy;
-    }
-
-    public void setSmoothingActive(boolean smoothingActive) {
-        this.smoothingActive = smoothingActive;
-    }
-
     public SimilarityAlgorithmTfIdf(int cutOffValue, boolean cutOffDummy, boolean smoothingActive) {
         this.cutOffValue = cutOffValue;
         this.cutOffDummy = cutOffDummy;
@@ -31,7 +22,7 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
 
 
     @Override
-    public SimilarityModel buildModel(Map<String, List<String>> requirements) throws InternalErrorException {
+    public SimilarityModel buildModel(Map<String, List<String>> requirements) {
 
         double cutOffParameter = computeCutOffParameter(requirements.size());
         boolean smoothing = (requirements.size() < 100);
@@ -58,21 +49,21 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
             ++i;
         }
 
-        return new SimilarityTfIdfModel(tfIdfValues,frequencyValues);
+        return new SimilarityModelTfIdf(tfIdfValues,frequencyValues);
     }
 
     @Override
     public double computeSimilarity(SimilarityModel similarityModel, String requirementIdA, String requirementIdB) {
-        SimilarityTfIdfModel modelTfIdf = (SimilarityTfIdfModel) similarityModel; //TODO check exception thrown
+        SimilarityModelTfIdf modelTfIdf = (SimilarityModelTfIdf) similarityModel; //TODO check exception thrown
         return cosineSimilarity.compute(modelTfIdf, requirementIdA, requirementIdB);
     }
 
 
     @Override
     public void addRequirements(SimilarityModel similarityModel, Map<String,List<String>> requirements) {
-        SimilarityTfIdfModel modelTfIdf = (SimilarityTfIdfModel) similarityModel; //TODO check exception thrown
-        Map<String, Integer> oldCorpusFrequency = modelTfIdf.getCorpusFrequency();
-        Map<String, Integer> newCorpusFrequency = cloneCorpusFrequency(oldCorpusFrequency);
+        SimilarityModelTfIdf modelTfIdf = (SimilarityModelTfIdf) similarityModel; //TODO check exception thrown
+        Map<String, Integer> newCorpusFrequency = modelTfIdf.getCorpusFrequency();
+        Map<String, Integer> oldCorpusFrequency = cloneCorpusFrequency(newCorpusFrequency);
         Map<String, Map<String, Double>> docs = modelTfIdf.getDocs();
 
         int oldSize = docs.size();
@@ -109,10 +100,10 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
 
     @Override
     public void deleteRequirements(SimilarityModel similarityModel, List<String> requirements) {
-        SimilarityTfIdfModel modelTfIdf = (SimilarityTfIdfModel) similarityModel; //TODO check exception thrown
+        SimilarityModelTfIdf modelTfIdf = (SimilarityModelTfIdf) similarityModel; //TODO check exception thrown
         Map<String, Map<String, Double>> docs = modelTfIdf.getDocs();
-        Map<String, Integer> oldCorpusFrequency = modelTfIdf.getCorpusFrequency();
-        Map<String, Integer> newCorpusFrequency = cloneCorpusFrequency(oldCorpusFrequency);
+        Map<String, Integer> newCorpusFrequency = modelTfIdf.getCorpusFrequency();
+        Map<String, Integer> oldCorpusFrequency = cloneCorpusFrequency(newCorpusFrequency);
 
         int oldSize = docs.size();
         int newSize = oldSize;
@@ -140,11 +131,9 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
 
     private Map<String, Integer> cloneCorpusFrequency(Map<String, Integer> corpusFrequency) {
         Map<String, Integer> oldCorpusFrequency = new HashMap<>();
-        Iterator it = corpusFrequency.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-            String word = (String) pair.getKey();
-            int value = (int) pair.getValue();
+        for (Map.Entry<String, Integer> entry : corpusFrequency.entrySet()) {
+            String word = entry.getKey();
+            int value = entry.getValue();
             oldCorpusFrequency.put(word, value);
         }
         return oldCorpusFrequency;
@@ -175,17 +164,13 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
     }
 
     private void recomputeIdfValues(Map<String, Map<String, Double>> docs, Map<String, Integer> oldCorpusFrequency, Map<String, Integer> newCorpusFrequency, double oldSize, double newSize) {
-        Iterator it = docs.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-            Map<String, Double> words = (Map<String, Double>) pair.getValue();
-            Iterator it2 = words.entrySet().iterator();
-            while (it2.hasNext()) {
-                Map.Entry pair2 = (Map.Entry)it2.next(); //problem: if the value was 0 (because corpus + 1 == totalSize) it will be always 0
-                String word = (String) pair2.getKey();
-                double score = (double) pair2.getValue();
-                double newScore = recomputeIdf(score, oldSize, oldCorpusFrequency.get(word), newSize, newCorpusFrequency.get(word));
-                pair2.setValue(newScore);
+        for (Map.Entry<String, Map<String, Double>> requirement : docs.entrySet()) {
+            Map<String, Double> words = requirement.getValue();
+            for (Map.Entry<String, Double> word : words.entrySet()) { //problem: if the value was 0 (because corpus + 1 == totalSize) it will be always 0
+                String wordId = word.getKey();
+                double score = word.getValue();
+                double newScore = recomputeIdf(score, oldSize, oldCorpusFrequency.get(wordId), newSize, newCorpusFrequency.get(wordId));
+                word.setValue(newScore);
             }
         }
     }

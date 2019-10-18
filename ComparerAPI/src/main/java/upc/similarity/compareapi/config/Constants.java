@@ -12,15 +12,22 @@ import upc.similarity.compareapi.util.Logger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 public class Constants {
 
     private static Constants instance = new Constants();
+    private Integer maxDepsForPage = null;
+    private Integer maxWaitingTime = null;
+    private String databasePath = null;
+    private SimilarityAlgorithm similarityAlgorithm = null;
+    private SimilarityModelDatabase similarityModelDatabase = null;
+    private PreprocessPipeline preprocessPipeline = null;
+
+    //TODO delete these unused stuff
     private String component = "Similarity-UPC";
     private String status = "proposed";
     private String dependencyType = "similar";
-
-    //TODO delete these unused stuff
     private String badRequestMessage = "Bad request";
     private String notFoundMessage = "Not found";
     private String notFinishedMessage = "Not finished";
@@ -29,32 +36,30 @@ public class Constants {
     private String sqlErrorMessage = "Database error";
     private String dependenciesArrayName = "dependencies";
 
-    private Integer maxDepsForPage = null;
-    private Integer maxWaitingTime = null;
-    private SimilarityAlgorithm similarityAlgorithm = null;
-    private SimilarityModelDatabase similarityModelDatabase = null;
-    private PreprocessPipeline preprocessPipeline = null;
-
     private Constants(){
         Logger.getInstance().showInfoMessage("Reading configuration file");
         try {
             Path path = Paths.get("../config_files/config.json");
-            String file = Files.readAllLines(path).get(0);
+            List<String> lines = Files.readAllLines(path);
+            String file = "";
+            for (String line : lines) file = file.concat(line);
             JSONObject json = new JSONObject(file);
 
             String preprocessPipelineAux = json.getString("preprocess_pipeline");
             String similarityAlgorithmAux = json.getString("similarity_algorithm");
 
+            String databasePathAux = json.getString("database_path");
             int maxDepsForPageAux = json.getInt("max_dependencies_page");
             int maxWaitingTimeAux = json.getInt("max_waiting_time_seconds");
 
             selectPreprocessPipeline(preprocessPipelineAux);
             selectSimilarityAlgorithm(similarityAlgorithmAux);
+            this.databasePath = databasePathAux;
             this.maxDepsForPage = maxDepsForPageAux;
             this.maxWaitingTime = maxWaitingTimeAux;
 
         } catch (Exception e) {
-            Logger.getInstance().showErrorMessage(e.getMessage());
+            Logger.getInstance().showErrorMessage("Error while reading config file: " + e.getMessage());
         }
     }
 
@@ -65,7 +70,9 @@ public class Constants {
                 boolean smoothing = true;
                 try {
                     Path path = Paths.get("../config_files/config_tfidf.json");
-                    String file = Files.readAllLines(path).get(0);
+                    List<String> lines = Files.readAllLines(path);
+                    String file = "";
+                    for (String line : lines) file = file.concat(line);
                     JSONObject jsonObject = new JSONObject(file);
                     cutOff = jsonObject.getInt("cut_off");
                     smoothing = jsonObject.getBoolean("smoothing");
@@ -148,6 +155,10 @@ public class Constants {
         this.maxWaitingTime = maxWaitingTime;
     }
 
+    public String getDatabasePath() {
+        return databasePath;
+    }
+
     public PreprocessPipeline getPreprocessPipeline() {
         return preprocessPipeline;
     }
@@ -158,5 +169,17 @@ public class Constants {
 
     public SimilarityModelDatabase getSimilarityModelDatabase() {
         return similarityModelDatabase;
+    }
+
+    /*
+    Test purpose methods
+     */
+
+    public void setSimilarityAlgorithm(SimilarityAlgorithm similarityAlgorithm) {
+        this.similarityAlgorithm = similarityAlgorithm;
+    }
+
+    public void setSimilarityModelDatabase(SimilarityModelDatabase similarityModelDatabase) {
+        this.similarityModelDatabase = similarityModelDatabase;
     }
 }

@@ -1,7 +1,6 @@
 package upc.similarity.compareapi.dao;
 
 import org.json.JSONArray;
-import org.json.JSONObject;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabase;
 import upc.similarity.compareapi.entity.*;
@@ -28,8 +27,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
     private Lock mainDbLock = new ReentrantLock(true);
     private static String dbMainName = "main";
-    private static String dbPath = "data/";
-    private static String driversName = "jdbc:sqlite:";
+    private static String dbPath = Constants.getInstance().getDatabasePath();
     private int sleepTime = Constants.getInstance().getMaxWaitingTime();
     private SimilarityModelDatabase similarityModelDatabase = Constants.getInstance().getSimilarityModelDatabase();
 
@@ -115,7 +113,7 @@ public class SQLiteDatabase implements DatabaseModel {
                         long finalTime = rs.getLong("finalTime");
                         String methodName = rs.getString("methodName");
                         Integer pagesLeft = null;
-                        Execution execution = null;
+                        Execution execution;
                         if (finished) {
                             int maxPages = rs.getInt("maxPages");
                             int actualPage = rs.getInt("actualPage");
@@ -174,7 +172,7 @@ public class SQLiteDatabase implements DatabaseModel {
     @Override
     public Dependency getDependency(String fromid, String toid, String organizationId, boolean useAuxiliaryTables) throws SQLException, NotFoundException {
 
-        Dependency result = null;
+        Dependency result;
 
         try (Connection conn = getConnection(organizationId)) {
 
@@ -379,14 +377,14 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void updateClustersAndDependencies(String organization, Model model, List<Dependency> dependencies, boolean useDepsAuxiliaryTable) throws SQLException {
+    public void updateClustersAndDependencies(String organization, OrganizationModels organizationModels, List<Dependency> dependencies, boolean useDepsAuxiliaryTable) throws SQLException {
 
         try (Connection conn = getConnection(organization)) {
             conn.setAutoCommit(false);
             clearClusterTables(conn);
-            if (model.hasClusters()) {
-                updateOrganizationClustersInfo(organization,model.getLastClusterId(),conn);
-                saveClusters(model.getClusters(), conn);
+            if (organizationModels.hasClusters()) {
+                updateOrganizationClustersInfo(organization,organizationModels.getLastClusterId(),conn);
+                saveClusters(organizationModels.getClusters(), conn);
                 if (!useDepsAuxiliaryTable) saveDependencies(dependencies, conn, false);
                 else insertAuxiliaryDepsTable(conn);
             }
@@ -428,7 +426,7 @@ public class SQLiteDatabase implements DatabaseModel {
     public String getResponsePage(String organizationId, String responseId) throws SQLException, NotFoundException, NotFinishedException {
         String sql = "SELECT actualPage, maxPages, finished FROM responses WHERE organizationId = ? AND responseId = ?";
 
-        String result = null;
+        String result;
 
         try (Connection conn = getConnection(dbMainName)) {
             conn.setAutoCommit(false);
@@ -653,6 +651,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
 
     private String buildDbUrl(String organization) {
+        String driversName = "jdbc:sqlite:";
         return driversName + dbPath + buildFileName(organization);
     }
 
@@ -971,7 +970,7 @@ public class SQLiteDatabase implements DatabaseModel {
             stmt.execute(sql3);
         }
 
-        similarityModelDatabase.createModelTables(conn);
+        similarityModelDatabase.clearModelTables(conn);
     }
 
     private void insertOrganization(String organization) throws SQLException, InternalErrorException {
@@ -989,24 +988,6 @@ public class SQLiteDatabase implements DatabaseModel {
 
     }
 
-    private void saveOrganizationInfo(String organization, double threshold, boolean compare, boolean hasClusters, int lastClusterId, Connection conn) throws SQLException {
-
-        String sql = "INSERT INTO info(id, threshold, compare, hasClusters, lastClusterId) VALUES (?,?,?,?,?)";
-
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1,organization);
-            ps.setDouble(2, threshold);
-            int value = 0;
-            if (compare) value = 1;
-            ps.setInt(3, value);
-            value = 0;
-            if (hasClusters) value = 1;
-            ps.setInt(4, value);
-            ps.setInt(5, lastClusterId);
-            ps.execute();
-        }
-    }
-
     private void updateOrganizationClustersInfo(String organizationId, int lastClusterId, Connection conn) throws SQLException {
 
         String sql = "UPDATE info SET lastClusterId = ? WHERE id = ?";
@@ -1018,68 +999,15 @@ public class SQLiteDatabase implements DatabaseModel {
         }
     }
 
-    private void saveDocs(Map<String, Map<String, Double>> docs, Connection conn) throws SQLException {
-
-        Iterator it = docs.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-            String key = (String) pair.getKey();
-            Map<String, Double> words = (Map<String, Double>) pair.getValue();
-            String sql = "INSERT INTO docs(id, definition) VALUES (?,?)";
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1,key);
-                ps.setString(2,wordsConversionToJson(words).toString());
-                ps.execute();
-            }
-        }
-    }
-
-    private JSONArray wordsConversionToJson(Map<String, Double> map) {
-        JSONArray result = new JSONArray();
-        Iterator it = map.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-            JSONObject aux = new JSONObject();
-            aux.put("id",pair.getKey());
-            aux.put("value",pair.getValue());
-            result.put(aux);
-        }
-        return result;
-    }
-
-    private void saveCorpusFrequency(Map<String, Integer> corpusFrequency, Connection conn) throws SQLException {
-
-        String sql = "INSERT INTO corpus(definition) VALUES (?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1,corpusFrequencyToJson(corpusFrequency));
-            ps.execute();
-        }
-    }
-
-    private String corpusFrequencyToJson(Map<String, Integer> corpusFrequency) {
-        JSONArray result = new JSONArray();
-        Iterator it = corpusFrequency.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-            JSONObject aux = new JSONObject();
-            aux.put("id",pair.getKey());
-            aux.put("value",pair.getValue());
-            result.put(aux);
-        }
-        return result.toString();
-    }
-
     private void saveClusters(Map<Integer, List<String>> clusters, Connection conn) throws SQLException {
 
-        Iterator it = clusters.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-            int key = (int) pair.getKey();
-            List<String> requirements = (List<String>) pair.getValue();
+        for (Map.Entry<Integer, List<String>> entry : clusters.entrySet()) {
+            int key = entry.getKey();
+            List<String> requirements = entry.getValue();
             String sql = "INSERT INTO clusters(id, definition) VALUES (?,?)";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1,key);
-                ps.setString(2,requirementsArrayConversionToJson(requirements).toString());
+                ps.setInt(1, key);
+                ps.setString(2, requirementsArrayConversionToJson(requirements).toString());
                 ps.execute();
             }
         }
@@ -1091,67 +1019,6 @@ public class SQLiteDatabase implements DatabaseModel {
             jsonArray.put(requirement);
         }
         return jsonArray;
-    }
-
-    private Map<String, Map<String, Double>> loadDocs(Connection conn) throws SQLException {
-
-        Map<String, Map<String, Double>> result = new HashMap<>();
-
-        String sql = "SELECT* FROM docs";
-
-        try (Statement stmt  = conn.createStatement();
-             ResultSet rs    = stmt.executeQuery(sql)){
-
-            while (rs.next()) {
-                String key = rs.getString("id");
-                String definition = rs.getString("definition");
-                result.put(key,docsConversionToMap(definition));
-            }
-        }
-
-        return result;
-    }
-
-    private Map<String, Double> docsConversionToMap(String rawJson) {
-        JSONArray json = new JSONArray(rawJson);
-        Map<String, Double> result = new HashMap<>();
-        for (int i = 0; i < json.length(); ++i) {
-            JSONObject aux = json.getJSONObject(i);
-            String id = aux.getString("id");
-            Double value = aux.getDouble("value");
-            result.put(id,value);
-        }
-        return result;
-    }
-
-    private Map<String, Integer> loadCorpusFrequency(Connection conn) throws SQLException {
-
-        Map<String, Integer> result;
-
-        String sql = "SELECT* FROM corpus";
-
-        try (Statement stmt  = conn.createStatement();
-             ResultSet rs    = stmt.executeQuery(sql)){
-
-            if (rs.next()) {
-                String corpus = rs.getString("definition");
-                result = corpusToMap(corpus);
-            } else throw new SQLException("Error loading corpus from the database");
-        }
-
-        return result;
-    }
-
-    private Map<String, Integer> corpusToMap(String corpus) {
-        Map<String, Integer> result = new HashMap<>();
-        JSONArray json = new JSONArray(corpus);
-        for (int i = 0; i < json.length(); ++i) {
-            JSONObject aux = json.getJSONObject(i);
-            String id = aux.getString("id");
-            Integer value = aux.getInt("value");
-            result.put(id, value);
-        }
-        return result;
     }
 
     private Map<Integer, List<String>> loadClusters(Connection conn) throws SQLException {

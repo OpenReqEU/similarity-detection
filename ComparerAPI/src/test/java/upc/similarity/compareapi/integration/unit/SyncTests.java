@@ -13,8 +13,7 @@ import upc.similarity.compareapi.entity.input.Clusters;
 import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.exception.NotFinishedException;
 import upc.similarity.compareapi.service.CompareServiceImpl;
-import upc.similarity.compareapi.dao.DatabaseOperations;
-import upc.similarity.compareapi.util.Tfidf;
+import upc.similarity.compareapi.service.DatabaseOperations;
 
 import java.io.File;
 import java.sql.Connection;
@@ -34,17 +33,16 @@ public class SyncTests {
 
     @BeforeClass
     public static void createTestDB() throws Exception {
-        sleepTime = Constants.getInstance().getSleepTime();
-        Constants.getInstance().setSleepTime(1);
+        sleepTime = Constants.getInstance().getMaxWaitingTime();
+        Constants.getInstance().setMaxWaitingTime(1);
         SQLiteDatabase.setDbPath("../testing/integration/test_database/");
         SQLiteDatabase db = new SQLiteDatabase();
         db.clearDatabase();
-        Tfidf.getInstance().setCutOffDummy(true);
     }
 
     @AfterClass
     public static void deleteTestDB() throws Exception {
-        Constants.getInstance().setSleepTime(sleepTime);
+        Constants.getInstance().setMaxWaitingTime(sleepTime);
         SQLiteDatabase db = new SQLiteDatabase();
         db.clearDatabase();
         File file = new File("../testing/integration/test_database/main.db");

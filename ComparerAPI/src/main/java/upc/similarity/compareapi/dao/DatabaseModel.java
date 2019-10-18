@@ -1,7 +1,6 @@
 package upc.similarity.compareapi.dao;
 
 import upc.similarity.compareapi.entity.Dependency;
-import upc.similarity.compareapi.entity.Model;
 import upc.similarity.compareapi.entity.Organization;
 import upc.similarity.compareapi.entity.OrganizationModels;
 import upc.similarity.compareapi.exception.InternalErrorException;
@@ -11,7 +10,6 @@ import upc.similarity.compareapi.exception.NotFoundException;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Set;
 
 public interface DatabaseModel {
 
@@ -57,7 +55,7 @@ public interface DatabaseModel {
 
     void updateClusterDependencies(String organizationId, String requirementId, int newClusterId, boolean useAuxiliaryTable) throws SQLException;
 
-    void updateClustersAndDependencies(String organization, Model model, List<Dependency> dependencies, boolean useDepsAuxiliaryTable) throws SQLException;
+    void updateClustersAndDependencies(String organization, OrganizationModels organizationModels, List<Dependency> dependencies, boolean useDepsAuxiliaryTable) throws SQLException;
 
     void deleteReqDependencies(String organizationId, String reqId, boolean useAuxiliaryTable) throws SQLException;
 

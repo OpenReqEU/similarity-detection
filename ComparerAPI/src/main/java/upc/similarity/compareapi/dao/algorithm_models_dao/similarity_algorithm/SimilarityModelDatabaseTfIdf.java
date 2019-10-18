@@ -3,7 +3,7 @@ package upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
-import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityTfIdfModel;
+import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityModelTfIdf;
 
 import java.sql.*;
 import java.util.HashMap;
@@ -44,7 +44,7 @@ public class SimilarityModelDatabaseTfIdf implements SimilarityModelDatabase {
 
     @Override
     public void saveModelInfo(SimilarityModel similarityModel, Connection conn) throws SQLException {
-        SimilarityTfIdfModel similarityModelTfIdf = (SimilarityTfIdfModel) similarityModel; //TODO check this
+        SimilarityModelTfIdf similarityModelTfIdf = (SimilarityModelTfIdf) similarityModel; //TODO check this
         saveDocs(similarityModelTfIdf.getDocs(), conn);
         saveCorpusFrequency(similarityModelTfIdf.getCorpusFrequency(), conn);
     }
@@ -54,7 +54,7 @@ public class SimilarityModelDatabaseTfIdf implements SimilarityModelDatabase {
         Map<String,Map<String,Double>> docs = loadDocs(conn);
         Map<String,Integer> corpusFrequency = null;
         if (!readOnly) corpusFrequency = loadCorpusFrequency(conn);
-        return new SimilarityTfIdfModel(docs,corpusFrequency);
+        return new SimilarityModelTfIdf(docs,corpusFrequency);
     }
 
     @Override
