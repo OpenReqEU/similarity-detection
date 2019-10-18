@@ -2,7 +2,7 @@ package upc.similarity.compareapi.entity;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONObject;
-import upc.similarity.compareapi.config.Control;
+import upc.similarity.compareapi.util.Logger;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -162,7 +162,7 @@ public class Dependency implements Serializable {
         try {
             jsonInString = mapper.writeValueAsString(this);
         } catch (Exception e) {
-            Control.getInstance().showErrorMessage(e.getMessage());
+            Logger.getInstance().showErrorMessage(e.getMessage());
             throw new InternalError("Error while converting dependency to jsonObject");
         }
         return new JSONObject(jsonInString);

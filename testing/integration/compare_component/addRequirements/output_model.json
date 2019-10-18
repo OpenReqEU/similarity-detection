@@ -1,0 +1,93 @@
+{
+	"compare": true,
+	"lastClusterId": 0,
+	"corpus": [{
+		"words": [{
+			"tfIdf": 0.5596157879354227,
+			"word": "jota"
+		}, {
+			"tfIdf": 0.3364722366212129,
+			"word": "pepe"
+		}, {
+			"tfIdf": 0.5596157879354227,
+			"word": "roland"
+		}],
+		"id": "UPC-7"
+	}, {
+		"words": [{
+			"tfIdf": 0.5596157879354227,
+			"word": "jota"
+		}, {
+			"tfIdf": 0.3364722366212129,
+			"word": "pepe"
+		}, {
+			"tfIdf": 0.5596157879354227,
+			"word": "roland"
+		}],
+		"id": "UPC-6"
+	}, {
+		"words": [],
+		"id": "UPC-5"
+	}, {
+		"words": [{
+			"tfIdf": 0.8472978603872037,
+			"word": "big"
+		}, {
+			"tfIdf": 0.8472978603872037,
+			"word": "littl"
+		}, {
+			"tfIdf": 0.33647223662121295,
+			"word": "pepe"
+		}],
+		"id": "UPC-4"
+	}, {
+		"words": [],
+		"id": "UPC-3"
+	}, {
+		"words": [{
+			"tfIdf": 0.5596157879354227,
+			"word": "jota"
+		}, {
+			"tfIdf": 1.252762968495368,
+			"word": "someth"
+		}, {
+			"tfIdf": 0.5596157879354227,
+			"word": "roland"
+		}],
+		"id": "UPC-2"
+	}, {
+		"words": [{
+			"tfIdf": 0.8472978603872037,
+			"word": "big"
+		}, {
+			"tfIdf": 1.6945957207744073,
+			"word": "littl"
+		}, {
+			"tfIdf": 0.3364722366212129,
+			"word": "pepe"
+		}],
+		"id": "UPC-1"
+	}],
+	"corpusFrequency": [{
+		"corpusTf": 2,
+		"word": "big"
+	}, {
+		"corpusTf": 3,
+		"word": "jota"
+	}, {
+		"corpusTf": 1,
+		"word": "someth"
+	}, {
+		"corpusTf": 2,
+		"word": "littl"
+	}, {
+		"corpusTf": 4,
+		"word": "pepe"
+	}, {
+		"corpusTf": 3,
+		"word": "roland"
+	}],
+	"threshold": 0,
+	"isCluster": false,
+	"clusters": []
+}

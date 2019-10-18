@@ -12,6 +12,8 @@ public class ReqProject implements Serializable {
     @JsonProperty(value="project_reqs")
     private List<String> projectReqs;
 
+    public ReqProject() {}
+
     public ReqProject(List<String> reqsToCompare, List<String> projectReqs) {
         this.reqsToCompare = reqsToCompare;
         this.projectReqs = projectReqs;

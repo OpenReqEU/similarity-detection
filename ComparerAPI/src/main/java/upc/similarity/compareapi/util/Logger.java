@@ -1,17 +1,17 @@
-package upc.similarity.compareapi.config;
+package upc.similarity.compareapi.util;
 
 import java.util.logging.*;
 
-public class Control {
+public class Logger {
 
-    private static Control instance = new Control();
-    private final Logger log = Logger.getLogger("CompareComponent.Control");
+    private static Logger instance = new Logger();
+    private final java.util.logging.Logger log = java.util.logging.Logger.getLogger("CompareComponent.Control");
 
-    public static Control getInstance() {
+    public static Logger getInstance() {
         return instance;
     }
 
-    private Control() {
+    private Logger() {
         log.setLevel(Level.ALL);
     }
 

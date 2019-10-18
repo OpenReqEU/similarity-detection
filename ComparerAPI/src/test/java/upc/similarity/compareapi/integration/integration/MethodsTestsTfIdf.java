@@ -14,11 +14,16 @@ import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
+import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabase;
+import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabaseTfIdf;
 import upc.similarity.compareapi.entity.Dependency;
-import upc.similarity.compareapi.entity.Model;
-import upc.similarity.compareapi.util.DatabaseOperations;
-import upc.similarity.compareapi.util.Tfidf;
+import upc.similarity.compareapi.entity.OrganizationModels;
+import upc.similarity.compareapi.service.DatabaseOperations;
+import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
+import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityAlgorithmTfIdf;
+import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityModelTfIdf;
 import upc.similarity.compareapi.util.Time;
 
 import static java.time.Instant.ofEpochMilli;
@@ -29,7 +34,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.time.Clock;
 import java.time.ZoneId;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment= SpringBootTest.WebEnvironment.DEFINED_PORT)
 @AutoConfigureMockMvc
-public class MethodsTests {
+public class MethodsTestsTfIdf {
 
     @Autowired
     private MockMvc mockMvc;
@@ -58,8 +62,11 @@ public class MethodsTests {
         SQLiteDatabase.setDbPath("../testing/integration/test_database/");
         SQLiteDatabase db = new SQLiteDatabase();
         db.clearDatabase();
-        Tfidf.getInstance().setCutOffDummy(true);
-        Tfidf.getInstance().setSmoothingActive(false);
+        SimilarityAlgorithm similarityAlgorithm = new SimilarityAlgorithmTfIdf(-1,false,false);
+        SimilarityModelDatabase similarityModelDatabase = new SimilarityModelDatabaseTfIdf();
+        Constants constants = Constants.getInstance();
+        constants.setSimilarityAlgorithm(similarityAlgorithm);
+        constants.setSimilarityModelDatabase(similarityModelDatabase);
     }
 
     @AfterClass
@@ -121,14 +128,9 @@ public class MethodsTests {
                 .param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"addRequirements/input_reqs.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
-                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "addRequirements/outputAdd.json")));
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "addRequirements/output_add.json")));
         ++id;
-        this.mockMvc.perform(post(url + "SimProject").param("organization", "UPC").param("threshold", "0").param("maxDeps", "0")
-                .param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"addRequirements/input_operation.json")))
-                .andExpect(status().isOk());
-        this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
-                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "addRequirements/outputProj.json")));
-        ++id;
+        assertEquals(read_file_json(path+"addRequirements/output_model.json"), extractModel("UPC",true, true));
     }
 
     @Test
@@ -141,14 +143,9 @@ public class MethodsTests {
                 .param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"deleteRequirements/input_reqs.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
-                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "deleteRequirements/outputAdd.json")));
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "deleteRequirements/output_delete.json")));
         ++id;
-        this.mockMvc.perform(post(url + "SimProject").param("organization", "UPC").param("threshold", "0").param("maxDeps", "0")
-                .param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"deleteRequirements/input_operation.json")))
-                .andExpect(status().isOk());
-        this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
-                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "deleteRequirements/outputProj.json")));
-        ++id;
+        assertEquals(read_file_json(path+"deleteRequirements/output_model.json"), extractModel("UPC",true, true));
     }
 
     @Test
@@ -556,70 +553,31 @@ public class MethodsTests {
     }
 
     private String extractModel(String organization, boolean withDocs, boolean withFrequency) throws Exception {
-        Model model = DatabaseOperations.getInstance().loadModel(organization, null, withFrequency);
-        JSONArray reqsArray = new JSONArray();
-        if (withDocs) {
-            Iterator it = model.getDocs().entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry pair = (Map.Entry) it.next();
-                String id = (String) pair.getKey();
-                HashMap<String, Double> words = (HashMap<String, Double>) pair.getValue();
-                Iterator it2 = words.entrySet().iterator();
-                JSONArray wordsArray = new JSONArray();
-                while (it2.hasNext()) {
-                    Map.Entry pair2 = (Map.Entry) it2.next();
-                    String word = (String) pair2.getKey();
-                    double value = (double) pair2.getValue();
-                    JSONObject auxWord = new JSONObject();
-                    auxWord.put("word", word);
-                    auxWord.put("tfIdf", value);
-                    wordsArray.put(auxWord);
-                    it2.remove();
-                }
-                it.remove();
-                JSONObject auxReq = new JSONObject();
-                auxReq.put("id", id);
-                auxReq.put("words", wordsArray);
-                reqsArray.put(auxReq);
-            }
-        }
-        JSONArray wordsFreq = new JSONArray();
-        if (withFrequency) {
-            Iterator it = model.getCorpusFrequency().entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry pair = (Map.Entry) it.next();
-                String word = (String) pair.getKey();
-                int value = (int) pair.getValue();
-                JSONObject auxWord = new JSONObject();
-                auxWord.put("word", word);
-                auxWord.put("corpusTf", value);
-                wordsFreq.put(auxWord);
-                it.remove();
-            }
-        }
+        OrganizationModels organizationModels = DatabaseOperations.getInstance().loadOrganizationModels(organization,null,!withFrequency);
+        SimilarityModelTfIdf similarityModelTfIdf = (SimilarityModelTfIdf) organizationModels.getSimilarityModel();
+
+        JSONObject aux = similarityModelTfIdf.extractModel(withDocs,withFrequency);
         JSONArray clusters = new JSONArray();
-        Iterator it = model.getClusters().entrySet().iterator();
-        while(it.hasNext()) {
-            Map.Entry pair = (Map.Entry) it.next();
-            int clusterId = (int) pair.getKey();
-            List<String> clusterRequirements = (List<String>) pair.getValue();
-            JSONArray requirementsArray = new JSONArray();
-            for (String requirement: clusterRequirements) requirementsArray.put(requirement);
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("clusterId", clusterId);
-            jsonObject.put("clusterRequirements", requirementsArray);
-            clusters.put(jsonObject);
+        if (organizationModels.hasClusters()) {
+            for (Map.Entry<Integer, List<String>> entry : organizationModels.getClusters().entrySet()) {
+                int clusterId = entry.getKey();
+                List<String> clusterRequirements = entry.getValue();
+                JSONArray requirementsArray = new JSONArray();
+                for (String requirement : clusterRequirements) requirementsArray.put(requirement);
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("clusterId", clusterId);
+                jsonObject.put("clusterRequirements", requirementsArray);
+                clusters.put(jsonObject);
+            }
         }
         JSONObject result = new JSONObject();
-        result.put("corpus", reqsArray);
-        result.put("corpusFrequency", wordsFreq);
+        result.put("corpus", aux.get("corpus"));
+        result.put("corpusFrequency", aux.get("corpusFrequency"));
         result.put("clusters", clusters);
-        result.put("threshold", model.getThreshold());
-        result.put("compare", model.isCompare());
-        result.put("isCluster", model.hasClusters());
-        result.put("lastClusterId", model.getLastClusterId());
+        result.put("threshold", organizationModels.getThreshold());
+        result.put("compare", organizationModels.isCompare());
+        result.put("isCluster", organizationModels.hasClusters());
+        result.put("lastClusterId", organizationModels.getLastClusterId());
         return result.toString();
     }
-
-
 }

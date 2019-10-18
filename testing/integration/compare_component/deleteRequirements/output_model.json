@@ -1,0 +1,57 @@
+{
+	"compare": true,
+	"lastClusterId": 0,
+	"corpus": [{
+		"words": [],
+		"id": "UPC-6"
+	}, {
+		"words": [],
+		"id": "UPC-5"
+	}, {
+		"words": [{
+			"tfIdf": 0.28768207245178085,
+			"word": "jota"
+		}, {
+			"tfIdf": 0.28768207245178085,
+			"word": "someth"
+		}, {
+			"tfIdf": 0.6931471805599453,
+			"word": "garro"
+		}, {
+			"tfIdf": 0.6931471805599453,
+			"word": "pepe"
+		}],
+		"id": "UPC-3"
+	}, {
+		"words": [{
+			"tfIdf": 0.5753641449035617,
+			"word": "jota"
+		}, {
+			"tfIdf": 0.28768207245178085,
+			"word": "someth"
+		}, {
+			"tfIdf": 0.6931471805599453,
+			"word": "roland"
+		}],
+		"id": "UPC-2"
+	}],
+	"corpusFrequency": [{
+		"corpusTf": 2,
+		"word": "jota"
+	}, {
+		"corpusTf": 2,
+		"word": "someth"
+	}, {
+		"corpusTf": 1,
+		"word": "garro"
+	}, {
+		"corpusTf": 1,
+		"word": "pepe"
+	}, {
+		"corpusTf": 1,
+		"word": "roland"
+	}],
+	"threshold": 0,
+	"isCluster": false,
+	"clusters": []
+}
