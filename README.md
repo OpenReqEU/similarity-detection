@@ -70,6 +70,7 @@ The service is divided into two independent components: SimilarityDetectionAPI(p
 - TestingRestSercice: example of client
 - testing: directory with input and output examples used to test
 - data: directory with the database files
+- config_files: directory where the configuration files are stored
 - LICENSE: license
 
 
@@ -129,6 +130,37 @@ There are two things to take into account. The first one is the ACID properties,
 - The service has two types of locks to avoid two users writing at the same time. The locks are implemented as RestraintLocks from java.util.concurrent.locks library. This library allows to order the threads like a priority queue and to define a max time that the threads can wait until holding the lock.
     - Main database lock: The main.db file has a unique lock. If one thread tries to hold this lock but has to wait longer than the defined time an InternalErrorException is thrown with the message "The database is busy".
     - Organization locks: Each organization has a lock saved in a ConcurrentHashMap. This lock allows to control ACID properties and to avoid two users writing at the same time. If one thread tries to hold this lock but has to wait longer than the defined time a LockedException is thrown with the message "The organization database is locked, another thread is using it".
+
+### Configuration files
+
+The service has two config files that allow the developers to adapt the service to their needs. They are read at the start of the service building process. So any change in these files only take effect after the service is restarted.
+
+- Main config file (/config_files/config.json):
+    - *preprocess_pipeline*: Determines the preprocess pipeline. The next section explains how to replace the default pipeline.
+    - *similarity_algorithm*: Determines the similarity algorithm. The next section explains how to replace the default algorithm.
+    - *database_path*: Determines the database path. If it is replaced by a relative path, it must come from inside the CompareAPI directory.
+    - *max_dependencies_page*: Determines the size of the dependencies patches returned in the GetResponse method.
+    - *max_waiting_time_seconds*: Determines the organization lock time. See the *Concurrency notes* section for more information. It is not recommended to set this variable to more than 10 minutes (be aware that the variable is expecting seconds not minutes).
+
+- TfIdf config file (/config_files/config_tfidf.json):
+    - *cut_off*: Determines the minimum tfidf word value accepted. It is used to delete the words that appear in the majority of the input requirements. Realize that increasing the value of this variable reduces the number of words used in the comparison between requirements (maybe decreasing the accuracy) and reduces the time consumed to compute the model and compute the similarity scores.
+    - *smoothing*: Determines if the smoothing should be used. The smoothing consists of disabling the cut_off filter in the input models with less than 100 requirements and increasing the words value in a determined constant number. This can be used to compute the similarity in a little group of requirements. However, it is not recommended to use the tfIdf algorithm with little sets of requirements.
+
+### Replacing the algorithms
+
+The similarity algorithm and the preprocess pipeline are decoupled from the api code so they can be easily substituted. 
+
+To change the preprocess pipeline it is necessary to do the following changes:
+- Create a class that implements the interface named *PreprocessPipeline*.
+- Change the variable called *preprocess_pipeline* in the main config file.
+- Add your preprocess pipeline in the method named *selectPreprocessPipeline* inside the *Constants* class. Assign the right class to the variable *preprocessPipeline*.
+
+To change the similarity algorithm it is necessary to do the following changes:
+- Create a class that implements the interface named *SimilarityAlgorithm*. This module is in charge of building the model and compute the similarity between pairs of requirements.
+- Create a class that implements the interface named *SimilarityModel*. This module is in charge of saving the model data structures of the similarity algorithm.
+- Create a class that implements the interface named *SimilarityModelDatabase*. This module is in charge of saving and loading the similairty algorithm model from the database.
+- Change the variable called *similarity_algorithm* in the main config file.
+- Add your similarity algorithm in the method named *selectSimilarityAlgorithm* inside the *Constants* class. Assign the right classes to the variables *similarityAlgorithm* and *similarityModelDatabase*.
 
 
 ## How to contribute
