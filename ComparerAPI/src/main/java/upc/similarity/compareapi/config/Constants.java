@@ -1,6 +1,8 @@
 package upc.similarity.compareapi.config;
 
 import org.json.JSONObject;
+import upc.similarity.compareapi.dao.DatabaseModel;
+import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabase;
 import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabaseTfIdf;
 import upc.similarity.compareapi.preprocess.PreprocessPipeline;
@@ -23,20 +25,9 @@ public class Constants {
     private SimilarityAlgorithm similarityAlgorithm = null;
     private SimilarityModelDatabase similarityModelDatabase = null;
     private PreprocessPipeline preprocessPipeline = null;
+    private DatabaseModel databaseModel = null;
 
-    //TODO delete these unused stuff
-    private String component = "Similarity-UPC";
-    private String status = "proposed";
-    private String dependencyType = "similar";
-    private String badRequestMessage = "Bad request";
-    private String notFoundMessage = "Not found";
-    private String notFinishedMessage = "Not finished";
-    private String internalErrorMessage = "Internal Error";
-    private String forbiddenErrorMessage = "The organization already has a model created. Please use the method called DeleteOrganizationData to delete the organization's model";
-    private String sqlErrorMessage = "Database error";
-    private String dependenciesArrayName = "dependencies";
-
-    private Constants(){
+    private Constants() {
         Logger.getInstance().showInfoMessage("Reading configuration file");
         try {
             Path path = Paths.get("../config_files/config.json");
@@ -57,9 +48,13 @@ public class Constants {
             this.databasePath = databasePathAux;
             this.maxDepsForPage = maxDepsForPageAux;
             this.maxWaitingTime = maxWaitingTimeAux;
-
         } catch (Exception e) {
             Logger.getInstance().showErrorMessage("Error while reading config file: " + e.getMessage());
+        }
+        try {
+            databaseModel = new SQLiteDatabase(databasePath,maxWaitingTime,similarityModelDatabase);
+        } catch (ClassNotFoundException e) {
+            Logger.getInstance().showErrorMessage("Error while loading database class");
         }
     }
 
@@ -103,48 +98,8 @@ public class Constants {
         return instance;
     }
 
-    public String getComponent() {
-        return component;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public String getDependencyType() {
-        return dependencyType;
-    }
-
     public Integer getMaxDepsForPage() {
         return maxDepsForPage;
-    }
-
-    public String getBadRequestMessage() {
-        return badRequestMessage;
-    }
-
-    public String getNotFoundMessage() {
-        return notFoundMessage;
-    }
-
-    public String getNotFinishedMessage() {
-        return notFinishedMessage;
-    }
-
-    public String getInternalErrorMessage() {
-        return internalErrorMessage;
-    }
-
-    public String getSqlErrorMessage() {
-        return sqlErrorMessage;
-    }
-
-    public String getForbiddenErrorMessage() {
-        return forbiddenErrorMessage;
-    }
-
-    public String getDependenciesArrayName() {
-        return dependenciesArrayName;
     }
 
     public Integer getMaxWaitingTime() {
@@ -171,6 +126,10 @@ public class Constants {
         return similarityModelDatabase;
     }
 
+    public DatabaseModel getDatabaseModel() {
+        return databaseModel;
+    }
+
     /*
     Test purpose methods
      */
@@ -181,5 +140,13 @@ public class Constants {
 
     public void setSimilarityModelDatabase(SimilarityModelDatabase similarityModelDatabase) {
         this.similarityModelDatabase = similarityModelDatabase;
+    }
+
+    public void setDatabasePath(String databasePath) {
+        this.databasePath = databasePath;
+    }
+
+    public void setDatabaseModel(DatabaseModel databaseModel) {
+        this.databaseModel = databaseModel;
     }
 }

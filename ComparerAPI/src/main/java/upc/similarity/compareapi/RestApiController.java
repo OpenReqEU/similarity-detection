@@ -254,7 +254,7 @@ public class RestApiController {
     @DeleteMapping(value = "/ClearOrganizationResponses")
     public ResponseEntity clearOrganizationResponses(@RequestParam("organization") String organization) {
         try {
-            compareService.clearOrganizationResponses(organization);
+            compareService.deleteOrganizationResponses(organization);
             return new ResponseEntity<>(null, HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
@@ -264,7 +264,7 @@ public class RestApiController {
     @DeleteMapping(value = "/ClearOrganization")
     public ResponseEntity clearOrganization(@RequestParam("organization") String organization) {
         try {
-            compareService.clearOrganization(organization);
+            compareService.deleteOrganization(organization);
             return new ResponseEntity<>(null, HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));

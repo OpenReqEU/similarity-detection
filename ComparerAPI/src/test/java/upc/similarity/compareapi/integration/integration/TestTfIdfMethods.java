@@ -20,7 +20,6 @@ import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.S
 import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabaseTfIdf;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.OrganizationModels;
-import upc.similarity.compareapi.service.DatabaseOperations;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
 import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityAlgorithmTfIdf;
 import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityModelTfIdf;
@@ -34,7 +33,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.time.Clock;
 import java.time.ZoneId;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -45,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment= SpringBootTest.WebEnvironment.DEFINED_PORT)
 @AutoConfigureMockMvc
-public class MethodsTestsTfIdf {
+public class TestTfIdfMethods {
 
     @Autowired
     private MockMvc mockMvc;
@@ -56,12 +54,14 @@ public class MethodsTestsTfIdf {
     private String path = "../testing/integration/compare_component/";
     private String url = "/upc/Compare/";
     private static int id = 0;
+    private static Constants constants = null;
 
     @BeforeClass
     public static void createTestDB() throws Exception {
-        SQLiteDatabase.setDbPath("../testing/integration/test_database/");
-        SQLiteDatabase db = new SQLiteDatabase();
-        db.clearDatabase();
+        constants = Constants.getInstance();
+        constants.setDatabasePath("../testing/integration/test_database/");
+        constants.setDatabaseModel(new SQLiteDatabase("../testing/integration/test_database/",1,constants.getSimilarityModelDatabase()));
+        constants.getDatabaseModel().clearDatabase();
         SimilarityAlgorithm similarityAlgorithm = new SimilarityAlgorithmTfIdf(-1,false,false);
         SimilarityModelDatabase similarityModelDatabase = new SimilarityModelDatabaseTfIdf();
         Constants constants = Constants.getInstance();
@@ -71,8 +71,7 @@ public class MethodsTestsTfIdf {
 
     @AfterClass
     public static void deleteTestDB() throws Exception {
-        SQLiteDatabase db = new SQLiteDatabase();
-        db.clearDatabase();
+        constants.getDatabaseModel().clearDatabase();
         File file = new File("../testing/integration/test_database/main.db");
         boolean result = file.delete();
     }
@@ -289,8 +288,7 @@ public class MethodsTestsTfIdf {
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "buildClusters/output_build.json")));
         ++id;
-        SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
-        List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
+        List<Dependency> dependencies = constants.getDatabaseModel().getDependencies("UPC");
         assertEquals(read_file_array(path+"buildClusters/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"buildClusters/output_model.json"), extractModel("UPC",true, false));
     }
@@ -303,8 +301,7 @@ public class MethodsTestsTfIdf {
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "buildClustersAndCompute/output.json")));
         ++id;
-        SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
-        List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
+        List<Dependency> dependencies = constants.getDatabaseModel().getDependencies("UPC");
         assertEquals(read_file_array(path+"buildClustersAndCompute/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"buildClustersAndCompute/output_model.json"), extractModel("UPC",true, false));
     }
@@ -346,8 +343,7 @@ public class MethodsTestsTfIdf {
         this.mockMvc.perform(post(url + "TreatAcceptedAndRejectedDependencies").param("organization", "UPC")
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"treatDependencies/input_treat.json")))
                 .andExpect(status().isOk());
-        SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
-        List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
+        List<Dependency> dependencies = constants.getDatabaseModel().getDependencies("UPC");
         assertEquals(read_file_array(path+"treatDependencies/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"treatDependencies/output_model.json"), extractModel("UPC",false, false));
     }
@@ -361,8 +357,7 @@ public class MethodsTestsTfIdf {
         this.mockMvc.perform(post(url + "TreatAcceptedAndRejectedDependencies").param("organization", "UPC")
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"treatDependencies/input_treat_loop.json")))
                 .andExpect(status().isOk());
-        SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
-        List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
+        List<Dependency> dependencies = constants.getDatabaseModel().getDependencies("UPC");
         assertEquals(read_file_array(path+"treatDependencies/output_dependencies_loop.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"treatDependencies/output_model_loop.json"), extractModel("UPC",false, false));
     }
@@ -376,8 +371,7 @@ public class MethodsTestsTfIdf {
         this.mockMvc.perform(post(url + "TreatAcceptedAndRejectedDependencies").param("organization", "UPC")
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"treatDependencies/input_treat.json")))
                 .andExpect(status().isOk());
-        SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
-        List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
+        List<Dependency> dependencies = constants.getDatabaseModel().getDependencies("UPC");
         assertEquals(read_file_array(path+"treatDependencies/output_dependencies_with_proposed.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"treatDependencies/output_model_with_proposed.json"), extractModel("UPC",false, false));
     }
@@ -392,8 +386,7 @@ public class MethodsTestsTfIdf {
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"batchProcess/input_cron.json")))
                 .andExpect(status().isOk());
         ++id;
-        SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
-        List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
+        List<Dependency> dependencies = constants.getDatabaseModel().getDependencies("UPC");
         assertEquals(read_file_array(path+"batchProcess/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"batchProcess/output_model.json"), extractModel("UPC",true, false));
     }
@@ -408,8 +401,7 @@ public class MethodsTestsTfIdf {
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"batchProcess/input_cron_loop.json")))
                 .andExpect(status().isOk());
         ++id;
-        SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
-        List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
+        List<Dependency> dependencies = constants.getDatabaseModel().getDependencies("UPC");
         assertEquals(read_file_array(path+"batchProcess/output_dependencies_loop.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"batchProcess/output_model_loop.json"), extractModel("UPC",true, false));
     }
@@ -424,8 +416,7 @@ public class MethodsTestsTfIdf {
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"batchProcess/input_cron.json")))
                 .andExpect(status().isOk());
         ++id;
-        SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
-        List<Dependency> dependencies = sqLiteDatabase.getDependencies("UPC");
+        List<Dependency> dependencies = constants.getDatabaseModel().getDependencies("UPC");
         assertEquals(read_file_array(path+"batchProcess/output_dependencies_proposed.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"batchProcess/output_model_proposed.json"), extractModel("UPC",true, false));
     }
@@ -441,7 +432,7 @@ public class MethodsTestsTfIdf {
         this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPCTest").param("threshold", "0.12")
                 .param("compare", "true").param("responseId", "Test0").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"getOrganizationInfo/input_model_with.json")))
                 .andExpect(status().isOk());
-        DatabaseOperations.getInstance().generateResponse("UPCTest","Test3","TestMethod");
+        Constants.getInstance().getDatabaseModel().saveResponse("UPCTest","Test3","TestMethod");
         Time.getInstance().setClock(Clock.fixed(ofEpochMilli(40), ZoneId.systemDefault()));
         this.mockMvc.perform(get(url + "GetOrganizationInfo").param("organization", "UPCTest"))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "getOrganizationInfo/output_with_clusters.json")));
@@ -553,7 +544,7 @@ public class MethodsTestsTfIdf {
     }
 
     private String extractModel(String organization, boolean withDocs, boolean withFrequency) throws Exception {
-        OrganizationModels organizationModels = DatabaseOperations.getInstance().loadOrganizationModels(organization,null,!withFrequency);
+        OrganizationModels organizationModels = Constants.getInstance().getDatabaseModel().getOrganizationModels(organization,!withFrequency);
         SimilarityModelTfIdf similarityModelTfIdf = (SimilarityModelTfIdf) organizationModels.getSimilarityModel();
 
         JSONObject aux = similarityModelTfIdf.extractModel(withDocs,withFrequency);

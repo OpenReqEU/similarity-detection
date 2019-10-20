@@ -7,13 +7,15 @@ import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 import upc.similarity.compareapi.config.Constants;
+import upc.similarity.compareapi.dao.DatabaseModel;
+import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabase;
+import upc.similarity.compareapi.exception.LockedOrganizationException;
 import upc.similarity.compareapi.util.Logger;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.entity.input.Clusters;
 import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.exception.NotFinishedException;
 import upc.similarity.compareapi.service.CompareServiceImpl;
-import upc.similarity.compareapi.service.DatabaseOperations;
 
 import java.io.File;
 import java.sql.Connection;
@@ -27,27 +29,27 @@ import static org.junit.Assert.*;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest()
-public class SyncTests {
+public class TestConcurrency {
 
     private static int sleepTime;
+    private static Constants constants = null;
 
     @BeforeClass
     public static void createTestDB() throws Exception {
-        sleepTime = Constants.getInstance().getMaxWaitingTime();
+        constants = Constants.getInstance();
+        constants.setDatabasePath("../testing/integration/test_database/");
+        constants.getDatabaseModel().clearDatabase();
+        sleepTime = constants.getMaxWaitingTime();
         Constants.getInstance().setMaxWaitingTime(1);
-        SQLiteDatabase.setDbPath("../testing/integration/test_database/");
-        SQLiteDatabase db = new SQLiteDatabase();
-        db.clearDatabase();
     }
 
     @AfterClass
     public static void deleteTestDB() throws Exception {
-        Constants.getInstance().setMaxWaitingTime(sleepTime);
-        SQLiteDatabase db = new SQLiteDatabase();
-        db.clearDatabase();
+        constants.setMaxWaitingTime(sleepTime);
+        constants.getDatabaseModel().clearDatabase();
         File file = new File("../testing/integration/test_database/main.db");
         boolean result = file.delete();
-        DatabaseOperations.getInstance().setDatabaseModel(db);
+        constants.setDatabaseModel(new SQLiteDatabase("data",sleepTime,constants.getSimilarityModelDatabase()));
     }
 
     @Test
@@ -61,8 +63,8 @@ public class SyncTests {
 
             Thread thread1 = new Thread(() -> {
                 try {
-                    compareService.getAccessToUpdate("UPC", null);
-                    compareService.releaseAccessToUpdate("UPC", null);
+                    compareService.getAccessToUpdate("UPC");
+                    compareService.releaseAccessToUpdate("UPC");
                 } catch (Exception e) {
                     control.flag = false;
                 }
@@ -70,7 +72,7 @@ public class SyncTests {
 
             Thread thread2 = new Thread(() -> {
                 try {
-                    compareService.getAccessToUpdate("UB", null);
+                    compareService.getAccessToUpdate("UB");
                 } catch (Exception e) {
                     control.flag = false;
                 }
@@ -78,8 +80,8 @@ public class SyncTests {
 
             Thread thread3 = new Thread(() -> {
                 try {
-                    compareService.getAccessToUpdate("UPC", null);
-                    compareService.releaseAccessToUpdate("UPC", null);
+                    compareService.getAccessToUpdate("UPC");
+                    compareService.releaseAccessToUpdate("UPC");
                 } catch (Exception e) {
                     control.flag = false;
                 }
@@ -115,7 +117,7 @@ public class SyncTests {
 
             Thread thread1 = new Thread(() -> {
                 try {
-                    compareService.getAccessToUpdate("UPC", null);
+                    compareService.getAccessToUpdate("UPC");
                 } catch (Exception e) {
                     control.flag1 = true;
                 }
@@ -123,10 +125,10 @@ public class SyncTests {
 
             Thread thread2 = new Thread(() -> {
                 try {
-                    compareService.getAccessToUpdate("UPC", null);
+                    compareService.getAccessToUpdate("UPC");
                 } catch (InternalErrorException e) {
                     control.flag2 = false;
-                }catch (NotFinishedException e) {
+                }catch (LockedOrganizationException e) {
                     control.flag2 = true;
                 }
             });
@@ -159,12 +161,12 @@ public class SyncTests {
 
             Thread thread1 = new Thread(() -> {
                 try {
-                    compareService.getAccessToUpdate("UB", null);
+                    compareService.getAccessToUpdate("UB");
                     compareService.removeOrganizationLock("UB");
-                    compareService.releaseAccessToUpdate("UB", null);
+                    compareService.releaseAccessToUpdate("UB");
                 } catch (InternalErrorException e) {
                     control.flag1 = true;
-                }catch (NotFinishedException e) {
+                } catch (LockedOrganizationException e) {
                     control.flag1 = false;
                 }
             });
@@ -186,9 +188,9 @@ public class SyncTests {
     public void testExceptions() {
         try {
             CompareServiceImpl compareService = new CompareServiceImpl();
-            SQLiteDatabase sqLiteDatabase = new SQLiteDatabase();
+            SQLiteDatabase sqLiteDatabase = new SQLiteDatabase("../testing/integration/test_database/",sleepTime,constants.getSimilarityModelDatabase());
             sqLiteDatabase.getAccessToMainDb();
-            DatabaseOperations.getInstance().setDatabaseModel(sqLiteDatabase);
+            constants.setDatabaseModel(sqLiteDatabase);
             class Control {
                 public volatile boolean flag = false;
             }
@@ -210,7 +212,7 @@ public class SyncTests {
             control.flag = false;
 
             sqLiteDatabase.releaseAccessToMainDb();
-            compareService.getAccessToUpdate("UPC", "12345");
+            compareService.getAccessToUpdate("UPC");
 
             thread1 = new Thread(() -> {
                 try {
@@ -228,8 +230,7 @@ public class SyncTests {
             assertEquals("","{\"error\":\"Not finished\",\"message\":\"There is another computation in the same organization with write or update rights that has not finished yet\",\"status\":423}",compareService.getResponsePage("UPC", "123456"));
             control.flag = false;
 
-            sqLiteDatabase = new SQliteNew();
-            DatabaseOperations.getInstance().setDatabaseModel(sqLiteDatabase);
+            constants.setDatabaseModel(new SQliteNew("../testing/integration/test_database/",sleepTime,constants.getSimilarityModelDatabase()));
 
             thread1 = new Thread(() -> {
                 try {
@@ -254,16 +255,16 @@ public class SyncTests {
 
     private class SQliteNew extends SQLiteDatabase {
         private String dbMainName = "main";
-        public SQliteNew() throws ClassNotFoundException {
-            Class.forName("org.sqlite.JDBC");
+        public SQliteNew(String dbPath, int sleepTime, SimilarityModelDatabase similarityModelDatabase) throws ClassNotFoundException {
+            super(dbPath,sleepTime,similarityModelDatabase);
         }
         @Override
-        public void saveResponse(String organizationId, String responseId, String methodName) throws SQLException, InternalErrorException {
-            String sql = "INSERT INTO responses(organizationId, responseId, actualPage, maxPages, finished, startTime, finalTime, methodName) VALUES (?,?,?,?,?,?,?,?)";
+        public void saveResponse(String organizationId, String responseId, String methodName) throws InternalErrorException {
+            String sql1 = "INSERT INTO responses(organizationId, responseId, actualPage, maxPages, finished, startTime, finalTime, methodName) VALUES (?,?,?,?,?,?,?,?)";
 
             getAccessToMainDb();
             try (Connection conn =  DriverManager.getConnection("jdbc:sqlite:../testing/integration/test_database/main.db");
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
+                 PreparedStatement ps = conn.prepareStatement(sql1)) {
                 ps.setString(1,organizationId);
                 ps.setString(2,responseId);
                 ps.setInt(3,0);
@@ -273,6 +274,8 @@ public class SyncTests {
                 ps.setLong(7, 123);
                 ps.setString(8, methodName);
                 ps.execute();
+            } catch (SQLException sql) {
+                throw new InternalErrorException(sql.getMessage());
             } finally {
                 releaseAccessToMainDb();
             }
