@@ -4,7 +4,6 @@ import org.json.JSONArray;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.exception.InternalErrorException;
-import upc.similarity.compareapi.service.DatabaseOperations;
 
 import java.util.Comparator;
 import java.util.TreeSet;
@@ -37,6 +36,8 @@ public class SizeFixedDependenciesQueue extends ResponseDependencies {
         for (Dependency dependency: queue) {
             dependencies.put(dependency.toJSON());
         }
-        DatabaseOperations.getInstance().generateResponsePage(responseId, organization, dependencies, Constants.getInstance().getDependenciesArrayName());
+        generateResponsePage(organization, responseId, dependencies, "dependencies", Constants.getInstance().getDatabaseModel());
     }
+
+
 }

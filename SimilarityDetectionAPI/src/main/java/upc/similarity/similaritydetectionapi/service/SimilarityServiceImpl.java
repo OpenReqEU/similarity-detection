@@ -1,6 +1,5 @@
 package upc.similarity.similaritydetectionapi.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -23,8 +22,7 @@ import java.util.*;
 @Service("similarityService")
 public class SimilarityServiceImpl implements SimilarityService {
 
-    private static Component component = Component.tfIdfCompare;
-    private static String thresholdNotOk = "The threshold must be a number between 0 and 1 both included";
+    private static Component component = Component.A_DEFAULT;
     private Random rand = new Random();
 
 
@@ -463,6 +461,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     private void checkThreshold(double threshold) throws BadRequestException {
+        String thresholdNotOk = "The threshold must be a number between 0 and 1 both included";
         if (threshold < 0 || threshold > 1) throw new BadRequestException(thresholdNotOk);
     }
 

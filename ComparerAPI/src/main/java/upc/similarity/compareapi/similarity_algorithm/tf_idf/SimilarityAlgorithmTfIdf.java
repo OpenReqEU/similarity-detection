@@ -7,7 +7,6 @@ import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
 import java.util.*;
 
 public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
-    //TODO improve exception handling
 
     private CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
     private int cutOffValue;

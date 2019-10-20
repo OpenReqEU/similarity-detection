@@ -32,7 +32,7 @@ import upc.similarity.similaritydetectionapi.config.TestConfig;
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment= SpringBootTest.WebEnvironment.DEFINED_PORT)
 @AutoConfigureMockMvc
-public class ControllerTests {
+public class TestMethods {
 
     @Autowired
     private MockMvc mockMvc;

@@ -1,6 +1,7 @@
 package upc.similarity.compareapi.dao;
 
 import org.json.JSONArray;
+import org.omg.CORBA.INTERNAL;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabase;
 import upc.similarity.compareapi.entity.*;
@@ -26,13 +27,17 @@ import java.util.stream.Stream;
 public class SQLiteDatabase implements DatabaseModel {
 
     private Lock mainDbLock = new ReentrantLock(true);
-    private static String dbMainName = "main";
-    private static String dbPath = Constants.getInstance().getDatabasePath();
-    private int sleepTime = Constants.getInstance().getMaxWaitingTime();
-    private SimilarityModelDatabase similarityModelDatabase = Constants.getInstance().getSimilarityModelDatabase();
+    private String dbMainName = "main";
+    private String dbPath;
+    private Integer sleepTime;
+    private SimilarityModelDatabase similarityModelDatabase;
+    private Logger logger = Logger.getInstance();
 
-    public static void setDbPath(String dbPath) {
-        SQLiteDatabase.dbPath = dbPath;
+    public SQLiteDatabase(String dbPath, int sleepTime, SimilarityModelDatabase similarityModelDatabase) throws ClassNotFoundException {
+        Class.forName("org.sqlite.JDBC");
+        this.dbPath = dbPath;
+        this.sleepTime = sleepTime;
+        this.similarityModelDatabase = similarityModelDatabase;
     }
 
 
@@ -62,123 +67,126 @@ public class SQLiteDatabase implements DatabaseModel {
      */
 
     @Override
-    public boolean existsOrganization(String organizationId) throws SQLException {
+    public boolean existsOrganization(String organizationId) throws InternalErrorException {
+        try {
+            boolean result = true;
+            try (Connection conn = getConnection(dbMainName);
+                 PreparedStatement ps = conn.prepareStatement("SELECT id FROM organizations WHERE id = ?")) {
+                ps.setString(1, organizationId);
 
-        boolean result = true;
-        try (Connection conn = getConnection(dbMainName);
-             PreparedStatement ps = conn.prepareStatement("SELECT id FROM organizations WHERE id = ?")) {
-            ps.setString(1, organizationId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) result = false;
-            }
-        }
-
-        return result;
-    }
-
-    @Override
-    public boolean existReqInOrganizationModel(String organizationId, String requirement) throws NotFoundException, SQLException {
-        String sql = "SELECT id FROM docs WHERE id = ?";
-        if (!existsOrganization(organizationId)) throw new NotFoundException("The organization " + organizationId + " does not exist");
-        try (Connection conn = getConnection(organizationId)) {
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, requirement);
                 try (ResultSet rs = ps.executeQuery()) {
-                    return rs.next();
+                    if (!rs.next()) result = false;
                 }
             }
+            return result;
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while checking the existence of an organization",organizationId);
         }
     }
 
     @Override
-    public Organization getOrganizationInfo(String organizationId) throws NotFoundException, SQLException {
+    public boolean existReqInOrganizationModel(String organizationId, String requirement) throws NotFoundException, InternalErrorException {
+        if (!existsOrganization(organizationId)) throw new NotFoundException("The organization " + organizationId + " does not exist");
+        try (Connection conn = getConnection(organizationId)) {
+            return similarityModelDatabase.existsReqInsideModel(requirement,conn);
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while checking if a requirement was inside an organizaton", organizationId);
+        }
+    }
+
+    @Override
+    public Organization getOrganizationInfo(String organizationId) throws NotFoundException, InternalErrorException {
 
         if (!existsOrganization(organizationId)) throw new NotFoundException("The organization with id " + organizationId + " does not exist");
-        List<Execution> currentExecutions = new ArrayList<>();
-        List<Execution> pendingResponses = new ArrayList<>();
-        OrganizationModels organizationInfo;
-        try(Connection conn = getConnection(organizationId)) {
-            organizationInfo = getOrganizationInfo(organizationId, conn);
-        }
-        try(Connection conn = getConnection(dbMainName)) {
-            String sql = "SELECT responseId, maxPages, actualPage, finished, startTime, finalTime, methodName FROM responses WHERE organizationId = ?";
-            try(PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, organizationId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        String responseId = rs.getString("responseId");
-                        boolean finished = rs.getBoolean("finished");
-                        long startTime = rs.getLong("startTime");
-                        long finalTime = rs.getLong("finalTime");
-                        String methodName = rs.getString("methodName");
-                        Integer pagesLeft = null;
-                        Execution execution;
-                        if (finished) {
-                            int maxPages = rs.getInt("maxPages");
-                            int actualPage = rs.getInt("actualPage");
-                            pagesLeft = maxPages - actualPage;
-                            execution = new Execution(responseId, methodName, pagesLeft, startTime, finalTime);
-                        } else {
-                            execution = new Execution(responseId, methodName, pagesLeft, startTime, null);
+        try {
+            List<Execution> currentExecutions = new ArrayList<>();
+            List<Execution> pendingResponses = new ArrayList<>();
+            OrganizationModels organizationInfo;
+            try (Connection conn = getConnection(organizationId)) {
+                organizationInfo = getOrganizationInfo(organizationId, conn);
+            }
+            try (Connection conn = getConnection(dbMainName)) {
+                String sql = "SELECT responseId, maxPages, actualPage, finished, startTime, finalTime, methodName FROM responses WHERE organizationId = ?";
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, organizationId);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                            String responseId = rs.getString("responseId");
+                            boolean finished = rs.getBoolean("finished");
+                            long startTime = rs.getLong("startTime");
+                            long finalTime = rs.getLong("finalTime");
+                            String methodName = rs.getString("methodName");
+                            Integer pagesLeft = null;
+                            Execution execution;
+                            if (finished) {
+                                int maxPages = rs.getInt("maxPages");
+                                int actualPage = rs.getInt("actualPage");
+                                pagesLeft = maxPages - actualPage;
+                                execution = new Execution(responseId, methodName, pagesLeft, startTime, finalTime);
+                            } else {
+                                execution = new Execution(responseId, methodName, pagesLeft, startTime, null);
+                            }
+                            if (finished) pendingResponses.add(execution);
+                            else currentExecutions.add(execution);
                         }
-                        if (finished) pendingResponses.add(execution);
-                        else currentExecutions.add(execution);
                     }
                 }
             }
+            return new Organization(organizationId, organizationInfo.getThreshold(), organizationInfo.isCompare(), organizationInfo.hasClusters(), currentExecutions, pendingResponses);
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while laoding the information of an organization",organizationId);
         }
-        return new Organization(organizationId, organizationInfo.getThreshold(), organizationInfo.isCompare(), organizationInfo.hasClusters(), currentExecutions, pendingResponses);
     }
 
     @Override
-    public OrganizationModels getOrganizationModels(String organization, boolean readOnly) throws NotFoundException, SQLException {
+    public OrganizationModels getOrganizationModels(String organization, boolean readOnly) throws NotFoundException, InternalErrorException {
 
         if (!existsOrganization(organization)) throw new NotFoundException("The organization with id " + organization + " does not exist");
-
-        OrganizationModels organizationModels;
-        try (Connection conn = getConnection(organization)) {
-            conn.setAutoCommit(false);
-            organizationModels = getOrganizationInfo(organization,conn);
-            organizationModels.setSimilarityModel(similarityModelDatabase.getModel(readOnly,conn));
-            if (organizationModels.hasClusters()) {
-                Map<Integer, List<String>> clusters = loadClusters(conn);
-                organizationModels.setClusters(clusters);
+        try {
+            OrganizationModels organizationModels;
+            try (Connection conn = getConnection(organization)) {
+                conn.setAutoCommit(false);
+                organizationModels = getOrganizationInfo(organization, conn);
+                organizationModels.setSimilarityModel(similarityModelDatabase.getModel(readOnly, conn));
+                if (organizationModels.hasClusters()) {
+                    Map<Integer, List<String>> clusters = loadClusters(conn);
+                    organizationModels.setClusters(clusters);
+                }
+                conn.commit();
             }
-            conn.commit();
+            return organizationModels;
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while loading organization models",organization);
         }
-
-        return organizationModels;
     }
 
     @Override
-    public void saveOrganizationModels(String organization, OrganizationModels organizationModels) throws IOException, InternalErrorException, SQLException {
-
-        insertNewOrganization(organization);
-
-        try (Connection conn = getConnection(organization)) {
-            conn.setAutoCommit(false);
-            clearOrganizationTables(conn);
-            saveOrganizationInfo(organization,organizationModels,conn);
-            conn.commit();
+    public void saveOrganizationModels(String organization, OrganizationModels organizationModels) throws InternalErrorException {
+        try {
+            insertNewOrganization(organization);
+            try (Connection conn = getConnection(organization)) {
+                conn.setAutoCommit(false);
+                clearOrganizationTables(conn);
+                saveOrganizationInfo(organization, organizationModels, conn);
+                conn.commit();
+            }
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while saving the models of an organization",organization);
         }
     }
 
-      /*
+
+    /*
     Public methods
     Cluster methods
      */
 
     @Override
-    public Dependency getDependency(String fromid, String toid, String organizationId, boolean useAuxiliaryTables) throws SQLException, NotFoundException {
-
+    public Dependency getDependency(String organizationId, String fromid, String toid, boolean useAuxiliaryTables) throws NotFoundException, InternalErrorException {
         Dependency result;
-
         try (Connection conn = getConnection(organizationId)) {
-
             String sql = "SELECT status, clusterId, score FROM dependencies WHERE (fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?)";
             if (useAuxiliaryTables) sql = "SELECT status, clusterId, score FROM aux_dependencies WHERE (fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?)";
-
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, fromid);
                 ps.setString(2, toid);
@@ -194,27 +202,25 @@ public class SQLiteDatabase implements DatabaseModel {
                     } else throw new NotFoundException("The dependency between " + fromid + " and " + toid + " does not exist ");
                 }
             }
+            return result;
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while loading a dependency from the database",organizationId);
         }
-
-        return result;
     }
 
     @Override
-    public List<Dependency> getDependencies(String organizationId) throws SQLException {
-        List<Dependency> result;
-
+    public List<Dependency> getDependencies(String organizationId) throws InternalErrorException {
         try (Connection conn = getConnection(organizationId)) {
-            result = loadDependencies(conn);
+            return loadDependencies(conn);
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while loading all the dependencies of an organization",organizationId);
         }
-        return result;
     }
 
     @Override
-    public List<Dependency> getDependenciesByStatus(String organizationId, String status, boolean useAuxiliaryTable) throws SQLException {
+    public List<Dependency> getDependenciesByStatus(String organizationId, String status, boolean useAuxiliaryTable) throws InternalErrorException {
         List<Dependency> result = new ArrayList<>();
-
         try (Connection conn = getConnection(organizationId)) {
-
             String sql = "SELECT fromid, toid FROM dependencies WHERE status = ?";
             if (useAuxiliaryTable) sql = "SELECT fromid, toid FROM aux_dependencies WHERE status = ?";
 
@@ -229,23 +235,21 @@ public class SQLiteDatabase implements DatabaseModel {
                     }
                 }
             }
+            return result;
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while loading the dependencies by status",organizationId);
         }
-        return result;
     }
 
     @Override
-    public List<Dependency> getReqDependencies(String organizationId, String requirementId, String status, boolean useAuxiliaryTable) throws SQLException {
+    public List<Dependency> getReqDependencies(String organizationId, String requirementId, String status, boolean useAuxiliaryTable) throws InternalErrorException {
         List<Dependency> result = new ArrayList<>();
-
         try (Connection conn = getConnection(organizationId)) {
-
             String sql = "SELECT toid, score FROM dependencies WHERE fromid = ? AND status = ?";
             if (useAuxiliaryTable) sql = "SELECT toid, score FROM aux_dependencies WHERE fromid = ? AND status = ?";
-
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, requirementId);
                 ps.setString(2, status);
-
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         String toid = rs.getString("toid");
@@ -254,23 +258,21 @@ public class SQLiteDatabase implements DatabaseModel {
                     }
                 }
             }
+            return result;
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while loading the dependecies of a requirement",organizationId);
         }
-        return result;
     }
 
     @Override
-    public List<Dependency> getClusterDependencies(String organizationId, int clusterId, boolean useAuxiliaryTable) throws SQLException {
-
+    public List<Dependency> getClusterDependencies(String organizationId, int clusterId, boolean useAuxiliaryTable) throws InternalErrorException {
         List<Dependency> result = new ArrayList<>();
-
         try (Connection conn = getConnection(organizationId)) {
-
             String sql = "SELECT fromid, toid FROM dependencies WHERE clusterId = ? AND status = ?";
             if (useAuxiliaryTable) sql = "SELECT fromid, toid FROM aux_dependencies WHERE clusterId = ? AND status = ?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, clusterId);
                 ps.setString(2, "accepted");
-
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         String fromid = rs.getString("fromid");
@@ -279,12 +281,14 @@ public class SQLiteDatabase implements DatabaseModel {
                     }
                 }
             }
+            return result;
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while loading the dependencies of a cluster",organizationId);
         }
-        return result;
     }
 
     @Override
-    public void createDepsAuxiliaryTable(String organizationId) throws SQLException {
+    public void createDepsAuxiliaryTable(String organizationId) throws InternalErrorException {
 
         String sql1 = "DROP TABLE IF EXISTS aux_dependencies;";
 
@@ -306,40 +310,46 @@ public class SQLiteDatabase implements DatabaseModel {
             stmt.execute(sql2);
             stmt.execute(sql3);
             conn.commit();
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while creating a dependencies auxiliary table",organizationId);
         }
 
     }
 
     @Override
-    public void saveDependencyOrReplace(String organizationId, Dependency dependency, boolean useAuxiliaryTable) throws SQLException {
-        String sql = "INSERT OR REPLACE INTO dependencies(fromid, toid, status, score, clusterId) VALUES (?,?,?,?,?)";
-        if (useAuxiliaryTable) sql = "INSERT OR REPLACE INTO aux_dependencies(fromid, toid, status, score, clusterId) VALUES (?,?,?,?,?)";
+    public void saveDependencyOrReplace(String organizationId, Dependency dependency, boolean useAuxiliaryTable) throws InternalErrorException {
+        String sql1 = "INSERT OR REPLACE INTO dependencies(fromid, toid, status, score, clusterId) VALUES (?,?,?,?,?)";
+        if (useAuxiliaryTable) sql1 = "INSERT OR REPLACE INTO aux_dependencies(fromid, toid, status, score, clusterId) VALUES (?,?,?,?,?)";
         try (Connection conn = getConnection(organizationId);
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql1)) {
             ps.setString(1, dependency.getFromid());
             ps.setString(2, dependency.getToid());
             ps.setString(3, dependency.getStatus());
             ps.setDouble(4, dependency.getDependencyScore());
             ps.setInt(5, dependency.getClusterId());
             ps.execute();
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while saving or replacing dependencies",organizationId);
         }
     }
 
     @Override
-    public void saveDependencies(String organizationId, List<Dependency> dependencies, boolean useAuxiliaryTable) throws SQLException {
+    public void saveDependencies(String organizationId, List<Dependency> dependencies, boolean useAuxiliaryTable) throws InternalErrorException {
         try (Connection conn = getConnection(organizationId)) {
             conn.setAutoCommit(false);
             saveDependencies(dependencies, conn, useAuxiliaryTable);
             conn.commit();
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while saving dependencies",organizationId);
         }
     }
 
     @Override
-    public void updateDependencyStatus(String organizationId, String fromid, String toid, String newStatus, int newClusterId, boolean useAuxiliaryTable) throws SQLException {
-        String sql = "UPDATE dependencies SET status = ?, clusterId = ? WHERE ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
-        if (useAuxiliaryTable) sql = "UPDATE aux_dependencies SET status = ?, clusterId = ? WHERE ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
+    public void updateDependencyStatus(String organizationId, String fromid, String toid, String newStatus, int newClusterId, boolean useAuxiliaryTable) throws InternalErrorException {
+        String sql1 = "UPDATE dependencies SET status = ?, clusterId = ? WHERE ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
+        if (useAuxiliaryTable) sql1 = "UPDATE aux_dependencies SET status = ?, clusterId = ? WHERE ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
         try (Connection conn = getConnection(organizationId);
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql1)) {
             ps.setString(1, newStatus);
             ps.setInt(2, newClusterId);
             ps.setString(3, fromid);
@@ -347,38 +357,43 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.setString(5, toid);
             ps.setString(6, fromid);
             ps.executeUpdate();
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while updating dependencies by status", organizationId);
         }
     }
 
     @Override
-    public void updateClusterDependencies(String organizationId, int oldClusterId, int newClusterId, boolean useAuxiliaryTable) throws SQLException {
-        String sql = "UPDATE dependencies SET clusterId = ? WHERE clusterId = ?";
-        if (useAuxiliaryTable) sql = "UPDATE aux_dependencies SET clusterId = ? WHERE clusterId = ?";
+    public void updateClusterDependencies(String organizationId, int oldClusterId, int newClusterId, boolean useAuxiliaryTable) throws InternalErrorException {
+        String sql1 = "UPDATE dependencies SET clusterId = ? WHERE clusterId = ?";
+        if (useAuxiliaryTable) sql1 = "UPDATE aux_dependencies SET clusterId = ? WHERE clusterId = ?";
         try (Connection conn = getConnection(organizationId);
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql1)) {
             ps.setInt(1,newClusterId);
             ps.setInt(2, oldClusterId);
             ps.executeUpdate();
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while updating cluster dependencies from an old cluster", organizationId);
         }
     }
 
     @Override
-    public void updateClusterDependencies(String organizationId, String requirementId, int newClusterId, boolean useAuxiliaryTable) throws SQLException {
-        String sql = "UPDATE dependencies SET clusterId = ? WHERE status = ? AND (fromid = ? OR toid = ?)";
-        if (useAuxiliaryTable) sql = "UPDATE aux_dependencies SET clusterId = ? WHERE status = ? AND (fromid = ? OR toid = ?)";
+    public void updateClusterDependencies(String organizationId, String requirementId, int newClusterId, boolean useAuxiliaryTable) throws InternalErrorException {
+        String sql1 = "UPDATE dependencies SET clusterId = ? WHERE status = ? AND (fromid = ? OR toid = ?)";
+        if (useAuxiliaryTable) sql1 = "UPDATE aux_dependencies SET clusterId = ? WHERE status = ? AND (fromid = ? OR toid = ?)";
         try (Connection conn = getConnection(organizationId);
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql1)) {
             ps.setInt(1,newClusterId);
             ps.setString(2, "accepted");
             ps.setString(3, requirementId);
             ps.setString(4, requirementId);
             ps.executeUpdate();
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while updating cluster dependencies",organizationId);
         }
     }
 
     @Override
-    public void updateClustersAndDependencies(String organization, OrganizationModels organizationModels, List<Dependency> dependencies, boolean useDepsAuxiliaryTable) throws SQLException {
-
+    public void updateClustersAndDependencies(String organization, OrganizationModels organizationModels, List<Dependency> dependencies, boolean useDepsAuxiliaryTable) throws InternalErrorException {
         try (Connection conn = getConnection(organization)) {
             conn.setAutoCommit(false);
             clearClusterTables(conn);
@@ -389,30 +404,36 @@ public class SQLiteDatabase implements DatabaseModel {
                 else insertAuxiliaryDepsTable(conn);
             }
             conn.commit();
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while updating clusters and dependencies",organization);
         }
     }
 
     @Override
-    public void deleteReqDependencies(String organizationId, String reqId, boolean useAuxiliaryTable) throws SQLException {
-        String sql = "DELETE FROM dependencies WHERE (fromid = ? OR toid = ?)";
-        if (useAuxiliaryTable) sql = "DELETE FROM aux_dependencies WHERE (fromid = ? OR toid = ?)";
+    public void deleteReqDependencies(String organizationId, String reqId, boolean useAuxiliaryTable) throws InternalErrorException {
+        String sql1 = "DELETE FROM dependencies WHERE (fromid = ? OR toid = ?)";
+        if (useAuxiliaryTable) sql1 = "DELETE FROM aux_dependencies WHERE (fromid = ? OR toid = ?)";
         try (Connection conn = getConnection(organizationId);
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql1)) {
             ps.setString(1,reqId);
             ps.setString(2, reqId);
             ps.executeUpdate();
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while deleting requirement dependencies",organizationId);
         }
     }
 
     @Override
-    public void deleteProposedClusterDependencies(String organizationId, int clusterId, boolean useAuxiliaryTable) throws SQLException {
-        String sql = "DELETE FROM dependencies WHERE clusterId = ? AND status = ?";
-        if (useAuxiliaryTable) sql = "DELETE FROM aux_dependencies WHERE clusterId = ? AND status = ?";
+    public void deleteProposedClusterDependencies(String organizationId, int clusterId, boolean useAuxiliaryTable) throws InternalErrorException {
+        String sql1 = "DELETE FROM dependencies WHERE clusterId = ? AND status = ?";
+        if (useAuxiliaryTable) sql1 = "DELETE FROM aux_dependencies WHERE clusterId = ? AND status = ?";
         try (Connection conn = getConnection(organizationId);
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql1)) {
             ps.setInt(1, clusterId);
             ps.setString(2, "proposed");
             ps.executeUpdate();
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while deleting proposed cluster dependencies",organizationId);
         }
     }
 
@@ -423,15 +444,13 @@ public class SQLiteDatabase implements DatabaseModel {
      */
 
     @Override
-    public String getResponsePage(String organizationId, String responseId) throws SQLException, NotFoundException, NotFinishedException {
-        String sql = "SELECT actualPage, maxPages, finished FROM responses WHERE organizationId = ? AND responseId = ?";
-
+    public String getResponsePage(String organizationId, String responseId) throws NotFoundException, NotFinishedException, InternalErrorException {
+        String sql1 = "SELECT actualPage, maxPages, finished FROM responses WHERE organizationId = ? AND responseId = ?";
         String result;
-
         try (Connection conn = getConnection(dbMainName)) {
             conn.setAutoCommit(false);
 
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            try (PreparedStatement ps = conn.prepareStatement(sql1)) {
                 ps.setString(1, organizationId);
                 ps.setString(2, responseId);
 
@@ -457,17 +476,18 @@ public class SQLiteDatabase implements DatabaseModel {
                 }
             }
             conn.commit();
+            return result;
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while loading response page",organizationId);
         }
-        return result;
     }
 
     @Override
-    public void saveResponse(String organizationId, String responseId, String methodName) throws SQLException, InternalErrorException {
-        String sql = "INSERT INTO responses(organizationId, responseId, actualPage, maxPages, finished, startTime, finalTime, methodName) VALUES (?,?,?,?,?,?,?,?)";
-
+    public void saveResponse(String organizationId, String responseId, String methodName) throws InternalErrorException {
+        String sql1 = "INSERT INTO responses(organizationId, responseId, actualPage, maxPages, finished, startTime, finalTime, methodName) VALUES (?,?,?,?,?,?,?,?)";
         getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName);
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql1)) {
             ps.setString(1,organizationId);
             ps.setString(2,responseId);
             ps.setInt(3,0);
@@ -477,44 +497,48 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.setLong(7, getCurrentTime());
             ps.setString(8, methodName);
             ps.execute();
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while saving a response",organizationId);
         } finally {
             releaseAccessToMainDb();
         }
     }
 
     @Override
-    public void saveResponsePage(String organizationId, String responseId, String jsonResponse) throws SQLException, NotFoundException, InternalErrorException {
+    public void saveResponsePage(String organizationId, String responseId, String jsonResponse) throws NotFoundException, InternalErrorException {
         getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName)) {
             conn.setAutoCommit(false);
             int page = getTotalPages(organizationId, responseId, conn);
             insertResponsePage(organizationId,responseId,page,jsonResponse,conn);
             conn.commit();
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while saving response page",organizationId);
         } finally {
             releaseAccessToMainDb();
         }
     }
 
     @Override
-    public void finishComputation(String organizationId, String responseId) throws SQLException, InternalErrorException {
-        String sql = "UPDATE responses SET finished = ?, finalTime = ? WHERE organizationId = ? AND responseId = ?";
-
+    public void finishComputation(String organizationId, String responseId) throws InternalErrorException {
+        String sql1 = "UPDATE responses SET finished = ?, finalTime = ? WHERE organizationId = ? AND responseId = ?";
         getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName);
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql1)) {
             ps.setInt(1,1);
             ps.setLong(2, getCurrentTime());
             ps.setString(3,organizationId);
             ps.setString(4,responseId);
             ps.executeUpdate();
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while finishing computation in database",organizationId);
         } finally {
             releaseAccessToMainDb();
         }
     }
 
     @Override
-    public void saveExceptionAndFinishComputation(String organizationId, String responseId, String jsonResponse) throws SQLException, InternalErrorException {
-
+    public void saveExceptionAndFinishComputation(String organizationId, String responseId, String jsonResponse) throws InternalErrorException {
         getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName)) {
             conn.setAutoCommit(false);
@@ -529,20 +553,21 @@ public class SQLiteDatabase implements DatabaseModel {
                 ps.executeUpdate();
             }
             conn.commit();
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while saving exception",organizationId);
         } finally {
             releaseAccessToMainDb();
         }
     }
 
     @Override
-    public void clearOrganizationResponses(String organizationId) throws SQLException, NotFoundException, InternalErrorException {
-        String sql = "SELECT responseId FROM responses WHERE organizationId = ? AND finished = ?";
-
+    public void deleteOrganizationResponses(String organizationId) throws NotFoundException, InternalErrorException {
+        String sql1 = "SELECT responseId FROM responses WHERE organizationId = ? AND finished = ?";
         getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName)) {
             conn.setAutoCommit(false);
             if (!existsOrganization(organizationId)) throw new NotFoundException("The organization " + organizationId + " does not exist");
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            try (PreparedStatement ps = conn.prepareStatement(sql1)) {
                 ps.setString(1, organizationId);
                 ps.setInt(2, 1);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -554,19 +579,20 @@ public class SQLiteDatabase implements DatabaseModel {
                 }
             }
             conn.commit();
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while deleting organization responses",organizationId);
         } finally {
             releaseAccessToMainDb();
         }
     }
 
     @Override
-    public void clearOldResponses(long borderTime) throws InternalErrorException, SQLException {
-        String sql = "SELECT organizationId, responseId FROM responses WHERE finalTime < ? AND finished = ?";
-
+    public void deleteOldResponses(long borderTime) throws InternalErrorException {
+        String sql1 = "SELECT organizationId, responseId FROM responses WHERE finalTime < ? AND finished = ?";
         getAccessToMainDb();
         try (Connection conn = getConnection(dbMainName)) {
             conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            try (PreparedStatement ps = conn.prepareStatement(sql1)) {
                 ps.setLong(1, borderTime);
                 ps.setInt(2, 1);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -579,6 +605,8 @@ public class SQLiteDatabase implements DatabaseModel {
                 }
             }
             conn.commit();
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while deleting old responses","");
         } finally {
             releaseAccessToMainDb();
         }
@@ -591,13 +619,24 @@ public class SQLiteDatabase implements DatabaseModel {
      */
 
     @Override
-    public void clearOrganization(String organizationId) throws NotFoundException, SQLException, InternalErrorException, IOException {
+    public void deleteOrganization(String organizationId) throws NotFoundException,InternalErrorException {
         if (!existsOrganization(organizationId)) throw new NotFoundException("The organization " + organizationId + " does not exist");
-        deleteOrganization(organizationId);
+        getAccessToMainDb();
+        if (!existsOrganization(organizationId)) throw new NotFoundException("The organization " + organizationId + " does not exist"); //concurrency check
+        try (Connection conn = getConnection(dbMainName);
+             PreparedStatement ps = conn.prepareStatement("DELETE FROM organizations WHERE id = ?")) {
+            deleteDataFiles(buildFileName(organizationId));
+            ps.setString(1, organizationId);
+            ps.executeUpdate();
+        } catch (IOException | SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while deleting an organization",organizationId);
+        } finally {
+            releaseAccessToMainDb();
+        }
     }
 
     @Override
-    public void clearDatabase() throws IOException, InternalErrorException, SQLException {
+    public void clearDatabase() throws InternalErrorException {
         resetMainDatabase();
     }
 
@@ -605,6 +644,11 @@ public class SQLiteDatabase implements DatabaseModel {
     /*
     Private methods
      */
+
+    private InternalErrorException treatSQLException(String sqlMessage, String exceptionMessage, String organizationId) {
+        logger.showErrorMessage(sqlMessage + " " + organizationId);
+        return new InternalErrorException("Database error: " + exceptionMessage);
+    }
 
     private void clearClusterTables(Connection conn) throws SQLException {
 
@@ -696,15 +740,18 @@ public class SQLiteDatabase implements DatabaseModel {
         if(!file.createNewFile()) throw new InternalErrorException("Error while creating a new file");
     }
 
-    private void insertNewOrganization(String organization) throws SQLException, IOException, InternalErrorException {
-
-        if (!existsOrganization(organization)) {
-            createOrganizationFiles(organization);
-            configureOrganizationDatabase(organization);
-            try (Connection conn = getConnection(organization)) {
-                createOrganizationTables(conn);
+    private void insertNewOrganization(String organization) throws InternalErrorException {
+        try {
+            if (!existsOrganization(organization)) {
+                createOrganizationFiles(organization);
+                configureOrganizationDatabase(organization);
+                try (Connection conn = getConnection(organization)) {
+                    createOrganizationTables(conn);
+                }
+                insertOrganization(organization);
             }
-            insertOrganization(organization);
+        } catch (IOException | SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while inserting a new organization",organization);
         }
     }
 
@@ -712,11 +759,7 @@ public class SQLiteDatabase implements DatabaseModel {
         return DriverManager.getConnection(buildDbUrl(organization));
     }
 
-    public SQLiteDatabase() throws ClassNotFoundException {
-        Class.forName("org.sqlite.JDBC");
-    }
-
-    private void resetMainDatabase() throws IOException, InternalErrorException, SQLException {
+    private void resetMainDatabase() throws InternalErrorException {
 
         getAccessToMainDb();
 
@@ -758,20 +801,8 @@ public class SQLiteDatabase implements DatabaseModel {
                 conn.commit();
             }
             configureOrganizationDatabase(dbMainName);
-        } finally {
-            releaseAccessToMainDb();
-        }
-    }
-
-    private void deleteOrganization(String organizationId) throws SQLException, NotFoundException, IOException, InternalErrorException {
-
-        getAccessToMainDb();
-        if (!existsOrganization(organizationId)) throw new NotFoundException("The organization " + organizationId + " does not exist");
-        try (Connection conn = getConnection(dbMainName);
-             PreparedStatement ps = conn.prepareStatement("DELETE FROM organizations WHERE id = ?")) {
-            deleteDataFiles(buildFileName(organizationId));
-            ps.setString(1, organizationId);
-            ps.executeUpdate();
+        } catch (IOException | SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while reseting database","");
         } finally {
             releaseAccessToMainDb();
         }

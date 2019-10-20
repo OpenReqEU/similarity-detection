@@ -14,6 +14,8 @@ import static java.lang.Long.max;
 public class Dependency implements Serializable {
 
     private static ObjectMapper mapper = new ObjectMapper();
+    private String defaultComponent = "Similarity-UPC";
+    private String defaultDependencyType = "similar";
 
     @JsonProperty(value="dependency_score")
     private double dependencyScore;
@@ -41,23 +43,29 @@ public class Dependency implements Serializable {
     public Dependency(String fromid, String toid) {
         this.fromid = fromid;
         this.toid = toid;
+        this.dependencyType = defaultDependencyType;
+        this.description = new ArrayList<>();
+        description.add(defaultComponent);
     }
 
-    public Dependency(double dependencyScore, String fromid, String toid, String status, String dependencyType, String component) {
+    public Dependency(double dependencyScore, String fromid, String toid) {
+        this.dependencyScore = dependencyScore;
+        this.fromid = fromid;
+        this.toid = toid;
+        this.status = "proposed";
+        this.dependencyType = defaultDependencyType;
+        this.description = new ArrayList<>();
+        description.add(defaultComponent);
+    }
+
+    public Dependency(double dependencyScore, String fromid, String toid, String status) {
         this.dependencyScore = dependencyScore;
         this.fromid = fromid;
         this.toid = toid;
         this.status = status;
-        this.dependencyType = dependencyType;
+        this.dependencyType = defaultDependencyType;
         this.description = new ArrayList<>();
-        description.add(component);
-    }
-
-    public Dependency(String fromid, String toid, String dependencyType) {
-        this.fromid = fromid;
-        this.toid = toid;
-        this.description = new ArrayList<>();
-        this.dependencyType = dependencyType;
+        description.add(defaultComponent);
     }
 
     public Dependency(String fromid, String toid, String status, double dependencyScore, int clusterId) {
@@ -66,7 +74,9 @@ public class Dependency implements Serializable {
         this.status = status;
         this.dependencyScore = dependencyScore;
         this.clusterId = clusterId;
+        this.dependencyType = defaultDependencyType;
         this.description = new ArrayList<>();
+        description.add(defaultComponent);
     }
 
     /*
