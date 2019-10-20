@@ -45,11 +45,11 @@ public class TestConcurrency {
 
     @AfterClass
     public static void deleteTestDB() throws Exception {
+        constants.setDatabaseModel(new SQLiteDatabase("../testing/integration/test_database/",sleepTime,constants.getSimilarityModelDatabase()));
         constants.setMaxWaitingTime(sleepTime);
         constants.getDatabaseModel().clearDatabase();
         File file = new File("../testing/integration/test_database/main.db");
         boolean result = file.delete();
-        constants.setDatabaseModel(new SQLiteDatabase("data",sleepTime,constants.getSimilarityModelDatabase()));
     }
 
     @Test
@@ -184,13 +184,16 @@ public class TestConcurrency {
         }
     }
 
+    private CompareServiceImpl compareService1;
+
     @Test
     public void testExceptions() {
         try {
-            CompareServiceImpl compareService = new CompareServiceImpl();
-            SQLiteDatabase sqLiteDatabase = new SQLiteDatabase("../testing/integration/test_database/",sleepTime,constants.getSimilarityModelDatabase());
+            SQLiteDatabase sqLiteDatabase = new SQLiteDatabase("../testing/integration/test_database/",1,constants.getSimilarityModelDatabase());
             sqLiteDatabase.getAccessToMainDb();
+            sqLiteDatabase.clearDatabase();
             constants.setDatabaseModel(sqLiteDatabase);
+            compareService1 = new CompareServiceImpl();
             class Control {
                 public volatile boolean flag = false;
             }
@@ -198,7 +201,7 @@ public class TestConcurrency {
 
             Thread thread1 = new Thread(() -> {
                 try {
-                    compareService.batchProcess("1234", "UPC", new Clusters());
+                    compareService1.batchProcess("1234", "UPC", new Clusters());
                 } catch (InternalErrorException e1) {
                     control.flag = true;
                 } catch (Exception e2) {
@@ -212,12 +215,12 @@ public class TestConcurrency {
             control.flag = false;
 
             sqLiteDatabase.releaseAccessToMainDb();
-            compareService.getAccessToUpdate("UPC");
+            compareService1.getAccessToUpdate("UPC");
 
             thread1 = new Thread(() -> {
                 try {
-                    compareService.batchProcess("123456", "UPC", new Clusters());
-                } catch (NotFinishedException e1) {
+                    compareService1.batchProcess("123456", "UPC", new Clusters());
+                } catch (LockedOrganizationException e1) {
                     control.flag = true;
                 } catch (Exception e2) {
                     control.flag = false;
@@ -227,14 +230,15 @@ public class TestConcurrency {
             thread1.start();
             thread1.join();
             assertTrue(control.flag);
-            assertEquals("","{\"error\":\"Not finished\",\"message\":\"There is another computation in the same organization with write or update rights that has not finished yet\",\"status\":423}",compareService.getResponsePage("UPC", "123456"));
+            assertEquals("","{\"error\":\"Locked\",\"message\":\"There is another computation in the same organization with write or update rights that has not finished yet\",\"status\":423}",compareService1.getResponsePage("UPC", "123456"));
             control.flag = false;
 
-            constants.setDatabaseModel(new SQliteNew("../testing/integration/test_database/",sleepTime,constants.getSimilarityModelDatabase()));
+            constants.setDatabaseModel(new SQliteNew("../testing/integration/test_database/",1,constants.getSimilarityModelDatabase()));
+            compareService1 = new CompareServiceImpl();
 
             thread1 = new Thread(() -> {
                 try {
-                    compareService.batchProcess("1234567", "UPC", new Clusters());
+                    compareService1.batchProcess("1234567", "UPC", new Clusters());
                 } catch (InternalErrorException e1) {
                     //check no error messages are shown in console
                     control.flag = true;
@@ -247,7 +251,7 @@ public class TestConcurrency {
             thread1.join();
             assertTrue(control.flag);
 
-            assertEquals("","{}",compareService.getResponsePage("UPC", "123456"));
+            assertEquals("","{}",compareService1.getResponsePage("UPC", "123456"));
         } catch (Exception e) {
             e.printStackTrace();
         }
