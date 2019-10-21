@@ -36,8 +36,6 @@ public class SizeFixedDependenciesQueue extends ResponseDependencies {
         for (Dependency dependency: queue) {
             dependencies.put(dependency.toJSON());
         }
-        generateResponsePage(organization, responseId, dependencies, "dependencies", Constants.getInstance().getDatabaseModel());
+        generateResponsePage(organization, responseId, dependencies, dependenciesArrayName, Constants.getInstance().getDatabaseModel());
     }
-
-
 }

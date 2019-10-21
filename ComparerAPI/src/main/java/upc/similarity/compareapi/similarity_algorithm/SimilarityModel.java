@@ -1,7 +1,5 @@
 package upc.similarity.compareapi.similarity_algorithm;
 
-import upc.similarity.compareapi.entity.Requirement;
-
 import java.util.List;
 
 public interface SimilarityModel {

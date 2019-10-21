@@ -15,7 +15,7 @@ public class ScheduledTasks {
         Logger.getInstance().showInfoMessage("DeleteOldResponses: Start computing");
         try {
             long time = Time.getInstance().getCurrentMillis();
-            long weekMillis = 7 * 24 * 60 * 60 * 1000;
+            long weekMillis = (long)(7 * 24 * 60 * 60 * 1000);
             Constants.getInstance().getDatabaseModel().deleteOldResponses(time - weekMillis);
             Logger.getInstance().showInfoMessage("DeleteOldResponses: Finish computing");
         } catch (InternalErrorException e) {

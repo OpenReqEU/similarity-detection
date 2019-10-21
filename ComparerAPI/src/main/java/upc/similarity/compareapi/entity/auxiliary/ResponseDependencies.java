@@ -11,6 +11,7 @@ public abstract class ResponseDependencies {
 
     protected String organization;
     protected String responseId;
+    protected String dependenciesArrayName = "dependencies";
 
     public ResponseDependencies(String organization, String responseId) {
         this.organization = organization;

@@ -13,7 +13,6 @@ public class DiskDependencies extends ResponseDependencies {
     private long totalNumDependencies;
     private int maxDepsForPage;
     private DatabaseModel databaseOperations;
-    private String dependenciesArrayName;
 
     public DiskDependencies(String organization, String responseId) {
         super(organization,responseId);
@@ -22,7 +21,6 @@ public class DiskDependencies extends ResponseDependencies {
         this.totalNumDependencies = 0;
         this.maxDepsForPage = Constants.getInstance().getMaxDepsForPage();
         this.databaseOperations = Constants.getInstance().getDatabaseModel();
-        this.dependenciesArrayName = "dependencies";
     }
 
     public void addDependency(Dependency dependency) throws InternalErrorException {
@@ -36,9 +34,7 @@ public class DiskDependencies extends ResponseDependencies {
     }
 
     public void finish() throws InternalErrorException {
-        if (dependencies.length() > 0) {
-            generateResponsePage(organization, responseId, dependencies, dependenciesArrayName, databaseOperations);
-        } else if (totalNumDependencies == 0) {
+        if (dependencies.length() > 0 || totalNumDependencies == 0) {
             generateResponsePage(organization, responseId, dependencies, dependenciesArrayName, databaseOperations);
         }
     }

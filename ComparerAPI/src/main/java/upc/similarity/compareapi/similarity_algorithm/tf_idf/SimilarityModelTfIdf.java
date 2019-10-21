@@ -2,7 +2,6 @@ package upc.similarity.compareapi.similarity_algorithm.tf_idf;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
 
 import java.util.*;

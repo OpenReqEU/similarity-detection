@@ -2,6 +2,7 @@ package upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
 import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityModelTfIdf;
 
@@ -43,10 +44,14 @@ public class SimilarityModelDatabaseTfIdf implements SimilarityModelDatabase {
     }
 
     @Override
-    public void saveModelInfo(SimilarityModel similarityModel, Connection conn) throws SQLException {
-        SimilarityModelTfIdf similarityModelTfIdf = (SimilarityModelTfIdf) similarityModel; //TODO check this
-        saveDocs(similarityModelTfIdf.getDocs(), conn);
-        saveCorpusFrequency(similarityModelTfIdf.getCorpusFrequency(), conn);
+    public void saveModelInfo(SimilarityModel similarityModel, Connection conn) throws InternalErrorException, SQLException {
+        try {
+            SimilarityModelTfIdf similarityModelTfIdf = (SimilarityModelTfIdf) similarityModel;
+            saveDocs(similarityModelTfIdf.getDocs(), conn);
+            saveCorpusFrequency(similarityModelTfIdf.getCorpusFrequency(), conn);
+        } catch (ClassCastException e) {
+            throw new InternalErrorException("A tfIdf method received a model that is not tfIdf");
+        }
     }
 
     @Override

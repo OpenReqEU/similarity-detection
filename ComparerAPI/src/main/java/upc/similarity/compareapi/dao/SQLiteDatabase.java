@@ -1,8 +1,6 @@
 package upc.similarity.compareapi.dao;
 
 import org.json.JSONArray;
-import org.omg.CORBA.INTERNAL;
-import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabase;
 import upc.similarity.compareapi.entity.*;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
@@ -662,7 +660,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
     }
 
-    private void saveOrganizationInfo(String organization, OrganizationModels organizationModels, Connection conn) throws SQLException {
+    private void saveOrganizationInfo(String organization, OrganizationModels organizationModels, Connection conn) throws InternalErrorException, SQLException {
 
         double threshold = organizationModels.getThreshold();
         boolean compare = organizationModels.isCompare();
@@ -956,7 +954,7 @@ public class SQLiteDatabase implements DatabaseModel {
         return result;
     }
 
-    private void createOrganizationTables(Connection conn) throws SQLException {
+    private void createOrganizationTables(Connection conn) throws InternalErrorException, SQLException {
 
         String sql1 = "CREATE TABLE info (\n"
                 + " id varchar PRIMARY KEY, \n"
@@ -989,7 +987,7 @@ public class SQLiteDatabase implements DatabaseModel {
         similarityModelDatabase.createModelTables(conn);
     }
 
-    private void clearOrganizationTables(Connection conn) throws SQLException {
+    private void clearOrganizationTables(Connection conn) throws InternalErrorException, SQLException {
 
         String sql1 = "DELETE FROM info";
         String sql2 = "DELETE FROM clusters";

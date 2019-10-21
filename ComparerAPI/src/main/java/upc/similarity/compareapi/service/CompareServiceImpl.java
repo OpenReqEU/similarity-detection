@@ -1,11 +1,9 @@
 package upc.similarity.compareapi.service;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.dao.DatabaseModel;
-import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.preprocess.PreprocessPipeline;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
@@ -35,9 +33,8 @@ public class CompareServiceImpl implements CompareService {
     private int sleepTime = Constants.getInstance().getMaxWaitingTime();
     private DatabaseModel databaseOperations = Constants.getInstance().getDatabaseModel();
     private String syncErrorMessage = "Synchronization error";
-    private String dependenciesArrayName = "dependencies";
 
-    private static final String forbiddenErrorMessage = "The organization already has a model created. Please use the method called DeleteOrganizationData to delete the organization's model";
+    private static final String FORBIDDEN_ERROR_MESSAGE = "The organization already has a model created. Please use the method called DeleteOrganizationData to delete the organization's model";
 
 
     /*
@@ -103,7 +100,7 @@ public class CompareServiceImpl implements CompareService {
         logger.showInfoMessage("BuildModel: Start computing " + organization + " " + responseId);
         try {
             databaseOperations.saveResponse(organization,responseId,"BuildModel");
-            if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(forbiddenErrorMessage);
+            if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(FORBIDDEN_ERROR_MESSAGE);
             SimilarityModel similarityModel = generateModel(compare, deleteDuplicates(requirements));
             OrganizationModels organizationModels = new OrganizationModels(0,compare,false, similarityModel);
             getAccessToUpdate(organization);
@@ -124,7 +121,7 @@ public class CompareServiceImpl implements CompareService {
         logger.showInfoMessage("BuildModelAndCompute: Start computing " + organization + " " + responseId);
         try {
             databaseOperations.saveResponse(organization, responseId, "BuildModelAndCompute");
-            if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(forbiddenErrorMessage);
+            if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(FORBIDDEN_ERROR_MESSAGE);
             SimilarityModel similarityModel = generateModel(compare, deleteDuplicates(requirements));
             OrganizationModels organizationModels = new OrganizationModels(0, compare, false, similarityModel);
             List<String> requirementsIds = new ArrayList<>();
@@ -342,7 +339,7 @@ public class CompareServiceImpl implements CompareService {
         try {
             databaseOperations.saveResponse(organization, responseId, "BuildClusters");
             if (!input.inputOk()) throw new BadRequestException("The input requirements array is empty");
-            if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(forbiddenErrorMessage);
+            if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(FORBIDDEN_ERROR_MESSAGE);
 
             List<Requirement> requirements = deleteDuplicates(input.getRequirements());
             SimilarityModel similarityModel = generateModel(compare, requirements);
@@ -372,7 +369,7 @@ public class CompareServiceImpl implements CompareService {
         try {
             databaseOperations.saveResponse(organization, responseId, "BuildClustersAndCompute");
             if (!input.inputOk()) throw new BadRequestException("The input requirements array is empty");
-            if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(forbiddenErrorMessage);
+            if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(FORBIDDEN_ERROR_MESSAGE);
 
             List<Requirement> requirements = deleteDuplicates(input.getRequirements());
             SimilarityModel similarityModel = generateModel(compare, requirements);
@@ -390,11 +387,8 @@ public class CompareServiceImpl implements CompareService {
                 releaseAccessToUpdate(organization);
             }
 
-            int cont = 0;
-            JSONArray array = new JSONArray();
-            Constants constants = Constants.getInstance();
+            ResponseDependencies responseDependencies = new DiskDependencies(organization,responseId);
             HashSet<String> repeated = new HashSet<>();
-            long numberDependencies = 0;
             for (Requirement requirement : requirements) {
                 String id = requirement.getId();
                 List<Dependency> dependencies = databaseOperations.getReqDependencies(organization, id, "accepted", false);
@@ -406,21 +400,13 @@ public class CompareServiceImpl implements CompareService {
                 for (Dependency dependency : dependencies) {
                     Dependency aux = new Dependency(dependency.getDependencyScore(), id, dependency.getToid(), dependency.getStatus());
                     if (!repeated.contains(aux.getFromid() + aux.getToid())) {
-                        array.put(aux.toJSON());
-                        ++numberDependencies;
-                        ++cont;
-                        if (cont >= constants.getMaxDepsForPage()) {
-                            generateResponsePage(organization, responseId, array, dependenciesArrayName);
-                            array = new JSONArray();
-                            cont = 0;
-                        }
+                        responseDependencies.addDependency(aux);
                         repeated.add(aux.getFromid() + aux.getToid());
                         repeated.add(aux.getToid() + aux.getFromid());
                     }
                 }
             }
-            if (array.length() == 0 && numberDependencies == 0) generateResponsePage(organization, responseId, array, dependenciesArrayName);
-            if (array.length() > 0) generateResponsePage(organization, responseId, array, dependenciesArrayName);
+            responseDependencies.finish();
             databaseOperations.finishComputation(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
@@ -738,13 +724,6 @@ public class CompareServiceImpl implements CompareService {
         if (!requirementIds.isEmpty()) similarityAlgorithm.deleteRequirements(similarityModel,requirementIds);
     }
 
-    private String buildRequirement(boolean compare, Requirement requirement) {
-        String text = "";
-        if (requirement.getName() != null) text = text.concat(cleanText(requirement.getName()) + ". ");
-        if (compare && (requirement.getText() != null)) text = text.concat(cleanText(requirement.getText()));
-        return text;
-    }
-
     private String cleanText(String text) {
         text = text.replaceAll("(\\{.*?})", " code ");
         text = text.replaceAll("[.$,;\\\"/:|!?=%,()><_0-9\\-\\[\\]{}']", " ");
@@ -762,17 +741,6 @@ public class CompareServiceImpl implements CompareService {
         try {
             databaseOperations.saveResponsePage(organization, responseId, new JSONObject().put("status", 200).toString());
             databaseOperations.finishComputation(organization, responseId);
-        } catch (NotFoundException e) {
-            throw new InternalErrorException("Error while saving response");
-        }
-    }
-
-    private void generateResponsePage(String organizationId, String responseId, JSONArray array, String arrayName) throws InternalErrorException {
-        try {
-            JSONObject json = new JSONObject();
-            json.put("status", 200);
-            json.put(arrayName, array);
-            databaseOperations.saveResponsePage(organizationId, responseId, json.toString());
         } catch (NotFoundException e) {
             throw new InternalErrorException("Error while saving response");
         }

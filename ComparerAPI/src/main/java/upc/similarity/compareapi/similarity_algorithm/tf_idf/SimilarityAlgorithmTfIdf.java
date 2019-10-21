@@ -1,5 +1,6 @@
 package upc.similarity.compareapi.similarity_algorithm.tf_idf;
 
+import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.util.Logger;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
@@ -22,7 +23,6 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
 
     @Override
     public SimilarityModel buildModel(Map<String, List<String>> requirements) {
-
         double cutOffParameter = computeCutOffParameter(requirements.size());
         boolean smoothing = (requirements.size() < 100);
         Logger.getInstance().showInfoMessage("Cutoff: " + cutOffParameter);
@@ -52,74 +52,86 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
     }
 
     @Override
-    public double computeSimilarity(SimilarityModel similarityModel, String requirementIdA, String requirementIdB) {
-        SimilarityModelTfIdf modelTfIdf = (SimilarityModelTfIdf) similarityModel; //TODO check exception thrown
-        return cosineSimilarity.compute(modelTfIdf, requirementIdA, requirementIdB);
+    public double computeSimilarity(SimilarityModel similarityModel, String requirementIdA, String requirementIdB) throws InternalErrorException {
+        try {
+            SimilarityModelTfIdf modelTfIdf = (SimilarityModelTfIdf) similarityModel;
+            return cosineSimilarity.compute(modelTfIdf, requirementIdA, requirementIdB);
+        } catch (ClassCastException e) {
+            throw new InternalErrorException("Error while computing similarity with tf_idf algorithm without a tf_idf model");
+        }
     }
 
 
     @Override
-    public void addRequirements(SimilarityModel similarityModel, Map<String,List<String>> requirements) {
-        SimilarityModelTfIdf modelTfIdf = (SimilarityModelTfIdf) similarityModel; //TODO check exception thrown
-        Map<String, Integer> newCorpusFrequency = modelTfIdf.getCorpusFrequency();
-        Map<String, Integer> oldCorpusFrequency = cloneCorpusFrequency(newCorpusFrequency);
-        Map<String, Map<String, Double>> docs = modelTfIdf.getDocs();
+    public void addRequirements(SimilarityModel similarityModel, Map<String,List<String>> requirements) throws InternalErrorException {
+        try {
+            SimilarityModelTfIdf modelTfIdf = (SimilarityModelTfIdf) similarityModel;
+            Map<String, Integer> newCorpusFrequency = modelTfIdf.getCorpusFrequency();
+            Map<String, Integer> oldCorpusFrequency = cloneCorpusFrequency(newCorpusFrequency);
+            Map<String, Map<String, Double>> docs = modelTfIdf.getDocs();
 
-        int oldSize = docs.size();
-        int finalSize = oldSize + requirements.size();
-        double cutOffParameter = computeCutOffParameter(finalSize);
-        boolean smoothing = (finalSize < 100);
+            int oldSize = docs.size();
+            int finalSize = oldSize + requirements.size();
+            double cutOffParameter = computeCutOffParameter(finalSize);
+            boolean smoothing = (finalSize < 100);
 
-        //tf new requirements
-        List<Map<String, Integer>> wordBagArray = new ArrayList<>();
-        for (Map.Entry<String,List<String>> requirement : requirements.entrySet()) {
-            List<String> tokens = requirement.getValue();
-            wordBagArray.add(tf(tokens,newCorpusFrequency));
-        }
-
-        //idf old requirements
-        recomputeIdfValues(docs, oldCorpusFrequency, newCorpusFrequency, oldSize, finalSize);
-
-        //idf new requirements
-        int i = 0;
-        for (Map.Entry<String,List<String>> requirement : requirements.entrySet()) {
-            String id = requirement.getKey();
-            List<String> tokens = requirement.getValue();
-            HashMap<String, Double> aux = new HashMap<>();
-            for (String s : tokens) {
-                double idf = idf(finalSize, newCorpusFrequency.get(s), smoothing);
-                Integer tf = wordBagArray.get(i).get(s);
-                double tfidf = idf * tf;
-                if (tfidf>=cutOffParameter) aux.put(s, tfidf);
+            //tf new requirements
+            List<Map<String, Integer>> wordBagArray = new ArrayList<>();
+            for (Map.Entry<String, List<String>> requirement : requirements.entrySet()) {
+                List<String> tokens = requirement.getValue();
+                wordBagArray.add(tf(tokens, newCorpusFrequency));
             }
-            docs.put(id,aux);
-            ++i;
-        }
-    }
 
-    @Override
-    public void deleteRequirements(SimilarityModel similarityModel, List<String> requirements) {
-        SimilarityModelTfIdf modelTfIdf = (SimilarityModelTfIdf) similarityModel; //TODO check exception thrown
-        Map<String, Map<String, Double>> docs = modelTfIdf.getDocs();
-        Map<String, Integer> newCorpusFrequency = modelTfIdf.getCorpusFrequency();
-        Map<String, Integer> oldCorpusFrequency = cloneCorpusFrequency(newCorpusFrequency);
+            //idf old requirements
+            recomputeIdfValues(docs, oldCorpusFrequency, newCorpusFrequency, oldSize, finalSize);
 
-        int oldSize = docs.size();
-        int newSize = oldSize;
-
-        for (String id: requirements) {
-            if (docs.containsKey(id)) { //problem: if the requirement had this word before applying cutoff parameter
-                --newSize;
-                Map<String, Double> words = docs.get(id);
-                for (String word: words.keySet()) {
-                    int value = newCorpusFrequency.get(word);
-                    if (value == 1) newCorpusFrequency.remove(word);
-                    else newCorpusFrequency.put(word, value-1);
+            //idf new requirements
+            int i = 0;
+            for (Map.Entry<String, List<String>> requirement : requirements.entrySet()) {
+                String id = requirement.getKey();
+                List<String> tokens = requirement.getValue();
+                HashMap<String, Double> aux = new HashMap<>();
+                for (String s : tokens) {
+                    double idf = idf(finalSize, newCorpusFrequency.get(s), smoothing);
+                    Integer tf = wordBagArray.get(i).get(s);
+                    double tfidf = idf * tf;
+                    if (tfidf >= cutOffParameter) aux.put(s, tfidf);
                 }
-                docs.remove(id);
+                docs.put(id, aux);
+                ++i;
             }
+        } catch (ClassCastException e) {
+            throw new InternalErrorException("Error while adding requirements with tf_idf algorithm without a tf_idf model");
         }
-        recomputeIdfValues(docs, oldCorpusFrequency, newCorpusFrequency, oldSize, newSize);
+    }
+
+    @Override
+    public void deleteRequirements(SimilarityModel similarityModel, List<String> requirements) throws InternalErrorException {
+        try {
+            SimilarityModelTfIdf modelTfIdf = (SimilarityModelTfIdf) similarityModel;
+            Map<String, Map<String, Double>> docs = modelTfIdf.getDocs();
+            Map<String, Integer> newCorpusFrequency = modelTfIdf.getCorpusFrequency();
+            Map<String, Integer> oldCorpusFrequency = cloneCorpusFrequency(newCorpusFrequency);
+
+            int oldSize = docs.size();
+            int newSize = oldSize;
+
+            for (String id : requirements) {
+                if (docs.containsKey(id)) { //problem: if the requirement had this word before applying cutoff parameter
+                    --newSize;
+                    Map<String, Double> words = docs.get(id);
+                    for (String word : words.keySet()) {
+                        int value = newCorpusFrequency.get(word);
+                        if (value == 1) newCorpusFrequency.remove(word);
+                        else newCorpusFrequency.put(word, value - 1);
+                    }
+                    docs.remove(id);
+                }
+            }
+            recomputeIdfValues(docs, oldCorpusFrequency, newCorpusFrequency, oldSize, newSize);
+        } catch (ClassCastException e) {
+            throw new InternalErrorException("Error while deleting requirements with tf_idf algorithm without a tf_idf model");
+        }
     }
 
 
