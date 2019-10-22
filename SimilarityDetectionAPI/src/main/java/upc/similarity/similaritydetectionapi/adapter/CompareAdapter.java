@@ -207,7 +207,7 @@ public class CompareAdapter extends ComponentAdapter{
         JSONParser jsonParser = new JSONParser();
         try {
             InputStream inputStream =  new BufferedInputStream(multipartFile.getInputStream());
-            org.json.simple.JSONObject jsonObject = (org.json.simple.JSONObject)jsonParser.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+            org.json.simple.JSONObject jsonObject = (org.json.simple.JSONObject)jsonParser.parse(new InputStreamReader(inputStream, StandardCharsets.US_ASCII));
             return jsonObject.toString();
         } catch (IOException e) {
             throw new InternalErrorException("Error reading input json file");
