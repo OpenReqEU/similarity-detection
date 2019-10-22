@@ -2,15 +2,11 @@ package upc.similarity.similaritydetectionapi.adapter;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 import org.springframework.web.multipart.MultipartFile;
 import upc.similarity.similaritydetectionapi.entity.Dependency;
 import upc.similarity.similaritydetectionapi.entity.Requirement;
 import upc.similarity.similaritydetectionapi.exception.*;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class CompareAdapter extends ComponentAdapter{
@@ -120,17 +116,13 @@ public class CompareAdapter extends ComponentAdapter{
     @Override
     public void buildClusters(String responseId, String organization, boolean compare, double threshold, MultipartFile input) throws ComponentException {
 
-        String content = readMultipartFile(input);
-
-        connectionComponentPost(URL + "BuildClusters?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, content);
+        connectionComponentPostMultipart(URL + "BuildClusters?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, input);
     }
 
     @Override
     public void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, int maxNumber, MultipartFile input) throws ComponentException {
 
-        String content = readMultipartFile(input);
-
-        connectionComponentPost(URL + "BuildClustersAndCompute?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold + "&maxNumber=" + maxNumber, content);
+        connectionComponentPostMultipart(URL + "BuildClustersAndCompute?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold + "&maxNumber=" + maxNumber, input);
     }
 
     @Override
@@ -202,19 +194,6 @@ public class CompareAdapter extends ComponentAdapter{
     /*
     Private methods
      */
-
-    private String readMultipartFile(MultipartFile multipartFile) throws BadRequestException, InternalErrorException {
-        JSONParser jsonParser = new JSONParser();
-        try {
-            InputStream inputStream =  new BufferedInputStream(multipartFile.getInputStream());
-            org.json.simple.JSONObject jsonObject = (org.json.simple.JSONObject)jsonParser.parse(new InputStreamReader(inputStream, StandardCharsets.US_ASCII));
-            return jsonObject.toString();
-        } catch (IOException e) {
-            throw new InternalErrorException("Error reading input json file");
-        } catch (ParseException e) {
-            throw new BadRequestException("The input json file is not well written");
-        }
-    }
 
     @Override
     protected void throwComponentException(Exception e, String message) throws InternalErrorException {

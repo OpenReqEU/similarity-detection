@@ -1,9 +1,11 @@
 package upc.similarity.compareapi;
 
+import org.json.simple.parser.JSONParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.entity.input.Clusters;
@@ -12,6 +14,10 @@ import upc.similarity.compareapi.entity.input.ReqProject;
 import upc.similarity.compareapi.exception.*;
 import upc.similarity.compareapi.service.CompareService;
 
+import java.io.BufferedInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
@@ -169,10 +175,10 @@ public class RestApiController {
                                         @RequestParam("compare") boolean compare,
                                         @RequestParam("threshold") double threshold,
                                         @RequestParam("responseId") String responseId,
-                                        @RequestBody Clusters input) {
+                                        @RequestParam("file") MultipartFile file) {
         try {
-            compareService.buildClusters(responseId,compare,threshold,organization,input);
-            return new ResponseEntity<>(null,HttpStatus.OK);
+            compareService.buildClusters(responseId, compare, threshold, organization, file);
+            return new ResponseEntity<>(null, HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
@@ -184,9 +190,9 @@ public class RestApiController {
                                                   @RequestParam("responseId") String responseId,
                                                   @RequestParam("threshold") double threshold,
                                                   @RequestParam("maxNumber") int maxNumber,
-                                                  @RequestBody Clusters input) {
+                                                  @RequestParam("file") MultipartFile file) {
         try {
-            compareService.buildClustersAndCompute(responseId,compare,organization,threshold,maxNumber,input);
+            compareService.buildClustersAndCompute(responseId,compare,organization,threshold,maxNumber, file);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));

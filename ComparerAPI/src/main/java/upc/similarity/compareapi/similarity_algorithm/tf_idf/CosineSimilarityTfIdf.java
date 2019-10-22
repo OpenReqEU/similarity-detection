@@ -6,13 +6,13 @@ import java.util.Set;
 
 import static java.lang.StrictMath.sqrt;
 
-public class CosineSimilarity {
+public class CosineSimilarityTfIdf {
 
-    private static CosineSimilarity instance = new CosineSimilarity();
+    private static CosineSimilarityTfIdf instance = new CosineSimilarityTfIdf();
 
-    private CosineSimilarity() {}
+    private CosineSimilarityTfIdf() {}
 
-    public static CosineSimilarity getInstance() {
+    public static CosineSimilarityTfIdf getInstance() {
         return instance;
     }
 

@@ -1,7 +1,11 @@
 package upc.similarity.compareapi.service;
 
-import org.json.JSONObject;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.dao.DatabaseModel;
 import upc.similarity.compareapi.preprocess.PreprocessPipeline;
@@ -16,6 +20,12 @@ import upc.similarity.compareapi.entity.input.ReqProject;
 import upc.similarity.compareapi.entity.output.Dependencies;
 import upc.similarity.compareapi.exception.*;
 import upc.similarity.compareapi.util.*;
+
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -112,6 +122,8 @@ public class CompareServiceImpl implements CompareService {
             generateEmptyResponse(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,responseId,true,e);
         }
         logger.showInfoMessage("BuildModel: Finish computing " + organization + " " + responseId);
     }
@@ -138,6 +150,8 @@ public class CompareServiceImpl implements CompareService {
             databaseOperations.finishComputation(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,responseId,true,e);
         }
         logger.showInfoMessage("BuildModelAndCompute: Finish computing " + organization + " " + responseId);
     }
@@ -168,6 +182,8 @@ public class CompareServiceImpl implements CompareService {
             generateEmptyResponse(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,responseId,true,e);
         }
         logger.showInfoMessage("AddRequirements: Finish computing " + organization + " " + responseId);
     }
@@ -191,6 +207,8 @@ public class CompareServiceImpl implements CompareService {
             generateEmptyResponse(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,responseId,true,e);
         }
         logger.showInfoMessage("DeleteRequirements: Finish computing " + organization + " " + responseId);
     }
@@ -207,6 +225,8 @@ public class CompareServiceImpl implements CompareService {
             return new Dependency(score, req1, req2);
         } catch (ComponentException e) {
             throw treatComponentException(organization,null,false,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,null,false,e);
         }
     }
 
@@ -235,6 +255,8 @@ public class CompareServiceImpl implements CompareService {
             databaseOperations.finishComputation(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,responseId,true,e);
         }
         logger.showInfoMessage("SimReqOrganization: Finish computing " + organization + " " + responseId);
     }
@@ -273,6 +295,8 @@ public class CompareServiceImpl implements CompareService {
             databaseOperations.finishComputation(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,responseId,true,e);
         }
         logger.showInfoMessage("SimReqOrganization: Finish computing " + organization + " " + responseId);
     }
@@ -293,6 +317,8 @@ public class CompareServiceImpl implements CompareService {
             databaseOperations.finishComputation(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,responseId,true,e);
         }
         logger.showInfoMessage("SimReqProject: Finish computing " + organization + " " + responseId);
     }
@@ -307,6 +333,8 @@ public class CompareServiceImpl implements CompareService {
             databaseOperations.finishComputation(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,responseId,true,e);
         }
         logger.showInfoMessage("SimProject: Finish computing " + organization + " " + responseId);
     }
@@ -323,6 +351,8 @@ public class CompareServiceImpl implements CompareService {
             databaseOperations.finishComputation(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,responseId,true,e);
         }
         logger.showInfoMessage("SimProjectProject: Finish computing " + organization + " " + responseId);
     }
@@ -334,10 +364,11 @@ public class CompareServiceImpl implements CompareService {
      */
 
     @Override
-    public void buildClusters(String responseId, boolean compare, double threshold, String organization, Clusters input) throws ComponentException {
-        logger.showInfoMessage("BuildClusters: Start computing " + organization + " " + responseId + " " + input.getRequirements().size() + " reqs");
+    public void buildClusters(String responseId, boolean compare, double threshold, String organization, MultipartFile file) throws ComponentException {
+        logger.showInfoMessage("BuildClusters: Start computing " + organization + " " + responseId);
         try {
             databaseOperations.saveResponse(organization, responseId, "BuildClusters");
+            Clusters input = parseMultipartFileToClusters(file);
             if (!input.inputOk()) throw new BadRequestException("The input requirements array is empty");
             if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(FORBIDDEN_ERROR_MESSAGE);
 
@@ -359,15 +390,18 @@ public class CompareServiceImpl implements CompareService {
             generateEmptyResponse(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,responseId,true,e);
         }
         logger.showInfoMessage("BuildClusters: Finish computing " + organization + " " + responseId);
     }
 
     @Override
-    public void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, int maxNumber, Clusters input) throws ComponentException {
-        logger.showInfoMessage("BuildClustersAndCompute: Start computing " + organization + " " + responseId + " " + input.getRequirements().size() + " reqs");
+    public void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, int maxNumber, MultipartFile file) throws ComponentException {
+        logger.showInfoMessage("BuildClustersAndCompute: Start computing " + organization + " " + responseId);
         try {
             databaseOperations.saveResponse(organization, responseId, "BuildClustersAndCompute");
+            Clusters input = parseMultipartFileToClusters(file);
             if (!input.inputOk()) throw new BadRequestException("The input requirements array is empty");
             if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(FORBIDDEN_ERROR_MESSAGE);
 
@@ -410,6 +444,8 @@ public class CompareServiceImpl implements CompareService {
             databaseOperations.finishComputation(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,responseId,true,e);
         }
         logger.showInfoMessage("BuildClustersAndCompute: Finish computing " + organization + " " + responseId);
     }
@@ -443,6 +479,8 @@ public class CompareServiceImpl implements CompareService {
             return new Dependencies(result);
         } catch (ComponentException e) {
             throw treatComponentException(organization,null,false,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,null,false,e);
         }
     }
 
@@ -480,6 +518,8 @@ public class CompareServiceImpl implements CompareService {
             }
         } catch (ComponentException e) {
             throw treatComponentException(organization,null,false,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,null,false,e);
         }
         logger.showInfoMessage("TreatAcceptedAndRejectedDependencies: Finish computing");
     }
@@ -553,6 +593,8 @@ public class CompareServiceImpl implements CompareService {
             generateEmptyResponse(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,responseId,true,e);
         }
         logger.showInfoMessage("BatchProcess: Finish computing " + organization + " " + responseId);
     }
@@ -569,6 +611,8 @@ public class CompareServiceImpl implements CompareService {
             return databaseOperations.getResponsePage(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,null,false,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,null,false,e);
         }
     }
 
@@ -578,6 +622,8 @@ public class CompareServiceImpl implements CompareService {
             return databaseOperations.getOrganizationInfo(organization);
         } catch (ComponentException e) {
             throw treatComponentException(organization,null,false,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,null,false,e);
         }
     }
 
@@ -587,6 +633,8 @@ public class CompareServiceImpl implements CompareService {
             databaseOperations.deleteOrganizationResponses(organization);
         } catch (ComponentException e) {
             throw treatComponentException(organization,null,false,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,null,false,e);
         }
     }
 
@@ -597,6 +645,8 @@ public class CompareServiceImpl implements CompareService {
             databaseOperations.deleteOrganization(organization);
         } catch (ComponentException e) {
             throw treatComponentException(organization,null,false,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(organization,null,false,e);
         } finally {
             releaseAccessToUpdate(organization);
         }
@@ -608,6 +658,8 @@ public class CompareServiceImpl implements CompareService {
             databaseOperations.clearDatabase();
         } catch (ComponentException e) {
             throw treatComponentException(null,null,false,e);
+        } catch (Exception e) {
+            throw treatUnexpectedException(null,null,false,e);
         }
     }
 
@@ -616,6 +668,21 @@ public class CompareServiceImpl implements CompareService {
     /*
     Private methods
      */
+
+    private Clusters parseMultipartFileToClusters(MultipartFile file) throws BadRequestException, InternalErrorException {
+        try {
+            JSONParser jsonParser = new JSONParser();
+            InputStream inputStream = new BufferedInputStream(file.getInputStream());
+            JSONObject jsonObject = (JSONObject) jsonParser.parse(new InputStreamReader(inputStream, StandardCharsets.US_ASCII));
+            return new Clusters(jsonObject);
+        } catch (IOException e) {
+            logger.showErrorMessage(e.getMessage());
+            throw new InternalErrorException("Error while converting input json file");
+        } catch (ParseException e) {
+            logger.showInfoMessage(e.getMessage());
+            throw new BadRequestException("The input json file is not well build");
+        }
+    }
 
     private List<String> deleteListDuplicates(List<String> inputList) {
         HashSet<String> notRepeated = new HashSet<>(inputList);
@@ -724,22 +791,11 @@ public class CompareServiceImpl implements CompareService {
         if (!requirementIds.isEmpty()) similarityAlgorithm.deleteRequirements(similarityModel,requirementIds);
     }
 
-    private String cleanText(String text) {
-        text = text.replaceAll("(\\{.*?})", " code ");
-        text = text.replaceAll("[.$,;\\\"/:|!?=%,()><_0-9\\-\\[\\]{}']", " ");
-        String[] aux2 = text.split(" ");
-        String result = "";
-        for (String a : aux2) {
-            if (a.length() > 1) {
-                result = result.concat(" " + a);
-            }
-        }
-        return result;
-    }
-
     private void generateEmptyResponse(String organization, String responseId) throws InternalErrorException {
         try {
-            databaseOperations.saveResponsePage(organization, responseId, new JSONObject().put("status", 200).toString());
+            org.json.JSONObject jsonObject = new org.json.JSONObject();
+            jsonObject.put("status", 200);
+            databaseOperations.saveResponsePage(organization, responseId, jsonObject.toString());
             databaseOperations.finishComputation(organization, responseId);
         } catch (NotFoundException e) {
             throw new InternalErrorException("Error while saving response");
@@ -753,8 +809,14 @@ public class CompareServiceImpl implements CompareService {
         return e;
     }
 
+    private InternalErrorException treatUnexpectedException(String organization, String responseId, boolean saveException, Exception e) throws InternalErrorException {
+        logger.showErrorMessage(e.getMessage() + " " + organization + " " + responseId);
+        if (saveException) databaseOperations.saveExceptionAndFinishComputation(organization, responseId, createJsonException(500, "Internal error", "Unexpected error. See the logs for more information"));
+        return new InternalErrorException("Unexpected error: " + e.getMessage());
+    }
+
     private String createJsonException(int status, String error, String message) {
-        JSONObject result = new JSONObject();
+        org.json.JSONObject result = new org.json.JSONObject();
         result.put("status",status);
         result.put("error",error);
         result.put("message",message);

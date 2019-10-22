@@ -1,7 +1,8 @@
 package upc.similarity.compareapi.entity;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.json.JSONObject;
+import org.json.simple.JSONObject;
+import upc.similarity.compareapi.exception.BadRequestException;
 import upc.similarity.compareapi.util.Logger;
 
 import java.io.Serializable;
@@ -38,6 +39,35 @@ public class Dependency implements Serializable {
 
     public Dependency() {
         this.description = new ArrayList<>();
+    }
+
+    public Dependency(JSONObject jsonObject) throws BadRequestException {
+        try {
+            Object aux = jsonObject.get("dependency_score");
+            if (aux instanceof Double) this.dependencyScore = (Double) aux;
+            else {
+                String dependencyScoreAux = (String) aux;
+                this.dependencyScore = (dependencyScoreAux == null) ? 0 : Double.parseDouble(dependencyScoreAux);
+            }
+            this.fromid = (String) jsonObject.get("fromid");
+            this.toid = (String) jsonObject.get("toid");
+            this.status = (String) jsonObject.get("status");
+            this.dependencyType = (String) jsonObject.get("dependency_type");
+            aux = jsonObject.get("created_at");
+            if (aux instanceof Long) this.createdAt = (Long) aux;
+            else {
+                String createdAtAux = (String) aux;
+                this.createdAt = (aux == null) ? 0 : Long.parseLong(createdAtAux);
+            }
+            aux = jsonObject.get("modified_at");
+            if (aux instanceof Long) this.modifiedAt = (Long) aux;
+            else {
+                String modifiedAtAux = (String) aux;
+                this.modifiedAt = (modifiedAtAux == null) ? 0 : Long.parseLong(modifiedAtAux);
+            }
+        } catch (Exception e) {
+            throw new BadRequestException("A dependency is not well written: " + e.getMessage());
+        }
     }
 
     public Dependency(String fromid, String toid) {
@@ -167,7 +197,7 @@ public class Dependency implements Serializable {
     Auxiliary operations
      */
 
-    public JSONObject toJSON() {
+    public org.json.JSONObject toJSON() {
         String jsonInString = "";
         try {
             jsonInString = mapper.writeValueAsString(this);
@@ -175,7 +205,7 @@ public class Dependency implements Serializable {
             Logger.getInstance().showErrorMessage(e.getMessage());
             throw new InternalError("Error while converting dependency to jsonObject");
         }
-        return new JSONObject(jsonInString);
+        return new org.json.JSONObject(jsonInString);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package upc.similarity.similaritydetectionapi.adapter;
 
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
@@ -8,15 +9,20 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.springframework.web.multipart.MultipartFile;
+import upc.similarity.similaritydetectionapi.config.Control;
 import upc.similarity.similaritydetectionapi.entity.Dependency;
 import upc.similarity.similaritydetectionapi.entity.Requirement;
 import upc.similarity.similaritydetectionapi.exception.*;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 public abstract class ComponentAdapter {
@@ -85,6 +91,22 @@ public abstract class ComponentAdapter {
         HttpPost httppost = new HttpPost(url);
         if (json != null) httppost.setEntity(new StringEntity(json.toString(), ContentType.APPLICATION_JSON));
         return connectionComponent(httppost);
+    }
+
+    protected String connectionComponentPostMultipart(String url, MultipartFile multipartFile) throws ComponentException {
+        try {
+            HttpPost httppost = new HttpPost(url);
+            InputStream inputStream = new BufferedInputStream(multipartFile.getInputStream());
+            MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+            builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+            builder.addBinaryBody("file", inputStream, ContentType.create("application/json"), "file");
+            HttpEntity entity = builder.build();
+            httppost.setEntity(entity);
+            return connectionComponent(httppost);
+        } catch (IOException e) {
+            Control.getInstance().showErrorMessage(e.getMessage());
+            throw new InternalErrorException("Error while sending the input multipart file");
+        }
     }
 
     protected String connectionComponentGet(String url) throws ComponentException {

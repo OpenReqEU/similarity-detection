@@ -12,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import upc.similarity.compareapi.config.Constants;
@@ -30,6 +31,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.time.Clock;
 import java.time.ZoneId;
@@ -282,8 +284,10 @@ public class TestTfIdfMethods {
 
     @Test
     public void buildClusters() throws Exception {
-        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"buildClusters/input.json")))
+        MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"buildClusters/input.json")));
+        this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "0")
+                .param("compare", "true").param("responseId", id+"")
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "buildClusters/output_build.json")));
@@ -295,8 +299,9 @@ public class TestTfIdfMethods {
 
     @Test
     public void buildClustersAndCompute() throws Exception {
-        this.mockMvc.perform(post(url + "BuildClustersAndCompute").param("organization", "UPC").param("threshold", "0.2")
-                .param("compare", "true").param("responseId", id+"").param("maxNumber", "-1").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"buildClustersAndCompute/input.json")))
+        MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"buildClustersAndCompute/input.json")));
+        this.mockMvc.perform(multipart(url + "BuildClustersAndCompute").file(multipartFile).param("organization", "UPC").param("threshold", "0.2")
+                .param("compare", "true").param("responseId", id+"").param("maxNumber", "-1"))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "buildClustersAndCompute/output.json")));
@@ -308,8 +313,9 @@ public class TestTfIdfMethods {
 
     @Test
     public void simReqClusters() throws Exception {
-        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"simReqClusters/input_model.json")))
+        MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"simReqClusters/input_model.json")));
+        this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "0")
+                .param("compare", "true").param("responseId", id+""))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("maxValue", "-1")
@@ -325,8 +331,9 @@ public class TestTfIdfMethods {
 
     @Test
     public void simReqClustersReqNotExist() throws Exception {
-        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"simReqClusters/input_model.json")))
+        MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"simReqClusters/input_model.json")));
+        this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "0")
+                .param("compare", "true").param("responseId", id+""))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("maxValue", "-1")
@@ -336,8 +343,9 @@ public class TestTfIdfMethods {
 
     @Test
     public void treatDependencies() throws Exception {
-        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "1.1")
-                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"treatDependencies/input_model.json")))
+        MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"treatDependencies/input_model.json")));
+        this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "1.1")
+                .param("compare", "true").param("responseId", id+""))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "TreatAcceptedAndRejectedDependencies").param("organization", "UPC")
@@ -350,8 +358,9 @@ public class TestTfIdfMethods {
 
     @Test
     public void treatDependenciesWithLoop() throws Exception {
-        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "1.1")
-                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"treatDependencies/input_model.json")))
+        MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"treatDependencies/input_model.json")));
+        this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "1.1")
+                .param("compare", "true").param("responseId", id+""))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "TreatAcceptedAndRejectedDependencies").param("organization", "UPC")
@@ -364,8 +373,9 @@ public class TestTfIdfMethods {
 
     @Test
     public void treatDependenciesWithProposed() throws Exception {
-        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"treatDependencies/input_model.json")))
+        MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"treatDependencies/input_model.json")));
+        this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "0")
+                .param("compare", "true").param("responseId", id+""))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "TreatAcceptedAndRejectedDependencies").param("organization", "UPC")
@@ -378,8 +388,9 @@ public class TestTfIdfMethods {
 
     @Test
     public void batchProcess() throws Exception {
-        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "1.1")
-                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"batchProcess/input_model.json")))
+        MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"batchProcess/input_model.json")));
+        this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "1.1")
+                .param("compare", "true").param("responseId", id+""))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "BatchProcess").param("organization", "UPC").param("responseId", id+"")
@@ -393,8 +404,9 @@ public class TestTfIdfMethods {
 
     @Test
     public void batchProcessLoop() throws Exception {
-        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "1.1")
-                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"batchProcess/input_model.json")))
+        MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"batchProcess/input_model.json")));
+        this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "1.1")
+                .param("compare", "true").param("responseId", id+""))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "BatchProcess").param("organization", "UPC").param("responseId", id+"")
@@ -408,8 +420,9 @@ public class TestTfIdfMethods {
 
     @Test
     public void batchProcessWithProposed() throws Exception {
-        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"batchProcess/input_model.json")))
+        MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"batchProcess/input_model.json")));
+        this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "0")
+                .param("compare", "true").param("responseId", id+""))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "BatchProcess").param("organization", "UPC").param("responseId", id+"")
@@ -429,8 +442,9 @@ public class TestTfIdfMethods {
     @Test
     public void getOrganizationInfo() throws Exception {
         Time.getInstance().setClock(Clock.fixed(ofEpochMilli(0), ZoneId.systemDefault()));
-        this.mockMvc.perform(post(url + "BuildClusters").param("organization", "UPCTest").param("threshold", "0.12")
-                .param("compare", "true").param("responseId", "Test0").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"getOrganizationInfo/input_model_with.json")))
+        MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"getOrganizationInfo/input_model_with.json")));
+        this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPCTest").param("threshold", "0.12")
+                .param("compare", "true").param("responseId", "Test0"))
                 .andExpect(status().isOk());
         Constants.getInstance().getDatabaseModel().saveResponse("UPCTest","Test3","TestMethod");
         Time.getInstance().setClock(Clock.fixed(ofEpochMilli(40), ZoneId.systemDefault()));

@@ -3,6 +3,7 @@ package upc.similarity.compareapi.service;
 
 import java.util.List;
 
+import org.springframework.web.multipart.MultipartFile;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Organization;
 import upc.similarity.compareapi.entity.Requirement;
@@ -44,9 +45,9 @@ public interface CompareService {
     Similarity with clusters
      */
 
-    void buildClusters(String responseId, boolean compare, double threshold, String organization, Clusters requirements) throws ComponentException;
+    void buildClusters(String responseId, boolean compare, double threshold, String organization, MultipartFile file) throws ComponentException;
 
-    void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, int maxNumber, Clusters requirements) throws ComponentException;
+    void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, int maxNumber, MultipartFile file) throws ComponentException;
 
     Dependencies simReqClusters(String organization, List<String> requirements, int maxNumber) throws ComponentException;
 

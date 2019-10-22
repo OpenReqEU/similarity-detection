@@ -9,7 +9,7 @@ import java.util.*;
 
 public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
 
-    private CosineSimilarity cosineSimilarity = CosineSimilarity.getInstance();
+    private CosineSimilarityTfIdf cosineSimilarityTfIdf = CosineSimilarityTfIdf.getInstance();
     private int cutOffValue;
     private boolean cutOffDummy;
     private boolean smoothingActive;
@@ -55,7 +55,7 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
     public double computeSimilarity(SimilarityModel similarityModel, String requirementIdA, String requirementIdB) throws InternalErrorException {
         try {
             SimilarityModelTfIdf modelTfIdf = (SimilarityModelTfIdf) similarityModel;
-            return cosineSimilarity.compute(modelTfIdf, requirementIdA, requirementIdB);
+            return cosineSimilarityTfIdf.compute(modelTfIdf, requirementIdA, requirementIdB);
         } catch (ClassCastException e) {
             throw new InternalErrorException("Error while computing similarity with tf_idf algorithm without a tf_idf model");
         }
