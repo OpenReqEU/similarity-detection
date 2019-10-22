@@ -16,6 +16,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 
 import static org.junit.Assert.assertEquals;
@@ -256,8 +258,7 @@ public class TestMethods {
 
     @Test
     public void buildClusters() throws Exception {
-        MockMultipartFile multipartFile = new MockMultipartFile("file", "test.txt",
-                "text/plain", "Spring Framework".getBytes());
+        MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File("../testing/integration/main_component/cronMethod/input.json")));
         stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
@@ -275,8 +276,7 @@ public class TestMethods {
 
     @Test
     public void buildClustersAndCompute() throws Exception {
-        MockMultipartFile multipartFile = new MockMultipartFile("file", "test.txt",
-                "text/plain", "Spring Framework".getBytes());
+        MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File("../testing/integration/main_component/cronMethod/input.json")));
         stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlPathMatching("/upc/Compare/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
