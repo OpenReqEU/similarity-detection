@@ -1,5 +1,6 @@
 package upc.similarity.compareapi.entity;
 
+import upc.similarity.compareapi.clusters_algorithm.ClustersModel;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
 
 import java.util.List;
@@ -12,10 +13,7 @@ public class OrganizationModels {
     private boolean withClusters;
 
     private SimilarityModel similarityModel;
-
-    private Map<Integer, List<String>> clusters;
-    private int lastClusterId;
-    private List<Dependency> dependencies;
+    private ClustersModel clustersModel;
 
     public OrganizationModels() {}
 
@@ -26,7 +24,15 @@ public class OrganizationModels {
         this.similarityModel = similarityModel;
     }
 
-    public OrganizationModels(double threshold, boolean compare, boolean withClusters, SimilarityModel similarityModel, int lastClusterId, Map<Integer, List<String>> clusters, List<Dependency> dependencies) {
+    public OrganizationModels(double threshold, boolean compare, boolean withClusters, SimilarityModel similarityModel, ClustersModel clustersModel) {
+        this.threshold = threshold;
+        this.compare = compare;
+        this.withClusters = withClusters;
+        this.similarityModel = similarityModel;
+        this.clustersModel = clustersModel;
+    }
+
+    /*public OrganizationModels(double threshold, boolean compare, boolean withClusters, SimilarityModel similarityModel, int lastClusterId, Map<Integer, List<String>> clusters, List<Dependency> dependencies) {
         this.threshold = threshold;
         this.compare = compare;
         this.withClusters = withClusters;
@@ -36,7 +42,7 @@ public class OrganizationModels {
             this.clusters = clusters;
             this.dependencies = dependencies;
         }
-    }
+    }*/
 
     /*
     Get methods
@@ -58,16 +64,8 @@ public class OrganizationModels {
         return similarityModel;
     }
 
-    public int getLastClusterId() {
-        return lastClusterId;
-    }
-
-    public Map<Integer, List<String>> getClusters() {
-        return clusters;
-    }
-
-    public List<Dependency> getDependencies() {
-        return dependencies;
+    public ClustersModel getClustersModel() {
+        return clustersModel;
     }
 
     /*
@@ -90,15 +88,7 @@ public class OrganizationModels {
         this.similarityModel = similarityModel;
     }
 
-    public void setLastClusterId(int lastClusterId) {
-        this.lastClusterId = lastClusterId;
-    }
-
-    public void setClusters(Map<Integer, List<String>> clusters) {
-        this.clusters = clusters;
-    }
-
-    public void setDependencies(List<Dependency> dependencies) {
-        this.dependencies = dependencies;
+    public void setClustersModel(ClustersModel clustersModel) {
+        this.clustersModel = clustersModel;
     }
 }

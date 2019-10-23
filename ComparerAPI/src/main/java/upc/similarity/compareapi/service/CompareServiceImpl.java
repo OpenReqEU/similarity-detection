@@ -1,11 +1,12 @@
 package upc.similarity.compareapi.service;
 
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import upc.similarity.compareapi.clusters_algorithm.ClustersAlgorithm;
+import upc.similarity.compareapi.clusters_algorithm.ClustersModel;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.dao.DatabaseModel;
 import upc.similarity.compareapi.preprocess.PreprocessPipeline;
@@ -37,8 +38,9 @@ import java.util.concurrent.locks.ReentrantLock;
 public class CompareServiceImpl implements CompareService {
 
     private Logger logger = Logger.getInstance();
-    private SimilarityAlgorithm similarityAlgorithm = Constants.getInstance().getSimilarityAlgorithm();
     private PreprocessPipeline preprocessPipeline = Constants.getInstance().getPreprocessPipeline();
+    private SimilarityAlgorithm similarityAlgorithm = Constants.getInstance().getSimilarityAlgorithm();
+    private ClustersAlgorithm clustersAlgorithm = Constants.getInstance().getClustersAlgorithm();
     private ConcurrentHashMap<String, Lock> organizationLocks = new ConcurrentHashMap<>();
     private int sleepTime = Constants.getInstance().getMaxWaitingTime();
     private DatabaseModel databaseOperations = Constants.getInstance().getDatabaseModel();
@@ -374,16 +376,13 @@ public class CompareServiceImpl implements CompareService {
 
             List<Requirement> requirements = deleteDuplicates(input.getRequirements());
             SimilarityModel similarityModel = generateModel(compare, requirements);
-            ClusterOperations clusterOperations = ClusterOperations.getInstance();
-            ClusterAndDeps iniClusters = clusterOperations.computeIniClusters(input.getDependencies(), requirements);
+            ClustersModel clustersModel = clustersAlgorithm.buildModel(requirements,input.getDependencies());
+            OrganizationModels organizationModels = new OrganizationModels(threshold, compare, true, similarityModel, clustersModel);
 
-            OrganizationModels organizationModels = new OrganizationModels(threshold, compare, true, similarityModel, iniClusters.getLastClusterId(), iniClusters.getClusters(), iniClusters.getDependencies());
             getAccessToUpdate(organization);
             try {
                 databaseOperations.saveOrganizationModels(organization, organizationModels);
-                databaseOperations.createDepsAuxiliaryTable(organization);
-                clusterOperations.computeProposedDependencies(organization, new HashSet<>(similarityModel.getRequirementsIds()), organizationModels.getClusters().keySet(), organizationModels, true);
-                databaseOperations.updateClustersAndDependencies(organization, organizationModels, null, true);
+                clustersAlgorithm.updateModel(organization,organizationModels);
             } finally {
                 releaseAccessToUpdate(organization);
             }
@@ -407,16 +406,13 @@ public class CompareServiceImpl implements CompareService {
 
             List<Requirement> requirements = deleteDuplicates(input.getRequirements());
             SimilarityModel similarityModel = generateModel(compare, requirements);
-            ClusterOperations clusterOperations = ClusterOperations.getInstance();
-            ClusterAndDeps iniClusters = clusterOperations.computeIniClusters(input.getDependencies(), requirements);
+            ClustersModel clustersModel = clustersAlgorithm.buildModel(requirements,input.getDependencies());
+            OrganizationModels organizationModels = new OrganizationModels(threshold, compare, true, similarityModel, clustersModel);
 
-            OrganizationModels organizationModels = new OrganizationModels(threshold, compare, true, similarityModel, iniClusters.getLastClusterId(), iniClusters.getClusters(), iniClusters.getDependencies());
             getAccessToUpdate(organization);
             try {
                 databaseOperations.saveOrganizationModels(organization, organizationModels);
-                databaseOperations.createDepsAuxiliaryTable(organization);
-                clusterOperations.computeProposedDependencies(organization, new HashSet<>(similarityModel.getRequirementsIds()), organizationModels.getClusters().keySet(), organizationModels, true);
-                databaseOperations.updateClustersAndDependencies(organization, organizationModels, null, true);
+                clustersAlgorithm.updateModel(organization,organizationModels);
             } finally {
                 releaseAccessToUpdate(organization);
             }

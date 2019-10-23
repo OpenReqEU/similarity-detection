@@ -18,7 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabase;
-import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabaseTfIdf;
+import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.tf_idf.SimilarityModelDatabaseTfIdf;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.OrganizationModels;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;

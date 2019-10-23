@@ -34,37 +34,6 @@ public interface DatabaseModel {
 
 
     /*
-    Cluster operations
-     */
-
-    Dependency getDependency(String organizationId, String fromid, String toid, boolean useAuxiliaryTable) throws NotFoundException, InternalErrorException;
-
-    List<Dependency> getDependenciesByStatus(String organizationId, String status, boolean useAuxiliaryTable) throws InternalErrorException;
-
-    List<Dependency> getReqDependencies(String organizationId, String requirementId, String status, boolean useAuxiliaryTable) throws InternalErrorException;
-
-    List<Dependency> getClusterDependencies(String organizationId, int clusterId, boolean useAuxiliaryTable) throws InternalErrorException;
-
-    void createDepsAuxiliaryTable(String organizationId) throws InternalErrorException;
-
-    void saveDependencyOrReplace(String organizationId, Dependency dependency, boolean useAuxiliaryTable) throws InternalErrorException;
-
-    void saveDependencies(String organizationId, List<Dependency> dependencies, boolean useAuxiliaryTable) throws InternalErrorException;
-
-    void updateDependencyStatus(String organizationId, String fromid, String toid, String newStatus, int newClusterId, boolean useAuxiliaryTable) throws InternalErrorException;
-
-    void updateClusterDependencies(String organizationId, int oldClusterId, int newClusterId, boolean useAuxiliaryTable) throws InternalErrorException;
-
-    void updateClusterDependencies(String organizationId, String requirementId, int newClusterId, boolean useAuxiliaryTable) throws InternalErrorException;
-
-    void updateClustersAndDependencies(String organization, OrganizationModels organizationModels, List<Dependency> dependencies, boolean useDepsAuxiliaryTable) throws InternalErrorException;
-
-    void deleteReqDependencies(String organizationId, String reqId, boolean useAuxiliaryTable) throws InternalErrorException;
-
-    void deleteProposedClusterDependencies(String organizationId, int clusterId, boolean useAuxiliaryTable) throws InternalErrorException;
-
-
-    /*
     Responses operations
      */
 
@@ -90,13 +59,6 @@ public interface DatabaseModel {
     void deleteOrganization(String organizationId) throws NotFoundException, InternalErrorException;
 
     void clearDatabase() throws InternalErrorException;
-
-
-    /*
-    Test purpose methods
-     */
-
-    List<Dependency> getDependencies(String organizationId) throws InternalErrorException;
 
 
 }

@@ -1,10 +1,14 @@
 package upc.similarity.compareapi.config;
 
 import org.json.JSONObject;
+import upc.similarity.compareapi.clusters_algorithm.ClustersAlgorithm;
+import upc.similarity.compareapi.clusters_algorithm.max_graph.ClustersAlgorithmMaxGraph;
 import upc.similarity.compareapi.dao.DatabaseModel;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
+import upc.similarity.compareapi.dao.algorithm_models_dao.clusters_algorithm.ClustersModelDatabase;
+import upc.similarity.compareapi.dao.algorithm_models_dao.clusters_algorithm.max_graph.ClustersModelDatabaseMaxGraph;
 import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabase;
-import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabaseTfIdf;
+import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.tf_idf.SimilarityModelDatabaseTfIdf;
 import upc.similarity.compareapi.preprocess.PreprocessPipeline;
 import upc.similarity.compareapi.preprocess.PreprocessPipelineDefault;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
@@ -25,6 +29,8 @@ public class Constants {
     private String databasePath = null;
     private SimilarityAlgorithm similarityAlgorithm = null;
     private SimilarityModelDatabase similarityModelDatabase = null;
+    private ClustersAlgorithm clustersAlgorithm = null;
+    private ClustersModelDatabase clustersModelDatabase = null;
     private PreprocessPipeline preprocessPipeline = null;
     private DatabaseModel databaseModel = null;
 
@@ -39,6 +45,7 @@ public class Constants {
 
             String preprocessPipelineAux = json.getString("preprocess_pipeline");
             String similarityAlgorithmAux = json.getString("similarity_algorithm");
+            String clustersAlgorithmAux = json.getString("clusters_algorithm");
 
             String databasePathAux = json.getString("database_path");
             int maxDepsForPageAux = json.getInt("max_dependencies_page");
@@ -46,6 +53,7 @@ public class Constants {
 
             selectPreprocessPipeline(preprocessPipelineAux);
             selectSimilarityAlgorithm(similarityAlgorithmAux);
+            selectClustersAlgorithm(clustersAlgorithmAux);
             this.databasePath = databasePathAux;
             this.maxDepsForPage = maxDepsForPageAux;
             this.maxWaitingTime = maxWaitingTimeAux;
@@ -53,9 +61,20 @@ public class Constants {
             Logger.getInstance().showErrorMessage("Error while reading config file: " + e.getMessage());
         }
         try {
-            databaseModel = new SQLiteDatabase(databasePath,maxWaitingTime,similarityModelDatabase);
+            databaseModel = new SQLiteDatabase(databasePath,maxWaitingTime,similarityModelDatabase,clustersModelDatabase);
         } catch (ClassNotFoundException e) {
             Logger.getInstance().showErrorMessage("Error while loading database class");
+        }
+    }
+
+    private void selectPreprocessPipeline(String algorithmType) {
+        switch (algorithmType) {
+            case "default":
+                this.preprocessPipeline = new PreprocessPipelineDefault();
+                break;
+            default:
+                Logger.getInstance().showErrorMessage("The preprocess pipeline specified in the configuration file does not exist.");
+                break;
         }
     }
 
@@ -107,13 +126,14 @@ public class Constants {
         }
     }
 
-    private void selectPreprocessPipeline(String algorithmType) {
+    private void selectClustersAlgorithm(String algorithmType) {
         switch (algorithmType) {
-            case "default":
-                this.preprocessPipeline = new PreprocessPipelineDefault();
+            case "max_graph":
+                this.clustersModelDatabase = new ClustersModelDatabaseMaxGraph();
+                this.clustersAlgorithm = new ClustersAlgorithmMaxGraph((ClustersModelDatabaseMaxGraph)clustersModelDatabase);
                 break;
             default:
-                Logger.getInstance().showErrorMessage("The preprocess pipeline specified in the configuration file does not exist.");
+                Logger.getInstance().showErrorMessage("The clusters algorithm specified in the configuration file does not exist.");
                 break;
         }
     }
@@ -144,6 +164,14 @@ public class Constants {
 
     public SimilarityAlgorithm getSimilarityAlgorithm() {
         return similarityAlgorithm;
+    }
+
+    public ClustersModelDatabase getClustersModelDatabase() {
+        return clustersModelDatabase;
+    }
+
+    public ClustersAlgorithm getClustersAlgorithm() {
+        return clustersAlgorithm;
     }
 
     public SimilarityModelDatabase getSimilarityModelDatabase() {

@@ -1,7 +1,8 @@
-package upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm;
+package upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.tf_idf;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabase;
 import upc.similarity.compareapi.exception.InternalErrorException;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
 import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityModelTfIdf;

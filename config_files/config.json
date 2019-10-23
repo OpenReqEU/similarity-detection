@@ -1,6 +1,7 @@
 {
     "preprocess_pipeline": "default",
     "similarity_algorithm": "tf_idf",
+    "clusters_algorithm": "max_graph",
     "database_path": "./data/",
     "max_dependencies_page": 20000,
     "max_waiting_time_seconds": 300
