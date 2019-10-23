@@ -17,6 +17,9 @@ import upc.similarity.similaritydetectionapi.exception.*;
 import upc.similarity.similaritydetectionapi.values.Component;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 @Service("similarityService")
@@ -283,16 +286,17 @@ public class SimilarityServiceImpl implements SimilarityService {
      */
 
     @Override
-    public ResultId buildClusters(String url, String organization, boolean compare, double threshold, MultipartFile input) throws BadRequestException {
+    public ResultId buildClusters(String url, String organization, boolean compare, double threshold, MultipartFile input) throws BadRequestException, InternalErrorException {
 
         checkThreshold(threshold);
         ResultId id = getId();
+        Path p = writeMultipartFile(id.getId(),input);
         //New thread
         Thread thread = new Thread(() -> {
             ResultJson result = new ResultJson(id.getId(),"BuildClusters");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                componentAdapter.buildClusters(id.getId(),organization,compare,threshold,input);
+                componentAdapter.buildClusters(id.getId(),organization,compare,threshold,p);
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -308,17 +312,17 @@ public class SimilarityServiceImpl implements SimilarityService {
 
 
     @Override
-    public ResultId buildClustersAndCompute(String url, String organization, boolean compare, double threshold, int maxNumber, MultipartFile input) throws BadRequestException {
+    public ResultId buildClustersAndCompute(String url, String organization, boolean compare, double threshold, int maxNumber, MultipartFile input) throws BadRequestException, InternalErrorException {
 
         checkThreshold(threshold);
         ResultId id = getId();
-
+        Path p = writeMultipartFile(id.getId(),input);
         //New thread
         Thread thread = new Thread(() -> {
             ResultJson result = new ResultJson(id.getId(),"BuildClustersAndCompute");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                componentAdapter.buildClustersAndCompute(id.getId(),organization,compare,threshold,maxNumber,input);
+                componentAdapter.buildClustersAndCompute(id.getId(),organization,compare,threshold,maxNumber,p);
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -413,6 +417,18 @@ public class SimilarityServiceImpl implements SimilarityService {
     /*
     Private operations
      */
+
+    private Path writeMultipartFile(String filename, MultipartFile multipartFile) throws InternalErrorException {
+        try {
+            Path p = Paths.get("../testing/output/multipart_files/" + filename);
+            Files.createFile(p);
+            multipartFile.transferTo(p);
+            return p;
+        } catch (IOException e) {
+            Control.getInstance().showErrorMessage(e.getMessage());
+            throw new InternalErrorException("Error while moving multipart file");
+        }
+    }
 
     private ResultId getId() {
         return new ResultId(System.currentTimeMillis() + "_" + rand.nextInt(1000));

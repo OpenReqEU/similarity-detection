@@ -23,6 +23,7 @@ import upc.similarity.similaritydetectionapi.exception.*;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.List;
 
 public abstract class ComponentAdapter {
@@ -57,9 +58,9 @@ public abstract class ComponentAdapter {
     Similarity with clusters
      */
 
-    public abstract void buildClusters(String responseId, String organization, boolean compare, double threshold, MultipartFile input) throws ComponentException;
+    public abstract void buildClusters(String responseId, String organization, boolean compare, double threshold, Path p) throws ComponentException;
 
-    public abstract void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, int maxNumber, MultipartFile input) throws ComponentException;
+    public abstract void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, int maxNumber, Path p) throws ComponentException;
 
     public abstract String simReqClusters(String organization, int maxValue, List<String> requirements) throws ComponentException;
 
@@ -93,20 +94,14 @@ public abstract class ComponentAdapter {
         return connectionComponent(httppost);
     }
 
-    protected String connectionComponentPostMultipart(String url, MultipartFile multipartFile) throws ComponentException {
-        try {
-            HttpPost httppost = new HttpPost(url);
-            InputStream inputStream = new BufferedInputStream(multipartFile.getInputStream());
-            MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-            builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
-            builder.addBinaryBody("file", inputStream, ContentType.create("application/json"), "file");
-            HttpEntity entity = builder.build();
-            httppost.setEntity(entity);
-            return connectionComponent(httppost);
-        } catch (IOException e) {
-            Control.getInstance().showErrorMessage(e.getMessage());
-            throw new InternalErrorException("Error while sending the input multipart file");
-        }
+    protected String connectionComponentPostMultipart(String url, InputStream inputStream) throws ComponentException {
+        HttpPost httppost = new HttpPost(url);
+        MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+        builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+        builder.addBinaryBody("file", inputStream, ContentType.create("application/json"), "file");
+        HttpEntity entity = builder.build();
+        httppost.setEntity(entity);
+        return connectionComponent(httppost);
     }
 
     protected String connectionComponentGet(String url) throws ComponentException {

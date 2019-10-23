@@ -38,9 +38,9 @@ public interface SimilarityService {
     Cluster operations
      */
 
-    ResultId buildClusters(String url, String organization, boolean compare, double threshold, MultipartFile input) throws BadRequestException;
+    ResultId buildClusters(String url, String organization, boolean compare, double threshold, MultipartFile input) throws BadRequestException, InternalErrorException;
 
-    ResultId buildClustersAndCompute(String url, String organization, boolean compare, double threshold, int maxNumber, MultipartFile input) throws BadRequestException;
+    ResultId buildClustersAndCompute(String url, String organization, boolean compare, double threshold, int maxNumber, MultipartFile input) throws BadRequestException, InternalErrorException;
 
     String simReqClusters(String organization, int maxValue, List<String> input) throws ComponentException;
 
