@@ -1,5 +1,5 @@
 {
-    "cut_off": 0.1,
+    "cut_off": 10,
     "smoothing": true,
     "topic_threshold": 5,
     "cut_off_topics": 0.25,

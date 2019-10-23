@@ -1,4 +1,4 @@
 {
-    "cut_off": 0.1,
+    "cut_off": 10,
     "smoothing": true
 }
