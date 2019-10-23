@@ -1,0 +1,7 @@
+{
+    "cut_off": 0.1,
+    "smoothing": true,
+    "topic_threshold": 5,
+    "cut_off_topics": 0.25,
+    "importance_low": 0.6
+}

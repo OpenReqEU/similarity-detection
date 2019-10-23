@@ -9,6 +9,7 @@ import upc.similarity.compareapi.preprocess.PreprocessPipeline;
 import upc.similarity.compareapi.preprocess.PreprocessPipelineDefault;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
 import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityAlgorithmTfIdf;
+import upc.similarity.compareapi.similarity_algorithm.tf_idf_double.SimilarityAlgorithmTfIdfDouble;
 import upc.similarity.compareapi.util.Logger;
 
 import java.nio.file.Files;
@@ -61,7 +62,7 @@ public class Constants {
     private void selectSimilarityAlgorithm(String algorithmType) {
         switch (algorithmType) {
             case "tf_idf":
-                int cutOff = 10;
+                double cutOff = 10;
                 boolean smoothing = true;
                 try {
                     Path path = Paths.get("../config_files/config_tfidf.json");
@@ -69,12 +70,35 @@ public class Constants {
                     String file = "";
                     for (String line : lines) file = file.concat(line);
                     JSONObject jsonObject = new JSONObject(file);
-                    cutOff = jsonObject.getInt("cut_off");
+                    cutOff = jsonObject.getDouble("cut_off");
                     smoothing = jsonObject.getBoolean("smoothing");
                 } catch (Exception e) {
                     Logger.getInstance().showErrorMessage("Error while reading tf_idf config file: " + e.getMessage());
                 }
                 this.similarityAlgorithm = new SimilarityAlgorithmTfIdf(cutOff,false,smoothing);
+                this.similarityModelDatabase = new SimilarityModelDatabaseTfIdf();
+                break;
+            case "tf_idf_double":
+                cutOff = 10;
+                smoothing = true;
+                double topicThreshold = 5;
+                double cutOffTopics = 0.25;
+                double importanceLow = 0.6;
+                try {
+                    Path path = Paths.get("../config_files/config_tfidf_double.json");
+                    List<String> lines = Files.readAllLines(path);
+                    String file = "";
+                    for (String line : lines) file = file.concat(line);
+                    JSONObject jsonObject = new JSONObject(file);
+                    cutOff = jsonObject.getDouble("cut_off");
+                    smoothing = jsonObject.getBoolean("smoothing");
+                    topicThreshold = jsonObject.getInt("topic_threshold");
+                    cutOffTopics = jsonObject.getDouble("cut_off_topics");
+                    importanceLow = jsonObject.getDouble("importance_low");
+                } catch (Exception e) {
+                    Logger.getInstance().showErrorMessage("Error while reading tf_idf config file: " + e.getMessage());
+                }
+                this.similarityAlgorithm = new SimilarityAlgorithmTfIdfDouble(cutOff,false,smoothing,topicThreshold,cutOffTopics,importanceLow);
                 this.similarityModelDatabase = new SimilarityModelDatabaseTfIdf();
                 break;
             default:

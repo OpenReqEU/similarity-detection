@@ -10,11 +10,11 @@ import java.util.*;
 public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
 
     private CosineSimilarityTfIdf cosineSimilarityTfIdf = CosineSimilarityTfIdf.getInstance();
-    private int cutOffValue;
+    private double cutOffValue;
     private boolean cutOffDummy;
     private boolean smoothingActive;
 
-    public SimilarityAlgorithmTfIdf(int cutOffValue, boolean cutOffDummy, boolean smoothingActive) {
+    public SimilarityAlgorithmTfIdf(double cutOffValue, boolean cutOffDummy, boolean smoothingActive) {
         this.cutOffValue = cutOffValue;
         this.cutOffDummy = cutOffDummy;
         this.smoothingActive = smoothingActive;
