@@ -2,7 +2,7 @@ package upc.similarity.compareapi.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.json.simple.JSONObject;
-import upc.similarity.compareapi.exception.BadRequestException;
+import upc.similarity.compareapi.entity.exception.BadRequestException;
 
 import java.io.Serializable;
 

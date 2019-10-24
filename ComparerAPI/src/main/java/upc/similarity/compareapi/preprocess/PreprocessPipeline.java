@@ -1,7 +1,7 @@
 package upc.similarity.compareapi.preprocess;
 
 import upc.similarity.compareapi.entity.Requirement;
-import upc.similarity.compareapi.exception.InternalErrorException;
+import upc.similarity.compareapi.entity.exception.InternalErrorException;
 
 import java.util.List;
 import java.util.Map;

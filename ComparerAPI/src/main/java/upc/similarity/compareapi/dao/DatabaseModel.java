@@ -1,12 +1,10 @@
 package upc.similarity.compareapi.dao;
 
-import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Organization;
 import upc.similarity.compareapi.entity.OrganizationModels;
-import upc.similarity.compareapi.exception.InternalErrorException;
-import upc.similarity.compareapi.exception.NotFinishedException;
-import upc.similarity.compareapi.exception.NotFoundException;
-import java.util.List;
+import upc.similarity.compareapi.entity.exception.InternalErrorException;
+import upc.similarity.compareapi.entity.exception.NotFinishedException;
+import upc.similarity.compareapi.entity.exception.NotFoundException;
 
 /**
  * Must be concurrent secure. The main service can create the next situations in different cases so the class that implements this interface must deal with them:
@@ -30,7 +28,7 @@ public interface DatabaseModel {
 
     OrganizationModels getOrganizationModels(String organizationId, boolean readOnly) throws NotFoundException, InternalErrorException;
 
-    void saveOrganizationModels(String organizationId, OrganizationModels organizationModels) throws InternalErrorException;
+    void saveOrganizationModels(String organizationId, OrganizationModels organizationModels, boolean saveSimilarityModel, boolean saveClustersModel) throws InternalErrorException;
 
 
     /*

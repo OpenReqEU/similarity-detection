@@ -1,16 +1,14 @@
 package upc.similarity.compareapi.dao;
 
-import org.json.JSONArray;
 import upc.similarity.compareapi.clusters_algorithm.ClustersModel;
-import upc.similarity.compareapi.clusters_algorithm.max_graph.ClustersModelMaxGraph;
 import upc.similarity.compareapi.dao.algorithm_models_dao.clusters_algorithm.ClustersModelDatabase;
 import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabase;
 import upc.similarity.compareapi.entity.*;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
 import upc.similarity.compareapi.util.Logger;
-import upc.similarity.compareapi.exception.InternalErrorException;
-import upc.similarity.compareapi.exception.NotFinishedException;
-import upc.similarity.compareapi.exception.NotFoundException;
+import upc.similarity.compareapi.entity.exception.InternalErrorException;
+import upc.similarity.compareapi.entity.exception.NotFinishedException;
+import upc.similarity.compareapi.entity.exception.NotFoundException;
 import upc.similarity.compareapi.util.Time;
 
 import java.io.File;
@@ -161,13 +159,13 @@ public class SQLiteDatabase implements DatabaseModel {
     }
 
     @Override
-    public void saveOrganizationModels(String organization, OrganizationModels organizationModels) throws InternalErrorException {
+    public void saveOrganizationModels(String organization, OrganizationModels organizationModels, boolean saveSimilarityModel, boolean saveClustersModel) throws InternalErrorException {
         try {
             insertNewOrganization(organization);
             try (Connection conn = getConnection(organization)) {
                 conn.setAutoCommit(false);
                 clearOrganizationTables(conn);
-                saveOrganizationInfo(organization, organizationModels, conn);
+                saveOrganizationInfo(organization, organizationModels, saveSimilarityModel, saveClustersModel, conn);
                 conn.commit();
             }
         } catch (SQLException sql) {
@@ -388,7 +386,7 @@ public class SQLiteDatabase implements DatabaseModel {
         return new InternalErrorException("Database error: " + exceptionMessage);
     }
 
-    private void saveOrganizationInfo(String organization, OrganizationModels organizationModels, Connection conn) throws InternalErrorException, SQLException {
+    private void saveOrganizationInfo(String organization, OrganizationModels organizationModels, boolean saveSimilarityModel, boolean saveClustersModel, Connection conn) throws InternalErrorException, SQLException {
 
         double threshold = organizationModels.getThreshold();
         boolean compare = organizationModels.isCompare();
@@ -410,8 +408,8 @@ public class SQLiteDatabase implements DatabaseModel {
             ps.execute();
         }
 
-        similarityModelDatabase.saveModelInfo(similarityModel,conn);
-        if (withClusters) clustersModelDatabase.saveModelInfo(clustersModel,conn);
+        if (saveSimilarityModel) similarityModelDatabase.saveModelInfo(similarityModel,conn);
+        if (withClusters && saveClustersModel) clustersModelDatabase.saveModelInfo(clustersModel,conn);
     }
 
 
@@ -673,7 +671,7 @@ public class SQLiteDatabase implements DatabaseModel {
         }
 
         similarityModelDatabase.clearModelTables(conn);
-        clustersModelDatabase.createModelTables(conn);
+        clustersModelDatabase.clearModelTables(conn);
     }
 
     private void insertOrganization(String organization) throws SQLException, InternalErrorException {

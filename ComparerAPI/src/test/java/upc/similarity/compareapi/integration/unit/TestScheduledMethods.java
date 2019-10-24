@@ -10,8 +10,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.dao.DatabaseModel;
-import upc.similarity.compareapi.exception.InternalErrorException;
-import upc.similarity.compareapi.exception.NotFoundException;
+import upc.similarity.compareapi.dao.SQLiteDatabase;
+import upc.similarity.compareapi.entity.exception.InternalErrorException;
+import upc.similarity.compareapi.entity.exception.NotFoundException;
 import upc.similarity.compareapi.service.ScheduledTasks;
 import upc.similarity.compareapi.util.Time;
 
@@ -30,7 +31,8 @@ public class TestScheduledMethods {
     @BeforeClass
     public static void createTestDB() throws Exception {
         constants = Constants.getInstance();
-        constants.setDatabasePath("../testing/integration/test_database/");
+        DatabaseModel databaseModel = new SQLiteDatabase("../testing/integration/test_database/",1,constants.getSimilarityModelDatabase(), constants.getClustersModelDatabase());
+        constants.setDatabaseModel(databaseModel);
         constants.getDatabaseModel().clearDatabase();
     }
 

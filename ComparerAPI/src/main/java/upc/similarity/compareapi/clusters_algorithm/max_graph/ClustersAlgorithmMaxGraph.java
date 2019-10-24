@@ -7,7 +7,8 @@ import upc.similarity.compareapi.dao.algorithm_models_dao.clusters_algorithm.max
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.OrganizationModels;
 import upc.similarity.compareapi.entity.Requirement;
-import upc.similarity.compareapi.exception.InternalErrorException;
+import upc.similarity.compareapi.entity.exception.InternalErrorException;
+import upc.similarity.compareapi.entity.exception.NotFoundException;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
 
@@ -78,10 +79,238 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
         }
     }
 
+    @Override
+    public List<Dependency> getReqProposedDependencies(String organization, String requirementId) throws InternalErrorException {
+        return databaseOperations.getReqDependencies(organization, requirementId, "proposed", false);
+    }
+
+    @Override
+    public List<Dependency> getReqAcceptedDependencies(String organization, String requirementId) throws InternalErrorException {
+        return databaseOperations.getReqDependencies(organization, requirementId, "accepted", false);
+    }
+
+    @Override
+    public void startUpdateProcess(String organization, OrganizationModels organizationModels) throws InternalErrorException {
+        try {
+            SimilarityModel similarityModel = organizationModels.getSimilarityModel();
+            ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) organizationModels.getClustersModel();
+            clustersModelMaxGraph.startUpdateProcess(new HashSet<>(similarityModel.getRequirementsIds()));
+            databaseOperations.createDepsAuxiliaryTable(organization);
+        } catch (ClassCastException e) {
+            throw new InternalErrorException("A max_graph method received a model that is not max_graph");
+        }
+    }
+
+    @Override
+    public void finishUpdateProcess(String organization, OrganizationModels organizationModels) throws InternalErrorException {
+        try {
+            ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) organizationModels.getClustersModel();
+            updateProposedDependencies(organization, organizationModels, clustersModelMaxGraph.getClustersChanged(), true);
+            databaseOperations.updateClustersAndDependencies(organization, organizationModels, null, true);
+            clustersModelMaxGraph.finishUpdateProcess();
+        } catch (ClassCastException e) {
+            throw new InternalErrorException("A max_graph method received a model that is not max_graph");
+        }
+    }
+
+    @Override
+    public void addAcceptedDependencies(String organization, List<Dependency> acceptedDependencies, OrganizationModels organizationModels) throws InternalErrorException {
+        try {
+            SimilarityModel similarityModel = organizationModels.getSimilarityModel();
+            ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) organizationModels.getClustersModel();
+            Map<Integer, List<String>> clusters = clustersModelMaxGraph.getClusters();
+            Set<Integer> clustersChanged = clustersModelMaxGraph.getClustersChanged();
+            Map<String,Integer> reqCluster = clustersModelMaxGraph.getReqCluster();
+
+            for (Dependency dependency : acceptedDependencies) {
+                String fromid = dependency.getFromid();
+                String toid = dependency.getToid();
+                if (fromid != null && toid != null && similarityModel.containsRequirement(fromid) && similarityModel.containsRequirement(toid)) {
+                    int oldId1 = reqCluster.get(fromid);
+                    int oldId2 = reqCluster.get(toid);
+                    boolean exists = false;
+                    String status = "accepted";
+                    try {
+                        Dependency aux = databaseOperations.getDependency(organization, fromid, toid, true);
+                        exists = true;
+                        status = aux.getStatus();
+                    } catch (NotFoundException e) {
+                        //empty
+                    }
+                    if (!exists || status.equals("proposed") || status.equals("rejected")) {
+                        mergeClusters(clusters, reqCluster, fromid, toid, clustersModelMaxGraph.getLastClusterId());
+                        int newId = reqCluster.get(fromid);
+                        clustersChanged.add(newId);
+                        if (oldId1 != -1) clustersChanged.add(oldId1);
+                        if (oldId2 != -1) clustersChanged.add(oldId2);
+                        databaseOperations.saveDependencyOrReplace(organization, new Dependency(fromid, toid, "accepted", dependency.getDependencyScore(), newId), true);
+                        databaseOperations.saveDependencyOrReplace(organization, new Dependency(toid, fromid, "accepted", dependency.getDependencyScore(), newId), true);
+                        if (oldId1 != newId && oldId1 != -1)
+                            databaseOperations.updateClusterDependencies(organization, oldId1, newId, true);
+                        if (oldId2 != newId && oldId2 != -1)
+                            databaseOperations.updateClusterDependencies(organization, oldId2, newId, true);
+                    }
+                }
+            }
+        } catch (ClassCastException e) {
+            throw new InternalErrorException("A max_graph method received a model that is not max_graph");
+        }
+    }
+
+    @Override
+    public void addRejectedDependencies(String organization, List<Dependency> deletedDependencies, OrganizationModels organizationModels) throws InternalErrorException {
+        try {
+            SimilarityModel similarityModel = organizationModels.getSimilarityModel();
+            ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) organizationModels.getClustersModel();
+            Map<Integer, List<String>> clusters = clustersModelMaxGraph.getClusters();
+            Set<Integer> clustersChanged = clustersModelMaxGraph.getClustersChanged();
+            Map<String,Integer> reqCluster = clustersModelMaxGraph.getReqCluster();
+            int lastClusterId = clustersModelMaxGraph.getLastClusterId();
+
+            for (Dependency dependency : deletedDependencies) {
+                String fromid = dependency.getFromid();
+                String toid = dependency.getToid();
+                if (fromid != null && toid != null && similarityModel.containsRequirement(fromid) && similarityModel.containsRequirement(toid)) {
+                    double score = dependency.getDependencyScore();
+                    try {
+                        Dependency aux = databaseOperations.getDependency(organization, fromid, toid, true);
+                        String status = aux.getStatus();
+                        int clusterId = aux.getClusterId();
+                        if (status.equals("accepted")) {
+                            List<String> clusterRequirements = clusters.get(clusterId);
+                            databaseOperations.updateDependencyStatus(organization, fromid, toid, "rejected", -1, true);
+                            List<Dependency> dependencies = databaseOperations.getClusterDependencies(organization, clusterId, true);
+                            HashMap<String, List<String>> reqDeps = createReqDeps(clusterRequirements, dependencies);
+                            List<String> requirementIds = new ArrayList<>();
+                            requirementIds.add(fromid);
+                            requirementIds.add(toid);
+                            Clusters auxClusters = bfsClusters(reqDeps, clusterRequirements, requirementIds, new HashSet<>());
+                            HashMap<Integer, List<String>> candidateClusters = auxClusters.candidateClusters;
+                            if (candidateClusters.size() > 1) {
+                                boolean firstOne = true;
+                                for (Map.Entry<Integer, List<String>> entry : candidateClusters.entrySet()) {
+                                    List<String> auxClusterRequirements = entry.getValue();
+                                    if (firstOne) {
+                                        clusters.put(clusterId, auxClusterRequirements);
+                                        clustersChanged.add(clusterId);
+                                        firstOne = false;
+                                    } else {
+                                        ++lastClusterId;
+                                        clusters.put(lastClusterId, auxClusterRequirements);
+                                        clustersChanged.add(lastClusterId);
+                                        for (String req : auxClusterRequirements) {
+                                            reqCluster.put(req, lastClusterId);
+                                            databaseOperations.updateClusterDependencies(organization, req, lastClusterId, true);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (status.equals("accepted") || status.equals("proposed")) {
+                            databaseOperations.saveDependencyOrReplace(organization, new Dependency(fromid, toid, "rejected", score, -1), true);
+                            databaseOperations.saveDependencyOrReplace(organization, new Dependency(toid, fromid, "rejected", score, -1), true);
+                        }
+                    } catch (NotFoundException e) {
+                        databaseOperations.saveDependencyOrReplace(organization, new Dependency(fromid, toid, "rejected", score, -1), true);
+                        databaseOperations.saveDependencyOrReplace(organization, new Dependency(toid, fromid, "rejected", score, -1), true);
+                    }
+                }
+                clustersModelMaxGraph.setLastClusterId(lastClusterId);
+            }
+        } catch (ClassCastException e) {
+            throw new InternalErrorException("A max_graph method received a model that is not max_graph");
+        }
+    }
+
+    @Override
+    public void addRequirementsToClusters(String organization, List<Requirement> addRequirements, OrganizationModels organizationModels) throws InternalErrorException {
+        try {
+            SimilarityModel similarityModel = organizationModels.getSimilarityModel();
+            ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) organizationModels.getClustersModel();
+            Set<Integer> clustersChanged = clustersModelMaxGraph.getClustersChanged();
+            Map<String,Integer> reqCluster = clustersModelMaxGraph.getReqCluster();
+            for (Requirement requirement : addRequirements) {
+                if (similarityModel.containsRequirement(requirement.getId())) {
+                    deleteReqFromClusters(organization, requirement.getId(), clustersModelMaxGraph, clustersChanged, reqCluster);
+                }
+            }
+            int lastClusterId = clustersModelMaxGraph.getLastClusterId();
+            Map<Integer, List<String>> clusters = clustersModelMaxGraph.getClusters();
+            for (Requirement requirement : addRequirements) {
+                ++lastClusterId;
+                List<String> aux = new ArrayList<>();
+                aux.add(requirement.getId());
+                clusters.put(lastClusterId, aux);
+                reqCluster.put(requirement.getId(), lastClusterId);
+                clustersChanged.add(lastClusterId);
+            }
+            clustersModelMaxGraph.setLastClusterId(lastClusterId);
+        } catch (ClassCastException e) {
+            throw new InternalErrorException("A max_graph method received a model that is not max_graph");
+        }
+    }
+
 
     /*
     Private methods
      */
+
+    private void deleteReqFromClusters(String organization, String req, ClustersModelMaxGraph clustersModelMaxGraph, Set<Integer> clustersChanged, Map<String,Integer> reqCluster) throws InternalErrorException {
+        Map<Integer,List<String>> clusters = clustersModelMaxGraph.getClusters();
+        int lastClusterId = clustersModelMaxGraph.getLastClusterId();
+
+        int clusterId = reqCluster.get(req);
+        List<String> clusterRequirements = clusters.get(clusterId);
+        clustersChanged.add(clusterId);
+        if (clusterRequirements.size() > 1) {
+            List<Dependency> dependencies = databaseOperations.getClusterDependencies(organization, clusterId, true);
+            HashMap<String, List<String>> reqDeps = createReqDeps(clusterRequirements, dependencies);
+            List<String> candidateReqs = new ArrayList<>(reqDeps.get(req));
+            HashSet<String> avoidReqs = new HashSet<>();
+            avoidReqs.add(req);
+            Clusters aux = bfsClusters(reqDeps, clusterRequirements, candidateReqs, avoidReqs);
+            clusterRequirements.remove(req);
+            HashMap<Integer, List<String>> candidateClusters = aux.candidateClusters;
+            //updating clusters
+            if (candidateClusters.size() > 1) {
+                boolean firstOne = true;
+                for (Map.Entry<Integer, List<String>> entry : candidateClusters.entrySet()) {
+                    List<String> auxClusterRequirements = entry.getValue();
+                    if (firstOne) {
+                        clusters.put(clusterId, auxClusterRequirements);
+                        firstOne = false;
+                    } else {
+                        ++lastClusterId;
+                        clusters.put(lastClusterId, auxClusterRequirements);
+                        clustersChanged.add(lastClusterId);
+                        for (String auxReq : auxClusterRequirements) {
+                            reqCluster.put(auxReq, lastClusterId);
+                            databaseOperations.updateClusterDependencies(organization, auxReq, lastClusterId, true);
+                        }
+                    }
+                }
+            }
+        } else clustersModelMaxGraph.getClusters().remove(reqCluster.get(req));
+
+        reqCluster.remove(req);
+        databaseOperations.deleteReqDependencies(organization, req, true);
+        clustersModelMaxGraph.setLastClusterId(lastClusterId);
+    }
+
+    private void updateProposedDependencies(String organization, OrganizationModels organizationModels, Set<Integer> clustersChanged, boolean useAuxiliaryTable) throws InternalErrorException {
+        try {
+            ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) organizationModels.getClustersModel();
+            Map<Integer, List<String>> clusters = clustersModelMaxGraph.getClusters();
+            Set < Integer > clusterIds = new HashSet<>();
+            for (int clusterId : clustersChanged) {
+                if (clusters.containsKey(clusterId)) clusterIds.add(clusterId);
+                databaseOperations.deleteProposedClusterDependencies(organization, clusterId, useAuxiliaryTable);
+            }
+            computeProposedDependencies(organization, new HashSet<>(organizationModels.getSimilarityModel().getRequirementsIds()), clusterIds, organizationModels, useAuxiliaryTable);
+        } catch (ClassCastException e) {
+            throw new InternalErrorException("A max_graph method received a model that is not max_graph");
+        }
+    }
 
     private void computeProposedDependencies(String organization, Set<String> requirements, Set<Integer> clustersIds, OrganizationModels organizationModels, boolean useAuxiliaryTable) throws InternalErrorException {
         try {

@@ -1,6 +1,6 @@
 package upc.similarity.compareapi.similarity_algorithm.tf_idf;
 
-import upc.similarity.compareapi.exception.InternalErrorException;
+import upc.similarity.compareapi.entity.exception.InternalErrorException;
 import upc.similarity.compareapi.util.Logger;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;

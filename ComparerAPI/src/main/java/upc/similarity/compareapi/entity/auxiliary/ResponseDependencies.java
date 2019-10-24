@@ -4,8 +4,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import upc.similarity.compareapi.dao.DatabaseModel;
 import upc.similarity.compareapi.entity.Dependency;
-import upc.similarity.compareapi.exception.InternalErrorException;
-import upc.similarity.compareapi.exception.NotFoundException;
+import upc.similarity.compareapi.entity.exception.InternalErrorException;
+import upc.similarity.compareapi.entity.exception.NotFoundException;
 
 public abstract class ResponseDependencies {
 

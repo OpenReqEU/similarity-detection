@@ -4,7 +4,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.util.Logger;
-import upc.similarity.compareapi.exception.InternalErrorException;
+import upc.similarity.compareapi.entity.exception.InternalErrorException;
 import upc.similarity.compareapi.util.Time;
 
 @Component

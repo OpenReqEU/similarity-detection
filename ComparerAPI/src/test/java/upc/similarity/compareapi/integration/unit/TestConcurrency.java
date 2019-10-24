@@ -6,15 +6,23 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
+import upc.similarity.compareapi.clusters_algorithm.ClustersAlgorithm;
+import upc.similarity.compareapi.clusters_algorithm.max_graph.ClustersAlgorithmMaxGraph;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.dao.DatabaseModel;
+import upc.similarity.compareapi.dao.algorithm_models_dao.clusters_algorithm.ClustersModelDatabase;
+import upc.similarity.compareapi.dao.algorithm_models_dao.clusters_algorithm.max_graph.ClustersModelDatabaseMaxGraph;
 import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabase;
-import upc.similarity.compareapi.exception.LockedOrganizationException;
+import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.tf_idf.SimilarityModelDatabaseTfIdf;
+import upc.similarity.compareapi.entity.exception.LockedOrganizationException;
+import upc.similarity.compareapi.preprocess.PreprocessPipeline;
+import upc.similarity.compareapi.preprocess.PreprocessPipelineDefault;
+import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
+import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityAlgorithmTfIdf;
 import upc.similarity.compareapi.util.Logger;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.entity.input.Clusters;
-import upc.similarity.compareapi.exception.InternalErrorException;
-import upc.similarity.compareapi.exception.NotFinishedException;
+import upc.similarity.compareapi.entity.exception.InternalErrorException;
 import upc.similarity.compareapi.service.CompareServiceImpl;
 
 import java.io.File;
@@ -33,19 +41,33 @@ public class TestConcurrency {
 
     private static int sleepTime;
     private static Constants constants = null;
+    private static PreprocessPipeline preprocessPipeline;
+    private static SimilarityAlgorithm similarityAlgorithm;
+    private static SimilarityModelDatabase similarityModelDatabase;
+    private static ClustersAlgorithm clustersAlgorithm;
+    private static ClustersModelDatabase clustersModelDatabase;
+    private static DatabaseModel databaseModel;
 
     @BeforeClass
     public static void createTestDB() throws Exception {
         constants = Constants.getInstance();
-        constants.setDatabasePath("../testing/integration/test_database/");
-        constants.getDatabaseModel().clearDatabase();
+        preprocessPipeline = new PreprocessPipelineDefault();
+        similarityAlgorithm = constants.getSimilarityAlgorithm();
+        similarityModelDatabase = constants.getSimilarityModelDatabase();
+        clustersAlgorithm = constants.getClustersAlgorithm();
+        clustersModelDatabase = constants.getClustersModelDatabase();
+        databaseModel = constants.getDatabaseModel();
         sleepTime = constants.getMaxWaitingTime();
-        Constants.getInstance().setMaxWaitingTime(1);
+
+        DatabaseModel databaseModel = new SQLiteDatabase("../testing/integration/test_database/",1,similarityModelDatabase, clustersModelDatabase);
+        constants.setDatabaseModel(databaseModel);
+        constants.setMaxWaitingTime(1);
+        constants.getDatabaseModel().clearDatabase();
     }
 
     @AfterClass
     public static void deleteTestDB() throws Exception {
-        constants.setDatabaseModel(new SQLiteDatabase("../testing/integration/test_database/",sleepTime,constants.getSimilarityModelDatabase()));
+        constants.setDatabaseModel(databaseModel);
         constants.setMaxWaitingTime(sleepTime);
         constants.getDatabaseModel().clearDatabase();
         File file = new File("../testing/integration/test_database/main.db");
@@ -189,7 +211,7 @@ public class TestConcurrency {
     @Test
     public void testExceptions() {
         try {
-            SQLiteDatabase sqLiteDatabase = new SQLiteDatabase("../testing/integration/test_database/",1,constants.getSimilarityModelDatabase());
+            SQLiteDatabase sqLiteDatabase = new SQLiteDatabase("../testing/integration/test_database/",1,similarityModelDatabase,clustersModelDatabase);
             sqLiteDatabase.getAccessToMainDb();
             sqLiteDatabase.clearDatabase();
             constants.setDatabaseModel(sqLiteDatabase);
@@ -233,7 +255,7 @@ public class TestConcurrency {
             assertEquals("","{\"error\":\"Locked\",\"message\":\"There is another computation in the same organization with write or update rights that has not finished yet\",\"status\":423}",compareService1.getResponsePage("UPC", "123456"));
             control.flag = false;
 
-            constants.setDatabaseModel(new SQliteNew("../testing/integration/test_database/",1,constants.getSimilarityModelDatabase()));
+            constants.setDatabaseModel(new SQliteNew("../testing/integration/test_database/",1,similarityModelDatabase,clustersModelDatabase));
             compareService1 = new CompareServiceImpl();
 
             thread1 = new Thread(() -> {
@@ -259,8 +281,8 @@ public class TestConcurrency {
 
     private class SQliteNew extends SQLiteDatabase {
         private String dbMainName = "main";
-        public SQliteNew(String dbPath, int sleepTime, SimilarityModelDatabase similarityModelDatabase) throws ClassNotFoundException {
-            super(dbPath,sleepTime,similarityModelDatabase);
+        public SQliteNew(String dbPath, int sleepTime, SimilarityModelDatabase similarityModelDatabase, ClustersModelDatabase clustersModelDatabase) throws ClassNotFoundException {
+            super(dbPath,sleepTime,similarityModelDatabase,clustersModelDatabase);
         }
         @Override
         public void saveResponse(String organizationId, String responseId, String methodName) throws InternalErrorException {

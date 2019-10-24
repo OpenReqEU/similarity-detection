@@ -26,16 +26,16 @@ public class Constants {
     private static Constants instance = new Constants();
     private Integer maxDepsForPage = null;
     private Integer maxWaitingTime = null;
-    private String databasePath = null;
+    private PreprocessPipeline preprocessPipeline = null;
     private SimilarityAlgorithm similarityAlgorithm = null;
     private SimilarityModelDatabase similarityModelDatabase = null;
     private ClustersAlgorithm clustersAlgorithm = null;
     private ClustersModelDatabase clustersModelDatabase = null;
-    private PreprocessPipeline preprocessPipeline = null;
     private DatabaseModel databaseModel = null;
 
     private Constants() {
         Logger.getInstance().showInfoMessage("Reading configuration file");
+        String databasePathAux = "data/";
         try {
             Path path = Paths.get("../config_files/config.json");
             List<String> lines = Files.readAllLines(path);
@@ -47,21 +47,20 @@ public class Constants {
             String similarityAlgorithmAux = json.getString("similarity_algorithm");
             String clustersAlgorithmAux = json.getString("clusters_algorithm");
 
-            String databasePathAux = json.getString("database_path");
+            databasePathAux = json.getString("database_path");
             int maxDepsForPageAux = json.getInt("max_dependencies_page");
             int maxWaitingTimeAux = json.getInt("max_waiting_time_seconds");
 
             selectPreprocessPipeline(preprocessPipelineAux);
             selectSimilarityAlgorithm(similarityAlgorithmAux);
             selectClustersAlgorithm(clustersAlgorithmAux);
-            this.databasePath = databasePathAux;
             this.maxDepsForPage = maxDepsForPageAux;
             this.maxWaitingTime = maxWaitingTimeAux;
         } catch (Exception e) {
             Logger.getInstance().showErrorMessage("Error while reading config file: " + e.getMessage());
         }
         try {
-            databaseModel = new SQLiteDatabase(databasePath,maxWaitingTime,similarityModelDatabase,clustersModelDatabase);
+            databaseModel = new SQLiteDatabase(databasePathAux,maxWaitingTime,similarityModelDatabase,clustersModelDatabase);
         } catch (ClassNotFoundException e) {
             Logger.getInstance().showErrorMessage("Error while loading database class");
         }
@@ -142,20 +141,17 @@ public class Constants {
         return instance;
     }
 
+
+    /*
+    Get operations
+     */
+
     public Integer getMaxDepsForPage() {
         return maxDepsForPage;
     }
 
     public Integer getMaxWaitingTime() {
         return maxWaitingTime;
-    }
-
-    public void setMaxWaitingTime(Integer maxWaitingTime) {
-        this.maxWaitingTime = maxWaitingTime;
-    }
-
-    public String getDatabasePath() {
-        return databasePath;
     }
 
     public PreprocessPipeline getPreprocessPipeline() {
@@ -166,25 +162,38 @@ public class Constants {
         return similarityAlgorithm;
     }
 
-    public ClustersModelDatabase getClustersModelDatabase() {
-        return clustersModelDatabase;
+    public SimilarityModelDatabase getSimilarityModelDatabase() {
+        return similarityModelDatabase;
     }
 
     public ClustersAlgorithm getClustersAlgorithm() {
         return clustersAlgorithm;
     }
 
-    public SimilarityModelDatabase getSimilarityModelDatabase() {
-        return similarityModelDatabase;
+    public ClustersModelDatabase getClustersModelDatabase() {
+        return clustersModelDatabase;
     }
 
     public DatabaseModel getDatabaseModel() {
         return databaseModel;
     }
 
+
     /*
-    Test purpose methods
+    Set operations
      */
+
+    public void setMaxDepsForPage(Integer maxDepsForPage) {
+        this.maxDepsForPage = maxDepsForPage;
+    }
+
+    public void setMaxWaitingTime(Integer maxWaitingTime) {
+        this.maxWaitingTime = maxWaitingTime;
+    }
+
+    public void setPreprocessPipeline(PreprocessPipeline preprocessPipeline) {
+        this.preprocessPipeline = preprocessPipeline;
+    }
 
     public void setSimilarityAlgorithm(SimilarityAlgorithm similarityAlgorithm) {
         this.similarityAlgorithm = similarityAlgorithm;
@@ -194,11 +203,28 @@ public class Constants {
         this.similarityModelDatabase = similarityModelDatabase;
     }
 
-    public void setDatabasePath(String databasePath) {
-        this.databasePath = databasePath;
+    public void setClustersAlgorithm(ClustersAlgorithm clustersAlgorithm) {
+        this.clustersAlgorithm = clustersAlgorithm;
+    }
+
+    public void setClustersModelDatabase(ClustersModelDatabase clustersModelDatabase) {
+        this.clustersModelDatabase = clustersModelDatabase;
     }
 
     public void setDatabaseModel(DatabaseModel databaseModel) {
+        this.databaseModel = databaseModel;
+    }
+
+    /*
+    Test purpose methods
+     */
+
+    public void changeConfiguration(int maxDepsForPage, int maxWaitingTime, PreprocessPipeline preprocessPipeline, SimilarityAlgorithm similarityAlgorithm, ClustersAlgorithm clustersAlgorithm, DatabaseModel databaseModel) {
+        this.maxDepsForPage = maxDepsForPage;
+        this.maxWaitingTime = maxWaitingTime;
+        this.similarityAlgorithm = similarityAlgorithm;
+        this.clustersAlgorithm = clustersAlgorithm;
+        this.preprocessPipeline = preprocessPipeline;
         this.databaseModel = databaseModel;
     }
 }

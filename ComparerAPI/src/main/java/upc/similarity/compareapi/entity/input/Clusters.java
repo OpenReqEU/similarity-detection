@@ -5,8 +5,8 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Requirement;
-import upc.similarity.compareapi.exception.BadRequestException;
-import upc.similarity.compareapi.exception.InternalErrorException;
+import upc.similarity.compareapi.entity.exception.BadRequestException;
+import upc.similarity.compareapi.entity.exception.InternalErrorException;
 
 import java.io.Serializable;
 import java.util.ArrayList;

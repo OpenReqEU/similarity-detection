@@ -19,8 +19,7 @@ import upc.similarity.compareapi.entity.input.Clusters;
 import upc.similarity.compareapi.entity.input.ProjectProject;
 import upc.similarity.compareapi.entity.input.ReqProject;
 import upc.similarity.compareapi.entity.output.Dependencies;
-import upc.similarity.compareapi.exception.*;
-import upc.similarity.compareapi.util.*;
+import upc.similarity.compareapi.entity.exception.*;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -117,7 +116,7 @@ public class CompareServiceImpl implements CompareService {
             OrganizationModels organizationModels = new OrganizationModels(0,compare,false, similarityModel);
             getAccessToUpdate(organization);
             try {
-                databaseOperations.saveOrganizationModels(organization, organizationModels);
+                databaseOperations.saveOrganizationModels(organization, organizationModels, true, false);
             } finally {
                 releaseAccessToUpdate(organization);
             }
@@ -144,7 +143,7 @@ public class CompareServiceImpl implements CompareService {
             }
             getAccessToUpdate(organization);
             try {
-                databaseOperations.saveOrganizationModels(organization, organizationModels);
+                databaseOperations.saveOrganizationModels(organization, organizationModels, true, false);
             } finally {
                 releaseAccessToUpdate(organization);
             }
@@ -177,7 +176,7 @@ public class CompareServiceImpl implements CompareService {
                     } else requirementsToAddOrUpdate.add(requirement);
                 }
                 addRequirementsToModel(organizationModels, requirementsToAddOrUpdate);
-                databaseOperations.saveOrganizationModels(organization, organizationModels);
+                databaseOperations.saveOrganizationModels(organization, organizationModels, true, false);
             } finally {
                 releaseAccessToUpdate(organization);
             }
@@ -202,7 +201,7 @@ public class CompareServiceImpl implements CompareService {
                 List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements);
                 SimilarityModel similarityModel = organizationModels.getSimilarityModel();
                 deleteRequirementsFromModel(similarityModel, notDuplicatedRequirements);
-                databaseOperations.saveOrganizationModels(organization, organizationModels);
+                databaseOperations.saveOrganizationModels(organization, organizationModels, true, false);
             } finally {
                 releaseAccessToUpdate(organization);
             }
@@ -290,7 +289,7 @@ public class CompareServiceImpl implements CompareService {
                 }
 
                 reqProject(requirementsToCompare, projectRequirements, similarityModel, threshold, organization, responseId, true, maxNumDeps);
-                databaseOperations.saveOrganizationModels(organization, organizationModels);
+                databaseOperations.saveOrganizationModels(organization, organizationModels, true, false);
             } finally {
                 releaseAccessToUpdate(organization);
             }
@@ -381,7 +380,7 @@ public class CompareServiceImpl implements CompareService {
 
             getAccessToUpdate(organization);
             try {
-                databaseOperations.saveOrganizationModels(organization, organizationModels);
+                databaseOperations.saveOrganizationModels(organization, organizationModels, true, true);
                 clustersAlgorithm.updateModel(organization,organizationModels);
             } finally {
                 releaseAccessToUpdate(organization);
@@ -411,7 +410,7 @@ public class CompareServiceImpl implements CompareService {
 
             getAccessToUpdate(organization);
             try {
-                databaseOperations.saveOrganizationModels(organization, organizationModels);
+                databaseOperations.saveOrganizationModels(organization, organizationModels, true, true);
                 clustersAlgorithm.updateModel(organization,organizationModels);
             } finally {
                 releaseAccessToUpdate(organization);
@@ -421,8 +420,8 @@ public class CompareServiceImpl implements CompareService {
             HashSet<String> repeated = new HashSet<>();
             for (Requirement requirement : requirements) {
                 String id = requirement.getId();
-                List<Dependency> dependencies = databaseOperations.getReqDependencies(organization, id, "accepted", false);
-                List<Dependency> proposedDependencies = databaseOperations.getReqDependencies(organization, id, "proposed", false);
+                List<Dependency> dependencies = clustersAlgorithm.getReqAcceptedDependencies(organization, id);
+                List<Dependency> proposedDependencies = clustersAlgorithm.getReqProposedDependencies(organization, id);
                 proposedDependencies.sort(Comparator.comparing(Dependency::getDependencyScore).reversed());
                 int highIndex = maxNumber;
                 if (maxNumber < 0 || maxNumber > proposedDependencies.size()) highIndex = proposedDependencies.size();
@@ -456,8 +455,8 @@ public class CompareServiceImpl implements CompareService {
 
             for (String id : requirements) {
                 if (!databaseOperations.existReqInOrganizationModel(organization, id)) throw new NotFoundException("The requirement with id " + id + " is not inside the organization's model");
-                List<Dependency> dependencies = databaseOperations.getReqDependencies(organization, id, "accepted", false);
-                List<Dependency> proposedDependencies = databaseOperations.getReqDependencies(organization, id, "proposed", false);
+                List<Dependency> dependencies = clustersAlgorithm.getReqAcceptedDependencies(organization, id);
+                List<Dependency> proposedDependencies = clustersAlgorithm.getReqProposedDependencies(organization, id);
                 proposedDependencies.sort(Comparator.comparing(Dependency::getDependencyScore).reversed());
                 int highIndex = maxNumber;
                 if (maxNumber < 0 || maxNumber > proposedDependencies.size()) highIndex = proposedDependencies.size();
@@ -490,25 +489,21 @@ public class CompareServiceImpl implements CompareService {
                 if (!organizationModels.hasClusters()) throw new BadRequestException("The model does not have clusters");
 
                 dependencies.sort(Comparator.comparing(Dependency::computeTime));
-                HashSet<Integer> clustersChanged = new HashSet<>();
-                Map<String, Integer> reqCluster = computeReqClusterMap(organizationModels.getClusters(), new HashSet<>(organizationModels.getSimilarityModel().getRequirementsIds()));
-                ClusterOperations clusterOperations = ClusterOperations.getInstance();
-                databaseOperations.createDepsAuxiliaryTable(organization);
 
+                clustersAlgorithm.startUpdateProcess(organization,organizationModels);
                 for (Dependency dependency : dependencies) {
                     if (dependency.getDependencyType() != null && dependency.getStatus() != null && dependency.getDependencyType().equals("similar")) {
                         String status = dependency.getStatus();
                         List<Dependency> aux = new ArrayList<>();
                         aux.add(dependency);
                         if (status.equals("accepted")) {
-                            clusterOperations.addAcceptedDependencies(organization, aux, organizationModels, clustersChanged, reqCluster);
+                            clustersAlgorithm.addAcceptedDependencies(organization, aux, organizationModels);
                         } else if (status.equals("rejected")) {
-                            clusterOperations.addRejectedDependencies(organization, aux, organizationModels, clustersChanged, reqCluster);
+                            clustersAlgorithm.addRejectedDependencies(organization, aux, organizationModels);
                         }
                     }
                 }
-                clusterOperations.updateProposedDependencies(organization, organizationModels, clustersChanged, true);
-                databaseOperations.updateClustersAndDependencies(organization, organizationModels, null, true);
+                clustersAlgorithm.finishUpdateProcess(organization,organizationModels);
             } finally {
                 releaseAccessToUpdate(organization);
             }
@@ -524,7 +519,6 @@ public class CompareServiceImpl implements CompareService {
     public void batchProcess(String responseId, String organization, Clusters input) throws ComponentException {
         logger.showInfoMessage("BatchProcess: Start computing " + organization + " " + responseId);
         try {
-            ClusterOperations clusterOperations = ClusterOperations.getInstance();
             databaseOperations.saveResponse(organization, responseId, "BatchProcess");
             getAccessToUpdate(organization);
             try {
@@ -556,33 +550,29 @@ public class CompareServiceImpl implements CompareService {
                     }
                 }
 
-                databaseOperations.createDepsAuxiliaryTable(organization);
                 objects.sort(Comparator.comparing(OrderedObject::getTime));
-                HashSet<Integer> clustersChanged = new HashSet<>();
-                Map<String, Integer> reqCluster = computeReqClusterMap(organizationModels.getClusters(), new HashSet<>(organizationModels.getSimilarityModel().getRequirementsIds()));
 
+                clustersAlgorithm.startUpdateProcess(organization,organizationModels);
                 for (OrderedObject orderedObject : objects) {
                     if (orderedObject.isDependency()) {
                         List<Dependency> aux = new ArrayList<>();
                         Dependency dependency = orderedObject.getDependency();
                         aux.add(dependency);
                         if (dependency.getStatus().equals("accepted")) {
-                            clusterOperations.addAcceptedDependencies(organization, aux, organizationModels, clustersChanged, reqCluster);
+                            clustersAlgorithm.addAcceptedDependencies(organization, aux, organizationModels);
                         } else {
-                            clusterOperations.addRejectedDependencies(organization, aux, organizationModels, clustersChanged, reqCluster);
+                            clustersAlgorithm.addRejectedDependencies(organization, aux, organizationModels);
                         }
                     } else {
                         List<Requirement> aux = new ArrayList<>();
                         Requirement requirement = orderedObject.getRequirement();
                         aux.add(requirement);
-                        clusterOperations.addRequirementsToClusters(organization, aux, organizationModels, clustersChanged, reqCluster);
+                        clustersAlgorithm.addRequirementsToClusters(organization, aux, organizationModels);
                         addRequirementsToModel(organizationModels, aux);
                     }
                 }
-                clusterOperations.updateProposedDependencies(organization, organizationModels, clustersChanged, true);
-                organizationModels.setDependencies(new ArrayList<>());
-                databaseOperations.saveOrganizationModels(organization, organizationModels);
-                databaseOperations.updateClustersAndDependencies(organization, organizationModels, null, true);
+                databaseOperations.saveOrganizationModels(organization, organizationModels, true, false);
+                clustersAlgorithm.finishUpdateProcess(organization,organizationModels);
             } finally {
                 releaseAccessToUpdate(organization);
             }

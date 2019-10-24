@@ -4,7 +4,7 @@ import org.json.JSONArray;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.dao.DatabaseModel;
 import upc.similarity.compareapi.entity.Dependency;
-import upc.similarity.compareapi.exception.InternalErrorException;
+import upc.similarity.compareapi.entity.exception.InternalErrorException;
 
 public class DiskDependencies extends ResponseDependencies {
 

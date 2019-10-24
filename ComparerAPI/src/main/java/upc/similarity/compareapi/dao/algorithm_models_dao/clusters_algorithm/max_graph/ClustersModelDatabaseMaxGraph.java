@@ -8,8 +8,8 @@ import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.dao.algorithm_models_dao.clusters_algorithm.ClustersModelDatabase;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.OrganizationModels;
-import upc.similarity.compareapi.exception.InternalErrorException;
-import upc.similarity.compareapi.exception.NotFoundException;
+import upc.similarity.compareapi.entity.exception.InternalErrorException;
+import upc.similarity.compareapi.entity.exception.NotFoundException;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -19,7 +19,7 @@ import java.util.Map;
 
 public class ClustersModelDatabaseMaxGraph implements ClustersModelDatabase {
 
-    private SQLiteDatabase sqLiteDatabase = (SQLiteDatabase) Constants.getInstance().getDatabaseModel();
+    private Constants constants = Constants.getInstance();
 
     /*
     Override methods
@@ -57,7 +57,7 @@ public class ClustersModelDatabaseMaxGraph implements ClustersModelDatabase {
     @Override
     public void clearModelTables(Connection conn) throws SQLException {
 
-        String sql1 = "DELETE FROM cluster_info";
+        String sql1 = "DELETE FROM clusters_info";
         String sql2 = "DELETE FROM clusters";
         String sql3 = "DELETE FROM dependencies";
 
@@ -73,7 +73,7 @@ public class ClustersModelDatabaseMaxGraph implements ClustersModelDatabase {
         try {
             ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) clustersModel;
 
-            String sql = "INSERT INTO cluster_info(id, lastClusterId) VALUES (?,?)";
+            String sql = "INSERT INTO clusters_info(id, lastClusterId) VALUES (?,?)";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1,1);
@@ -92,7 +92,7 @@ public class ClustersModelDatabaseMaxGraph implements ClustersModelDatabase {
     public ClustersModel getModel(Connection conn) throws InternalErrorException, SQLException {
         int lastClusterId = 0;
 
-        String sql = "SELECT lastClusterId FROM cluster_info WHERE id = ?";
+        String sql = "SELECT lastClusterId FROM clusters_info WHERE id = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, 1);
 
@@ -317,9 +317,9 @@ public class ClustersModelDatabaseMaxGraph implements ClustersModelDatabase {
             ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) organizationModels.getClustersModel();
             try (Connection conn = getConnection(organization)) {
                 conn.setAutoCommit(false);
-                clearClusterTables(conn);
+                clearModelTables(conn);
                 if (organizationModels.hasClusters()) {
-                    updateOrganizationClustersInfo(organization, clustersModelMaxGraph.getLastClusterId(), conn);
+                    updateOrganizationClustersInfo(clustersModelMaxGraph.getLastClusterId(), conn);
                     saveClusters(clustersModelMaxGraph.getClusters(), conn);
                     if (!useDepsAuxiliaryTable) saveDependencies(dependencies, conn, false);
                     else insertAuxiliaryDepsTable(conn);
@@ -365,23 +365,13 @@ public class ClustersModelDatabaseMaxGraph implements ClustersModelDatabase {
      */
 
     private InternalErrorException treatSQLException(String message, String s, String organization) {
+        SQLiteDatabase sqLiteDatabase = (SQLiteDatabase) constants.getDatabaseModel();
         return sqLiteDatabase.treatSQLException(message,s,organization);
     }
 
     private Connection getConnection(String organization) throws SQLException {
+        SQLiteDatabase sqLiteDatabase = (SQLiteDatabase) constants.getDatabaseModel();
         return sqLiteDatabase.getConnection(organization);
-    }
-
-    private void clearClusterTables(Connection conn) throws SQLException {
-
-        String sql1 = "DELETE FROM clusters";
-        String sql2 = "DELETE FROM dependencies";
-
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute(sql1);
-            stmt.execute(sql2);
-        }
-
     }
 
     private void insertAuxiliaryDepsTable(Connection conn) throws SQLException {
@@ -393,14 +383,14 @@ public class ClustersModelDatabaseMaxGraph implements ClustersModelDatabase {
         }
     }
 
-    private void updateOrganizationClustersInfo(String organizationId, int lastClusterId, Connection conn) throws SQLException {
+    private void updateOrganizationClustersInfo(int lastClusterId, Connection conn) throws SQLException {
 
-        String sql = "UPDATE info SET lastClusterId = ? WHERE id = ?";
+        String sql = "INSERT INTO clusters_info(id, lastClusterId) VALUES (?,?)";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)){
-            ps.setInt(1, lastClusterId);
-            ps.setString(2,organizationId);
-            ps.executeUpdate();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1,1);
+            ps.setInt(2,lastClusterId);
+            ps.execute();
         }
     }
 

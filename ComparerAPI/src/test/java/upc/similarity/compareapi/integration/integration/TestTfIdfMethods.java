@@ -15,12 +15,20 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import upc.similarity.compareapi.clusters_algorithm.ClustersAlgorithm;
+import upc.similarity.compareapi.clusters_algorithm.max_graph.ClustersAlgorithmMaxGraph;
+import upc.similarity.compareapi.clusters_algorithm.max_graph.ClustersModelMaxGraph;
 import upc.similarity.compareapi.config.Constants;
+import upc.similarity.compareapi.dao.DatabaseModel;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
+import upc.similarity.compareapi.dao.algorithm_models_dao.clusters_algorithm.ClustersModelDatabase;
+import upc.similarity.compareapi.dao.algorithm_models_dao.clusters_algorithm.max_graph.ClustersModelDatabaseMaxGraph;
 import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabase;
 import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.tf_idf.SimilarityModelDatabaseTfIdf;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.OrganizationModels;
+import upc.similarity.compareapi.preprocess.PreprocessPipeline;
+import upc.similarity.compareapi.preprocess.PreprocessPipelineDefault;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
 import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityAlgorithmTfIdf;
 import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityModelTfIdf;
@@ -57,18 +65,19 @@ public class TestTfIdfMethods {
     private String url = "/upc/Compare/";
     private static int id = 0;
     private static Constants constants = null;
+    private static ClustersModelDatabaseMaxGraph clustersModelDatabaseMaxGraph = null;
 
     @BeforeClass
     public static void createTestDB() throws Exception {
-        constants = Constants.getInstance();
-        constants.setDatabasePath("../testing/integration/test_database/");
-        constants.setDatabaseModel(new SQLiteDatabase("../testing/integration/test_database/",1,constants.getSimilarityModelDatabase()));
-        constants.getDatabaseModel().clearDatabase();
+        PreprocessPipeline preprocessPipeline = new PreprocessPipelineDefault();
         SimilarityAlgorithm similarityAlgorithm = new SimilarityAlgorithmTfIdf(-1,false,false);
         SimilarityModelDatabase similarityModelDatabase = new SimilarityModelDatabaseTfIdf();
-        Constants constants = Constants.getInstance();
-        constants.setSimilarityAlgorithm(similarityAlgorithm);
-        constants.setSimilarityModelDatabase(similarityModelDatabase);
+        clustersModelDatabaseMaxGraph = new ClustersModelDatabaseMaxGraph();
+        ClustersAlgorithm clustersAlgorithm = new ClustersAlgorithmMaxGraph(clustersModelDatabaseMaxGraph);
+        DatabaseModel databaseModel = new SQLiteDatabase("../testing/integration/test_database/",1,similarityModelDatabase, clustersModelDatabaseMaxGraph);
+        constants = Constants.getInstance();
+        constants.changeConfiguration(20000, 300, preprocessPipeline, similarityAlgorithm,clustersAlgorithm, databaseModel);
+        constants.getDatabaseModel().clearDatabase();
     }
 
     @AfterClass
@@ -292,7 +301,7 @@ public class TestTfIdfMethods {
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "buildClusters/output_build.json")));
         ++id;
-        List<Dependency> dependencies = constants.getDatabaseModel().getDependencies("UPC");
+        List<Dependency> dependencies = clustersModelDatabaseMaxGraph.getDependencies("UPC");
         assertEquals(read_file_array(path+"buildClusters/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"buildClusters/output_model.json"), extractModel("UPC",true, false));
     }
@@ -306,7 +315,7 @@ public class TestTfIdfMethods {
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "buildClustersAndCompute/output.json")));
         ++id;
-        List<Dependency> dependencies = constants.getDatabaseModel().getDependencies("UPC");
+        List<Dependency> dependencies = clustersModelDatabaseMaxGraph.getDependencies("UPC");
         assertEquals(read_file_array(path+"buildClustersAndCompute/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"buildClustersAndCompute/output_model.json"), extractModel("UPC",true, false));
     }
@@ -351,7 +360,7 @@ public class TestTfIdfMethods {
         this.mockMvc.perform(post(url + "TreatAcceptedAndRejectedDependencies").param("organization", "UPC")
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"treatDependencies/input_treat.json")))
                 .andExpect(status().isOk());
-        List<Dependency> dependencies = constants.getDatabaseModel().getDependencies("UPC");
+        List<Dependency> dependencies = clustersModelDatabaseMaxGraph.getDependencies("UPC");
         assertEquals(read_file_array(path+"treatDependencies/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"treatDependencies/output_model.json"), extractModel("UPC",false, false));
     }
@@ -366,7 +375,7 @@ public class TestTfIdfMethods {
         this.mockMvc.perform(post(url + "TreatAcceptedAndRejectedDependencies").param("organization", "UPC")
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"treatDependencies/input_treat_loop.json")))
                 .andExpect(status().isOk());
-        List<Dependency> dependencies = constants.getDatabaseModel().getDependencies("UPC");
+        List<Dependency> dependencies = clustersModelDatabaseMaxGraph.getDependencies("UPC");
         assertEquals(read_file_array(path+"treatDependencies/output_dependencies_loop.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"treatDependencies/output_model_loop.json"), extractModel("UPC",false, false));
     }
@@ -381,7 +390,7 @@ public class TestTfIdfMethods {
         this.mockMvc.perform(post(url + "TreatAcceptedAndRejectedDependencies").param("organization", "UPC")
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"treatDependencies/input_treat.json")))
                 .andExpect(status().isOk());
-        List<Dependency> dependencies = constants.getDatabaseModel().getDependencies("UPC");
+        List<Dependency> dependencies = clustersModelDatabaseMaxGraph.getDependencies("UPC");
         assertEquals(read_file_array(path+"treatDependencies/output_dependencies_with_proposed.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"treatDependencies/output_model_with_proposed.json"), extractModel("UPC",false, false));
     }
@@ -397,7 +406,7 @@ public class TestTfIdfMethods {
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"batchProcess/input_cron.json")))
                 .andExpect(status().isOk());
         ++id;
-        List<Dependency> dependencies = constants.getDatabaseModel().getDependencies("UPC");
+        List<Dependency> dependencies = clustersModelDatabaseMaxGraph.getDependencies("UPC");
         assertEquals(read_file_array(path+"batchProcess/output_dependencies.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"batchProcess/output_model.json"), extractModel("UPC",true, false));
     }
@@ -413,7 +422,7 @@ public class TestTfIdfMethods {
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"batchProcess/input_cron_loop.json")))
                 .andExpect(status().isOk());
         ++id;
-        List<Dependency> dependencies = constants.getDatabaseModel().getDependencies("UPC");
+        List<Dependency> dependencies = clustersModelDatabaseMaxGraph.getDependencies("UPC");
         assertEquals(read_file_array(path+"batchProcess/output_dependencies_loop.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"batchProcess/output_model_loop.json"), extractModel("UPC",true, false));
     }
@@ -429,7 +438,7 @@ public class TestTfIdfMethods {
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_json(path+"batchProcess/input_cron.json")))
                 .andExpect(status().isOk());
         ++id;
-        List<Dependency> dependencies = constants.getDatabaseModel().getDependencies("UPC");
+        List<Dependency> dependencies = clustersModelDatabaseMaxGraph.getDependencies("UPC");
         assertEquals(read_file_array(path+"batchProcess/output_dependencies_proposed.json"),listDependenciesToJson(dependencies).toString());
         assertEquals(read_file_json(path+"batchProcess/output_model_proposed.json"), extractModel("UPC",true, false));
     }
@@ -560,29 +569,24 @@ public class TestTfIdfMethods {
     private String extractModel(String organization, boolean withDocs, boolean withFrequency) throws Exception {
         OrganizationModels organizationModels = Constants.getInstance().getDatabaseModel().getOrganizationModels(organization,!withFrequency);
         SimilarityModelTfIdf similarityModelTfIdf = (SimilarityModelTfIdf) organizationModels.getSimilarityModel();
-
-        JSONObject aux = similarityModelTfIdf.extractModel(withDocs,withFrequency);
-        JSONArray clusters = new JSONArray();
+        ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) organizationModels.getClustersModel();
+        JSONObject auxSimilarity = similarityModelTfIdf.extractModel(withDocs,withFrequency);
+        JSONObject auxClusters = null;
         if (organizationModels.hasClusters()) {
-            for (Map.Entry<Integer, List<String>> entry : organizationModels.getClusters().entrySet()) {
-                int clusterId = entry.getKey();
-                List<String> clusterRequirements = entry.getValue();
-                JSONArray requirementsArray = new JSONArray();
-                for (String requirement : clusterRequirements) requirementsArray.put(requirement);
-                JSONObject jsonObject = new JSONObject();
-                jsonObject.put("clusterId", clusterId);
-                jsonObject.put("clusterRequirements", requirementsArray);
-                clusters.put(jsonObject);
-            }
+            auxClusters = clustersModelMaxGraph.extractModel();
         }
         JSONObject result = new JSONObject();
-        result.put("corpus", aux.get("corpus"));
-        result.put("corpusFrequency", aux.get("corpusFrequency"));
-        result.put("clusters", clusters);
+        result.put("corpus", auxSimilarity.get("corpus"));
+        result.put("corpusFrequency", auxSimilarity.get("corpusFrequency"));
+        if (organizationModels.hasClusters()) {
+            result.put("clusters", auxClusters.get("clusters"));
+        } else result.put("clusters", new JSONArray());
         result.put("threshold", organizationModels.getThreshold());
         result.put("compare", organizationModels.isCompare());
         result.put("isCluster", organizationModels.hasClusters());
-        result.put("lastClusterId", organizationModels.getLastClusterId());
+        if (organizationModels.hasClusters()) {
+            result.put("lastClusterId",auxClusters.get("lastClusterId"));
+        } else result.put("lastClusterId",0);
         return result.toString();
     }
 }

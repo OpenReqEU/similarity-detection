@@ -3,7 +3,7 @@ package upc.similarity.compareapi.entity.auxiliary;
 import org.json.JSONArray;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.entity.Dependency;
-import upc.similarity.compareapi.exception.InternalErrorException;
+import upc.similarity.compareapi.entity.exception.InternalErrorException;
 
 import java.util.Comparator;
 import java.util.TreeSet;

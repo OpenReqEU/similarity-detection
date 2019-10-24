@@ -11,7 +11,7 @@ import upc.similarity.compareapi.entity.input.Clusters;
 import upc.similarity.compareapi.entity.input.ProjectProject;
 import upc.similarity.compareapi.entity.input.ReqProject;
 import upc.similarity.compareapi.entity.output.Dependencies;
-import upc.similarity.compareapi.exception.*;
+import upc.similarity.compareapi.entity.exception.*;
 
 public interface CompareService {
 

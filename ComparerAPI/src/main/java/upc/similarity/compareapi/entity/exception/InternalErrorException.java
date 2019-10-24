@@ -1,4 +1,4 @@
-package upc.similarity.compareapi.exception;
+package upc.similarity.compareapi.entity.exception;
 
 public class InternalErrorException extends ComponentException {
 
