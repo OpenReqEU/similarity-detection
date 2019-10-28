@@ -19,8 +19,6 @@ import java.util.Map;
 
 public class ClustersModelDatabaseMaxGraph implements ClustersModelDatabase {
 
-    private Constants constants = Constants.getInstance();
-
     /*
     Override methods
      */
@@ -365,12 +363,12 @@ public class ClustersModelDatabaseMaxGraph implements ClustersModelDatabase {
      */
 
     private InternalErrorException treatSQLException(String message, String s, String organization) {
-        SQLiteDatabase sqLiteDatabase = (SQLiteDatabase) constants.getDatabaseModel();
+        SQLiteDatabase sqLiteDatabase = (SQLiteDatabase) Constants.getInstance().getDatabaseModel();
         return sqLiteDatabase.treatSQLException(message,s,organization);
     }
 
     private Connection getConnection(String organization) throws SQLException {
-        SQLiteDatabase sqLiteDatabase = (SQLiteDatabase) constants.getDatabaseModel();
+        SQLiteDatabase sqLiteDatabase = (SQLiteDatabase) Constants.getInstance().getDatabaseModel();
         return sqLiteDatabase.getConnection(organization);
     }
 

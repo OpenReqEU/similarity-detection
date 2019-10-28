@@ -21,10 +21,7 @@ import upc.similarity.compareapi.entity.input.ReqProject;
 import upc.similarity.compareapi.entity.output.Dependencies;
 import upc.similarity.compareapi.entity.exception.*;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -797,6 +794,9 @@ public class CompareServiceImpl implements CompareService {
 
     private InternalErrorException treatUnexpectedException(String organization, String responseId, boolean saveException, Exception e) throws InternalErrorException {
         logger.showErrorMessage(e.getMessage() + " " + organization + " " + responseId);
+        StringWriter errors = new StringWriter();
+        e.printStackTrace(new PrintWriter(errors));
+        logger.showErrorMessage(errors.toString());
         if (saveException) databaseOperations.saveExceptionAndFinishComputation(organization, responseId, createJsonException(500, "Internal error", "Unexpected error. See the logs for more information"));
         return new InternalErrorException("Unexpected error: " + e.getMessage());
     }
