@@ -32,18 +32,6 @@ public class OrganizationModels {
         this.clustersModel = clustersModel;
     }
 
-    /*public OrganizationModels(double threshold, boolean compare, boolean withClusters, SimilarityModel similarityModel, int lastClusterId, Map<Integer, List<String>> clusters, List<Dependency> dependencies) {
-        this.threshold = threshold;
-        this.compare = compare;
-        this.withClusters = withClusters;
-        this.similarityModel = similarityModel;
-        if (withClusters) {
-            this.lastClusterId = lastClusterId;
-            this.clusters = clusters;
-            this.dependencies = dependencies;
-        }
-    }*/
-
     /*
     Get methods
      */

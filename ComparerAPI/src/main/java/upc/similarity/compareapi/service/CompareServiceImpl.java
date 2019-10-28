@@ -653,9 +653,8 @@ public class CompareServiceImpl implements CompareService {
      */
 
     private Clusters parseMultipartFileToClusters(MultipartFile file) throws BadRequestException, InternalErrorException {
-        try {
+        try(InputStream inputStream = new BufferedInputStream(file.getInputStream())) {
             JSONParser jsonParser = new JSONParser();
-            InputStream inputStream = new BufferedInputStream(file.getInputStream());
             JSONObject jsonObject = (JSONObject) jsonParser.parse(new InputStreamReader(inputStream, StandardCharsets.US_ASCII));
             return new Clusters(jsonObject);
         } catch (IOException e) {
@@ -670,21 +669,6 @@ public class CompareServiceImpl implements CompareService {
     private List<String> deleteListDuplicates(List<String> inputList) {
         HashSet<String> notRepeated = new HashSet<>(inputList);
         return new ArrayList<>(notRepeated);
-    }
-
-    private HashMap<String, Integer> computeReqClusterMap(Map<Integer,List<String>> clusters, Set<String> requirements) {
-        HashMap<String,Integer> reqCluster = new HashMap<>();
-        for (String requirement: requirements) {
-            reqCluster.put(requirement, -1);
-        }
-        for (Map.Entry<Integer, List<String>> entry : clusters.entrySet()) {
-            int id = entry.getKey();
-            List<String> clusterRequirements = entry.getValue();
-            for (String req : clusterRequirements) {
-                reqCluster.put(req, id);
-            }
-        }
-        return reqCluster;
     }
 
     private boolean requirementUpdated(Requirement requirement, OrganizationModels organizationModels) throws InternalErrorException {

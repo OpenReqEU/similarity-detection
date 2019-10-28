@@ -14,8 +14,6 @@ import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 import upc.similarity.similaritydetectionapi.RestApiController;
 
-import java.util.HashSet;
-
 @Configuration
 @PropertySource("classpath:swagger.properties")
 @ComponentScan(basePackageClasses = RestApiController.class)

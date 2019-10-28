@@ -88,19 +88,19 @@ public class ClustersModelMaxGraph implements ClustersModel {
     Private methods
      */
 
-    private HashMap<String, Integer> computeReqClusterMap(Map<Integer,List<String>> clusters, Set<String> requirements) {
-        HashMap<String,Integer> reqCluster = new HashMap<>();
+    private Map<String, Integer> computeReqClusterMap(Map<Integer,List<String>> clusters, Set<String> requirements) {
+        HashMap<String,Integer> result = new HashMap<>();
         for (String requirement: requirements) {
-            reqCluster.put(requirement, -1);
+            result.put(requirement, -1);
         }
         for (Map.Entry<Integer, List<String>> entry : clusters.entrySet()) {
             int id = entry.getKey();
             List<String> clusterRequirements = entry.getValue();
             for (String req : clusterRequirements) {
-                reqCluster.put(req, id);
+                result.put(req, id);
             }
         }
-        return reqCluster;
+        return result;
     }
 
     public JSONObject extractModel() {

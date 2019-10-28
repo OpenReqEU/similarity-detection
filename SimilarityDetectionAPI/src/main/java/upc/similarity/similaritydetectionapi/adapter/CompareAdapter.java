@@ -2,7 +2,6 @@ package upc.similarity.similaritydetectionapi.adapter;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.springframework.web.multipart.MultipartFile;
 import upc.similarity.similaritydetectionapi.config.Control;
 import upc.similarity.similaritydetectionapi.entity.Dependency;
 import upc.similarity.similaritydetectionapi.entity.Requirement;
@@ -11,7 +10,6 @@ import upc.similarity.similaritydetectionapi.exception.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 public class CompareAdapter extends ComponentAdapter{
@@ -124,15 +122,12 @@ public class CompareAdapter extends ComponentAdapter{
         try {
             InputStream inputStream = new FileInputStream(p.toFile());
             connectionComponentPostMultipart(URL + "BuildClusters?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, inputStream);
+            Files.delete(p);
         } catch (FileNotFoundException e) {
             Control.getInstance().showErrorMessage(e.getMessage());
             throw new InternalErrorException("Error while moving multipart file");
-        } finally {
-            try {
-                Files.delete(p);
-            } catch (IOException e) {
-                throw new InternalErrorException("Error while deleting multipart file");
-            }
+        } catch (IOException e) {
+            throw new InternalErrorException("Error while deleting multipart file");
         }
     }
 
@@ -142,15 +137,12 @@ public class CompareAdapter extends ComponentAdapter{
         try {
             InputStream inputStream = new FileInputStream(p.toFile());
             connectionComponentPostMultipart(URL + "BuildClustersAndCompute?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold + "&maxNumber=" + maxNumber, inputStream);
+            Files.delete(p);
         } catch (FileNotFoundException e) {
             Control.getInstance().showErrorMessage(e.getMessage());
             throw new InternalErrorException("Error while moving multipart file");
-        } finally {
-            try {
-                Files.delete(p);
-            } catch (IOException e) {
-                throw new InternalErrorException("Error while deleting multipart file");
-            }
+        } catch (IOException e) {
+            throw new InternalErrorException("Error while deleting multipart file");
         }
     }
 
