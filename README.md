@@ -138,6 +138,7 @@ The service has two config files that allow the developers to adapt the service 
 - Main config file (/config_files/config.json):
     - *preprocess_pipeline*: Determines the preprocess pipeline. The next section explains how to replace the default pipeline.
     - *similarity_algorithm*: Determines the similarity algorithm. The next section explains how to replace the default algorithm.
+    - *clusters_algorithm*: Determines the clusters algorithm. The next section explains how to replace the default algorithm.
     - *database_path*: Determines the database path. If it is replaced by a relative path, it must come from inside the CompareAPI directory.
     - *max_dependencies_page*: Determines the size of the dependencies patches returned in the GetResponse method.
     - *max_waiting_time_seconds*: Determines the organization lock time. See the *Concurrency notes* section for more information. It is not recommended to set this variable to more than 10 minutes (be aware that the variable is expecting seconds not minutes).
@@ -148,7 +149,7 @@ The service has two config files that allow the developers to adapt the service 
 
 ### Replacing the algorithms
 
-The similarity algorithm and the preprocess pipeline are decoupled from the api code so they can be easily substituted. 
+The similarity algorithm, the preprocess pipeline and the clusters algorithm are decoupled from the api code so they can be easily substituted. 
 
 To change the preprocess pipeline it is necessary to do the following changes:
 - Create a class that implements the interface named *PreprocessPipeline*.
@@ -159,8 +160,15 @@ To change the similarity algorithm it is necessary to do the following changes:
 - Create a class that implements the interface named *SimilarityAlgorithm*. This module is in charge of building the model and compute the similarity between pairs of requirements.
 - Create a class that implements the interface named *SimilarityModel*. This module is in charge of saving the model data structures of the similarity algorithm.
 - Create a class that implements the interface named *SimilarityModelDatabase*. This module is in charge of saving and loading the similairty algorithm model from the database.
-- Change the variable called *similarity_algorithm* in the main config file.
+- Change the variable called *similarity_algorithm* from the main config file.
 - Add your similarity algorithm in the method named *selectSimilarityAlgorithm* inside the *Constants* class. Assign the right classes to the variables *similarityAlgorithm* and *similarityModelDatabase*.
+
+To change the clusters algorithm it is necessary to do the following changes:
+- Create a class that implements the interface named *ClustersAlgorithm*. This module is in charge of building the clusters model.
+- Create a class that implements the interface named *ClustersModel*. This module is in charge of saving the model data structures of the clusters algorithm.
+- Create a class that implements the interface named *ClustersModelDatabase*. This module is in charge of saving and loading the clusters algorithm model from the database.
+- Change the variable called *clusters_algorithm* from the main config file.
+- Add your clusters algorithm in the method named *selectClustersAlgorithm* inside the *Constants* class. Assign the right classes to the variables *clustersAlgorithm* and *clustersModelDatabase*.
 
 
 ## How to contribute
