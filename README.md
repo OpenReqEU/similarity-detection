@@ -131,21 +131,51 @@ There are two things to take into account. The first one is the ACID properties,
     - Main database lock: The main.db file has a unique lock. If one thread tries to hold this lock but has to wait longer than the defined time an InternalErrorException is thrown with the message "The database is busy".
     - Organization locks: Each organization has a lock saved in a ConcurrentHashMap. This lock allows to control ACID properties and to avoid two users writing at the same time. If one thread tries to hold this lock but has to wait longer than the defined time a LockedException is thrown with the message "The organization database is locked, another thread is using it".
 
+### Description of each procedure/algorithm
+
+- Preprocess Pipeline: It is composed of the following 6 steps:
+    - Text cleaning (own preprocess step done with regex)
+    - Tokenizer (from apache lucene library)
+    - Lowercase (from apache lucene library)
+    - Stop words removal (from apache lucene library)
+    - Stemmer (from porter stem library)
+    - Bi-grams discovering (from apache lucene library)
+
+- Similarity Algorithm: There are two tf idf modalities:
+    - tf_idf (default): it is implemented as the well known *term frequency–inverse document frequency* algorithm. The similarity score is computed with the cosine similarity measure. The configurable parameters are:
+        - *cut_off*: A double number. Determines the minimum tfidf word value accepted. It is used to delete the words that appear in the majority of the input requirements. Realize that increasing the value of this variable reduces the number of words used in the comparison between requirements (maybe decreasing the accuracy) and reduces the time consumed to compute the model and compute the similarity scores.
+        - *smoothing*: A boolean value. Determines if the smoothing should be used. The smoothing consists of disabling the cut_off filter in the input models with less than 100 requirements and increasing the words value in a determined constant number. This can be used to compute the similarity in a little group of requirements. However, it is not recommended to use the tfIdf algorithm with little sets of requirements.
+    - tf_idf_double: it is implemented as the prior algorithm except for the similarity score computation. It is first computed the score between the words with greater tfidf value (the topics) and if they are similar it is then computed the score between the words with lower values (the matter at hand). In this way, the requirements which have the same topic and talk about the same issue have a higher score than the requirements which only have the same topic. The configurable parameters are:
+        - *cut_off*: as seen before.
+        - *smoothing*: as seen before.
+        - *topic_threshold*: An integer number. Determines the number of words selected as topics. We only select as topics the specified number of words that have the highest tf idf values.
+        - *cut_off_topics*: A double number between 0 and 1. Determines the threshold of the topic comparison. When two requirements have a score above this threshold when comparing their topic words it is considered that they have the same topic. 
+        - *importance_low*: A double number between 0 and 1. It is a percentage that determines the importance of the words with low tf_idf value against the topic words.
+
+- Clusters Algorithm: Consists of saving the user feedback as graphs where the nodes are the organization requirements and the edges are the accepted dependencies. It recommends proposed dependencies to the user that can be accepted or rejected.
+
 ### Configuration files
 
 The service has two config files that allow the developers to adapt the service to their needs. They are read at the start of the service building process. So any change in these files only take effect after the service is restarted.
 
 - Main config file (/config_files/config.json):
-    - *preprocess_pipeline*: Determines the preprocess pipeline. The next section explains how to replace the default pipeline.
-    - *similarity_algorithm*: Determines the similarity algorithm. The next section explains how to replace the default algorithm.
-    - *clusters_algorithm*: Determines the clusters algorithm. The next section explains how to replace the default algorithm.
+    - *preprocess_pipeline*: Determines the preprocess pipeline. One of the next sections explains how to replace the default pipeline.
+    - *similarity_algorithm*: Determines the similarity algorithm. One of the next sections explains how to replace the default algorithm.
+    - *clusters_algorithm*: Determines the clusters algorithm.One of the next sections explains how to replace the default algorithm.
     - *database_path*: Determines the database path. If it is replaced by a relative path, it must come from inside the CompareAPI directory.
     - *max_dependencies_page*: Determines the size of the dependencies patches returned in the GetResponse method.
     - *max_waiting_time_seconds*: Determines the organization lock time. See the *Concurrency notes* section for more information. It is not recommended to set this variable to more than 10 minutes (be aware that the variable is expecting seconds not minutes).
 
 - TfIdf config file (/config_files/config_tfidf.json):
-    - *cut_off*: Determines the minimum tfidf word value accepted. It is used to delete the words that appear in the majority of the input requirements. Realize that increasing the value of this variable reduces the number of words used in the comparison between requirements (maybe decreasing the accuracy) and reduces the time consumed to compute the model and compute the similarity scores.
-    - *smoothing*: Determines if the smoothing should be used. The smoothing consists of disabling the cut_off filter in the input models with less than 100 requirements and increasing the words value in a determined constant number. This can be used to compute the similarity in a little group of requirements. However, it is not recommended to use the tfIdf algorithm with little sets of requirements.
+    - *cut_off*: explained in the previous section.
+    - *smoothing*: explained in the previous section.
+
+- TfIdfDouble config file (/config_files/config_tfidf_double.json):
+    - *cut_off*: explained in the previous section.
+    - *smoothing*: explained in the previous section.
+    - *topic_threshold*: explained in the previous section.
+    - *cut_off_topics*: explained in the previous section.
+    - *importance_low*: explained in the previous section.
 
 ### Replacing the algorithms
 

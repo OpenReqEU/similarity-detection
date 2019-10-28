@@ -24,9 +24,9 @@ public class CosineSimilarityTfIdfDouble {
         }
     }
 
-    private double topicThreshold = 5;
-    private double cutOffTopics = 0.25;
-    private double importanceLow = 0.6;
+    private double topicThreshold;
+    private double cutOffTopics;
+    private double importanceLow;
 
     public CosineSimilarityTfIdfDouble(double topicThreshold, double cutOffTopics, double importanceLow) {
         this.topicThreshold = topicThreshold;
