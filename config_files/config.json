@@ -1,6 +1,6 @@
 {
     "preprocess_pipeline": "default",
-    "similarity_algorithm": "tf_idf",
+    "similarity_algorithm": "tf_idf_double",
     "clusters_algorithm": "max_graph",
     "database_path": "./data/",
     "max_dependencies_page": 20000,

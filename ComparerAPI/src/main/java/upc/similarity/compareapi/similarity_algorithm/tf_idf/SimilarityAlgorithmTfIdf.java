@@ -22,7 +22,7 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
 
 
     @Override
-    public SimilarityModel buildModel(Map<String, List<String>> requirements) {
+    public SimilarityModelTfIdf buildModel(Map<String, List<String>> requirements) {
         double cutOffParameter = computeCutOffParameter(requirements.size());
         boolean smoothing = (requirements.size() < 100);
         Logger.getInstance().showInfoMessage("Cutoff: " + cutOffParameter);

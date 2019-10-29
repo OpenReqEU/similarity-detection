@@ -1,7 +1,7 @@
 {
-    "cut_off": 10,
-    "smoothing": true,
-    "topic_threshold": 5,
-    "cut_off_topics": 0.25,
-    "importance_low": 0.6
+    "cut_off": 0.1,
+    "smoothing": false,
+    "topic_threshold": 30,
+    "cut_off_topics": 0.0785,
+    "importance_low": 0.01115
 }

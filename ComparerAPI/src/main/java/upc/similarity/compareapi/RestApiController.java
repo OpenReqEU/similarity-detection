@@ -12,6 +12,7 @@ import upc.similarity.compareapi.entity.input.ProjectProject;
 import upc.similarity.compareapi.entity.input.ReqProject;
 import upc.similarity.compareapi.entity.exception.*;
 import upc.similarity.compareapi.service.CompareService;
+import upc.similarity.compareapi.util.TestMethods;
 
 import java.util.List;
 
@@ -280,6 +281,17 @@ public class RestApiController {
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
         }
+    }
+
+
+    /*
+    Test methods
+     */
+
+    @PostMapping(value = "/TestAccuracy")
+    public ResponseEntity testAccuracy(@RequestBody Clusters clusters) {
+        TestMethods.getInstance().testAccuracy(clusters);
+        return new ResponseEntity<>(null, HttpStatus.OK);
     }
 
 }
