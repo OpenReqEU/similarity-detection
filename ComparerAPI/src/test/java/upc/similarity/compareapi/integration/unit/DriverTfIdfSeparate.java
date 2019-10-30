@@ -8,9 +8,13 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.preprocess.PreprocessPipelineDefault;
+import upc.similarity.compareapi.preprocess.PreprocessPipelineSeparate;
 import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityAlgorithmTfIdf;
 import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityModelTfIdf;
 import upc.similarity.compareapi.similarity_algorithm.tf_idf_double.CosineSimilarityTfIdfDouble;
+import upc.similarity.compareapi.similarity_algorithm.tf_idf_separate.CosineSimilarityTfIdfSeparate;
+import upc.similarity.compareapi.similarity_algorithm.tf_idf_separate.SimilarityAlgorithmTfIdfSeparate;
+import upc.similarity.compareapi.similarity_algorithm.tf_idf_separate.SimilarityModelTfIdfSeparate;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -19,17 +23,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 
-public class DriverTfIdfDouble {
+public class DriverTfIdfSeparate {
 
-    private static int numberIter = 50;
+    private static int numberIter = 100;
     private static JSONArray duplicateDependencies;
     private static JSONArray notDuplicateDependencies;
     private static JSONArray duplicateRequirements;
     private static JSONArray notDuplicateRequirements;
-    private static SimilarityModelTfIdf modelTfIdf;
+    private static SimilarityModelTfIdfSeparate modelTfIdf;
 
     private static class State {
-        int topic_threshold;
         double cut_off_topics;
         double importance_low;
         HashSet<String> alreadyTested;
@@ -37,15 +40,13 @@ public class DriverTfIdfDouble {
         //int cutOffValue;
         double threshold;
         State(){}
-        State(int topic_threshold, double cut_off_topics, double importance_low/*, int cutOffValue*/, double threshold) {
-            this.topic_threshold = topic_threshold;
+        State(double cut_off_topics, double importance_low/*, int cutOffValue*/, double threshold) {
             this.cut_off_topics = cut_off_topics;
             this.importance_low = importance_low;
             //this.cutOffValue = cutOffValue;
             this.threshold = threshold;
         }
         State(State state) {
-            this.topic_threshold = state.topic_threshold;
             this.cut_off_topics = state.cut_off_topics;
             this.importance_low = state.importance_low;
             //this.cutOffValue = state.cutOffValue;
@@ -54,7 +55,7 @@ public class DriverTfIdfDouble {
             this.alreadyTested = state.alreadyTested;
         }
         String print() {
-            return "score -> " + score +"; topic_threshold -> " + topic_threshold + "; cut_off_topics -> " + cut_off_topics + "; importance_low -> " + importance_low/* + "; cut_off_value -> " + cutOffValue*/ + "; threshold -> " + threshold;
+            return "score -> " + score + "; cut_off_topics -> " + cut_off_topics + "; importance_low -> " + importance_low/* + "; cut_off_value -> " + cutOffValue*/ + "; threshold -> " + threshold;
         }
     }
 
@@ -77,12 +78,12 @@ public class DriverTfIdfDouble {
             System.out.println("Finished initialization");
 
             System.out.println("Started computation");
-            State bestState = null;
+            State bestState = new State();
+            bestState.score = 0;
 
             for (int i = 0; i < numberIter; ++i) {
                 System.out.println("Global iteration -> " + i);
                 State state = new State();
-                state.topic_threshold = random.nextInt(30);
                 state.cut_off_topics = random.nextDouble();
                 state.importance_low = random.nextDouble();
                 state.threshold = random.nextDouble();
@@ -91,22 +92,23 @@ public class DriverTfIdfDouble {
                 alreadyTested.add(create_unique_map_id(state));
                 state.alreadyTested = alreadyTested;
                 state.score = getAccuracy(state);
-                if (bestState == null) bestState = new State(state);
 
                 System.out.println("Start state: " + state.print());
 
                 boolean changed = true;
                 int cont = 0;
+                double last_score = state.score;
                 while (changed && (cont < 100) ) {
                     System.out.println("Iter number: " + cont);
-                    State aux = testNeighbours(state);
-                    if (aux.score == state.score) {
-                        changed = false;
-                    } else state = aux;
+                    changed = testNeighbours(state);
+                    if (changed) {
+                        if (state.score < last_score) System.out.println("ERRORRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR");
+                        last_score = state.score;
+                    }
                     ++cont;
                 }
                 System.out.println("Result state: " + state.print());
-                bestState = getBestState(bestState,state);
+                if (state.score > bestState.score) bestState = state;
             }
             System.out.println("Finished computation");
             System.out.println("Result state: " + bestState.print());
@@ -116,39 +118,24 @@ public class DriverTfIdfDouble {
     }
 
     private static String create_unique_map_id(State state) {
-        return state.topic_threshold+""+state.cut_off_topics+""+state.importance_low/*+""+state.cutOffValue*/+""+state.threshold;
+        return state.cut_off_topics+""+state.importance_low/*+""+state.cutOffValue*/+""+state.threshold;
     }
 
     private static State testState(State currentState, State maxState) throws Exception {
-        currentState.score = getAccuracy(currentState);
-        return getBestState(maxState,currentState);
+        double auxScore = getAccuracy(currentState);
+        if (auxScore > maxState.score) {
+            currentState.score = auxScore;
+            return currentState;
+        } else return maxState;
     }
 
-    private static State getBestState(State stateA, State stateB) {
-        return (stateA.score <= stateB.score) ? stateA : stateB;
-    }
-
-    private static State testNeighbours(State initialState) throws Exception {
+    private static boolean testNeighbours(State initialState) throws Exception {
         State maxState = new State(initialState);
         HashSet<String> alreadyTested = initialState.alreadyTested;
 
         State auxState = new State(initialState);
-        auxState.topic_threshold += 1;
-        String id = create_unique_map_id(auxState);
-        if (!alreadyTested.contains(id) && (auxState.topic_threshold <= 30)) {
-            alreadyTested.add(id);
-            maxState = testState(auxState,maxState);
-        }
-        auxState = new State(initialState);
-        auxState.topic_threshold -= 1;
-        id = create_unique_map_id(auxState);
-        if (!alreadyTested.contains(id) && (auxState.topic_threshold >= 0)) {
-            alreadyTested.add(id);
-            maxState = testState(auxState,maxState);
-        }
-        auxState = new State(initialState);
         auxState.cut_off_topics += 0.05;
-        id = create_unique_map_id(auxState);
+        String id = create_unique_map_id(auxState);
         if (!alreadyTested.contains(id) && (auxState.cut_off_topics <= 1)) {
             alreadyTested.add(id);
             maxState = testState(auxState,maxState);
@@ -202,75 +189,34 @@ public class DriverTfIdfDouble {
             alreadyTested.add(id);
             maxState = testState(auxState,maxState);
         }
-        return maxState;
+        return  (maxState != initialState);
     }
 
-    /*private static double getAccuracy(State state) throws Exception {
+    private static double getAccuracy(State state) throws Exception {
         //SimilarityModelTfIdf modelTfIdf = createModel(state.cutOffValue);
-        CosineSimilarityTfIdfDouble cosineSimilarityTfIdfDouble = new CosineSimilarityTfIdfDouble(state.topic_threshold,state.cut_off_topics,state.importance_low);
+        CosineSimilarityTfIdfSeparate cosineSimilarityTfIdfSeparate = new CosineSimilarityTfIdfSeparate(state.cut_off_topics,state.importance_low);
         int truePositive = 0;
         int falsePositive = 0;
         for (int i = 0; i < duplicateDependencies.length(); ++i) {
             JSONObject aux = duplicateDependencies.getJSONObject(i);
             String fromid = aux.getString("fromid");
             String toid = aux.getString("toid");
-            double score = cosineSimilarityTfIdfDouble.compute(modelTfIdf,fromid,toid);
+            double score = cosineSimilarityTfIdfSeparate.compute(modelTfIdf,fromid,toid);
             if (score >= state.threshold) ++truePositive;
         }
         for (int i = 0; i < notDuplicateDependencies.length(); ++i) {
             JSONObject aux = notDuplicateDependencies.getJSONObject(i);
             String fromid = aux.getString("fromid");
             String toid = aux.getString("toid");
-            double score = cosineSimilarityTfIdfDouble.compute(modelTfIdf,fromid,toid);
+            double score = cosineSimilarityTfIdfSeparate.compute(modelTfIdf,fromid,toid);
             if (score >= state.threshold) ++falsePositive;
         }
         double result = (double)truePositive/duplicateDependencies.length() - (double)falsePositive/notDuplicateDependencies.length();
         if (result < 0) result = 0;
         return result*100;
-    }*/
-
-    //Davies–Bouldin index
-    private static double getAccuracy(State state) throws Exception {
-        //SimilarityModelTfIdf modelTfIdf = createModel(state.cutOffValue);
-        CosineSimilarityTfIdfDouble cosineSimilarityTfIdfDouble = new CosineSimilarityTfIdfDouble(state.topic_threshold,state.cut_off_topics,state.importance_low);
-        double sumScoresDuplicates = 0;
-        double sumScoresNotDuplicates = 0;
-        List<Double> scoresDuplicates = new ArrayList<>();
-        List<Double> scoresNotDuplicates = new ArrayList<>();
-        for (int i = 0; i < duplicateDependencies.length(); ++i) {
-            JSONObject aux = duplicateDependencies.getJSONObject(i);
-            String fromid = aux.getString("fromid");
-            String toid = aux.getString("toid");
-            double score = cosineSimilarityTfIdfDouble.compute(modelTfIdf,fromid,toid);
-            scoresDuplicates.add(score);
-            sumScoresDuplicates += score;
-        }
-        for (int i = 0; i < notDuplicateDependencies.length(); ++i) {
-            JSONObject aux = notDuplicateDependencies.getJSONObject(i);
-            String fromid = aux.getString("fromid");
-            String toid = aux.getString("toid");
-            double score = cosineSimilarityTfIdfDouble.compute(modelTfIdf,fromid,toid);
-            scoresNotDuplicates.add(score);
-            sumScoresNotDuplicates += score;
-        }
-        double duplicatesCentroid = sumScoresDuplicates/scoresDuplicates.size();
-        double notDuplicatesCentroid = sumScoresNotDuplicates/scoresNotDuplicates.size();
-        return (compute_cluster_scatter(scoresDuplicates,duplicatesCentroid)+compute_cluster_scatter(scoresNotDuplicates,notDuplicatesCentroid))/compute_clusters_separation(duplicatesCentroid,notDuplicatesCentroid);
     }
 
-    private static double compute_cluster_scatter(List<Double> cluster, double clusterCentroid) {
-        double sum = 0;
-        for (double value: cluster) {
-            sum += Math.pow(clusterCentroid - value, 2);
-        }
-        return Math.sqrt(sum/cluster.size());
-    }
-
-    private static double compute_clusters_separation(double clusterCentroidA, double clusterCentroidB) {
-        return Math.abs(clusterCentroidA-clusterCentroidB);
-    }
-
-    private static SimilarityModelTfIdf createModel(double cutOffValue) {
+    private static SimilarityModelTfIdfSeparate createModel(double cutOffValue) {
         try {
             List<Requirement> requirements = new ArrayList<>();
             for (int i = 0; i < duplicateRequirements.length(); ++i) {
@@ -289,9 +235,9 @@ public class DriverTfIdfDouble {
                 requirement.setText(aux.getString("text"));
                 requirements.add(requirement);
             }
-            PreprocessPipelineDefault preprocessPipelineDefault = new PreprocessPipelineDefault();
-            SimilarityAlgorithmTfIdf similarityAlgorithmTfIdf = new SimilarityAlgorithmTfIdf(cutOffValue, false, false);
-            return similarityAlgorithmTfIdf.buildModel(preprocessPipelineDefault.preprocessRequirements(true, requirements));
+            PreprocessPipelineSeparate preprocessPipelineSeparate = new PreprocessPipelineSeparate();
+            SimilarityAlgorithmTfIdfSeparate similarityAlgorithmTfIdfSeparate = new SimilarityAlgorithmTfIdfSeparate(cutOffValue, false, false,0,0);
+            return similarityAlgorithmTfIdfSeparate.buildModel(preprocessPipelineSeparate.preprocessRequirements(true, requirements));
         } catch (Exception e) {
             e.printStackTrace();
             return null;
