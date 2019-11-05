@@ -84,7 +84,7 @@ public class SwaggerConfig {
     }
 
     private ApiInfo apiInfo() {
-        return new ApiInfoBuilder().title(TITLE).description(DESCRIPTION).version("2.0")
+        return new ApiInfoBuilder().title(TITLE).description(DESCRIPTION).version("3.2")
                 .license("License").licenseUrl("https://www.eclipse.org/org/documents/epl-2.0/EPL-2.0.txt")
                 .contact(new Contact("UPC-GESSI (OPENReq)", "http://openreq.eu/", ""))
                 .build();

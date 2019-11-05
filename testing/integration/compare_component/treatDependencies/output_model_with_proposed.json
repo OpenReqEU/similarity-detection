@@ -1,16 +1,27 @@
 {
-    "compare":true,
-    "lastClusterId":8,
-    "corpus":[],
-    "corpusFrequency":[],
-    "threshold":0,
-    "isCluster":true,
-    "clusters":[
-        {"clusterRequirements":["UPC-3","UPC-1","UPC-4"],"clusterId":0},
-        {"clusterRequirements":["UPC-8"],"clusterId":2},
-        {"clusterRequirements":["UPC-6"],"clusterId":4},
-        {"clusterRequirements":["UPC-5"],"clusterId":6},
-        {"clusterRequirements":["UPC-7"],"clusterId":7},
-        {"clusterRequirements":["UPC-2","UPC-9"],"clusterId":8}
-    ]
+	"compare": true,
+	"lastClusterId": 7,
+	"corpus": [],
+	"corpusFrequency": [],
+	"threshold": 0,
+	"isCluster": true,
+	"clusters": [{
+		"clusterRequirements": ["UPC-4", "UPC-3", "UPC-1"],
+		"clusterId": 0
+	}, {
+		"clusterRequirements": ["UPC-8"],
+		"clusterId": 2
+	}, {
+		"clusterRequirements": ["UPC-7"],
+		"clusterId": 3
+	}, {
+		"clusterRequirements": ["UPC-6"],
+		"clusterId": 4
+	}, {
+		"clusterRequirements": ["UPC-2", "UPC-9"],
+		"clusterId": 6
+	}, {
+		"clusterRequirements": ["UPC-5"],
+		"clusterId": 7
+	}]
 }

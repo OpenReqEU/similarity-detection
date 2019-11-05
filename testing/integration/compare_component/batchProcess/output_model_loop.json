@@ -1,6 +1,6 @@
 {
 	"compare": true,
-	"lastClusterId": 6,
+	"lastClusterId": 5,
 	"corpus": [{
 		"words": [{
 			"tfIdf": 1.0986122886681098,
@@ -21,34 +21,34 @@
 		"id": "UPC-6"
 	}, {
 		"words": [{
-			"tfIdf": 1.09861228866811,
+			"tfIdf": 1.0986122886681098,
 			"word": "love"
 		}, {
-			"tfIdf": 1.09861228866811,
+			"tfIdf": 1.0986122886681098,
 			"word": "all"
 		}, {
 			"tfIdf": 0.6931471805599453,
 			"word": "alon"
 		}, {
-			"tfIdf": 1.09861228866811,
+			"tfIdf": 1.0986122886681098,
 			"word": "them"
 		}],
 		"id": "UPC-5"
 	}, {
 		"words": [{
-			"tfIdf": 0,
+			"tfIdf": 0.4054651081081644,
 			"word": "uab"
 		}],
 		"id": "UPC-9"
 	}, {
 		"words": [{
-			"tfIdf": 0,
+			"tfIdf": 0.4054651081081644,
 			"word": "uab"
 		}],
 		"id": "UPC-3"
 	}, {
 		"words": [{
-			"tfIdf": 1.09861228866811,
+			"tfIdf": 0,
 			"word": "ub"
 		}],
 		"id": "UPC-2"
@@ -63,16 +63,16 @@
 	"threshold": 1.1,
 	"isCluster": true,
 	"clusters": [{
-		"clusterRequirements": ["UPC-2", "UPC-1"],
+		"clusterRequirements": ["UPC-1", "UPC-2"],
 		"clusterId": 0
 	}, {
 		"clusterRequirements": ["UPC-5"],
-		"clusterId": 4
+		"clusterId": 2
 	}, {
 		"clusterRequirements": ["UPC-6", "UPC-3"],
-		"clusterId": 5
+		"clusterId": 4
 	}, {
 		"clusterRequirements": ["UPC-9"],
-		"clusterId": 6
+		"clusterId": 5
 	}]
 }

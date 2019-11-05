@@ -123,10 +123,7 @@ public class CompareAdapter extends ComponentAdapter{
             InputStream inputStream = new FileInputStream(p.toFile());
             connectionComponentPostMultipart(URL + "BuildClusters?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, inputStream);
             Files.delete(p);
-        } catch (FileNotFoundException e) {
-            Control.getInstance().showErrorMessage(e.getMessage());
-            throw new InternalErrorException("Error while moving multipart file");
-        } catch (IOException e) {
+        }  catch (IOException e) {
             throw new InternalErrorException("Error while deleting multipart file");
         }
     }
