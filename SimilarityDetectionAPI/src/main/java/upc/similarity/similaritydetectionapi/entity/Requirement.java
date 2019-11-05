@@ -19,6 +19,9 @@ public class Requirement implements Serializable {
     @ApiModelProperty(example = "The swagger version is deprecated. Please update the service asap.")
     @JsonProperty(value="text")
     private String text;
+    @ApiModelProperty(example = "empty")
+    @JsonProperty(value="status")
+    private String status;
     @ApiModelProperty(example = "1354019441000")
     @JsonProperty(value="created_at")
     private Long createdAt;
@@ -38,6 +41,10 @@ public class Requirement implements Serializable {
         return text;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
     public Long getCreatedAt() {
         return createdAt;
     }
@@ -47,6 +54,7 @@ public class Requirement implements Serializable {
         json.put("id",id);
         json.put("name",name);
         json.put("text",text);
+        json.put("status",status);
         json.put("created_at",createdAt);
         json.put("modified_at", modifiedAt);
         return json;

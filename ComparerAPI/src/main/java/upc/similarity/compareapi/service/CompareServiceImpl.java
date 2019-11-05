@@ -493,10 +493,16 @@ public class CompareServiceImpl implements CompareService {
                         String status = dependency.getStatus();
                         List<Dependency> aux = new ArrayList<>();
                         aux.add(dependency);
-                        if (status.equals("accepted")) {
-                            clustersAlgorithm.addAcceptedDependencies(organization, aux, organizationModels);
-                        } else if (status.equals("rejected")) {
-                            clustersAlgorithm.addRejectedDependencies(organization, aux, organizationModels);
+                        switch (status) {
+                            case "accepted":
+                                clustersAlgorithm.addAcceptedDependencies(organization, aux, organizationModels);
+                                break;
+                            case "rejected":
+                                clustersAlgorithm.addRejectedDependencies(organization, aux, organizationModels);
+                                break;
+                            case "deleted":
+                                clustersAlgorithm.addDeletedDependencies(organization, aux, organizationModels);
+                                break;
                         }
                     }
                 }
@@ -530,9 +536,10 @@ public class CompareServiceImpl implements CompareService {
                     String id = requirement.getId();
                     if (id != null && !notRepeatedReqs.contains(id)) {
                         notRepeatedReqs.add(id);
-                        if (similarityModel.containsRequirement(id)) {
-                            if (requirementUpdated(requirement, organizationModels))
-                                objects.add(new OrderedObject(null, requirement, requirement.getTime()));
+                        String status = requirement.getStatus();
+                        if (status != null && status.equals("deleted")) objects.add(new OrderedObject(null, requirement, requirement.getTime()));
+                        else if (similarityModel.containsRequirement(id)) {
+                            if (requirementUpdated(requirement, organizationModels)) objects.add(new OrderedObject(null, requirement, requirement.getTime()));
                         } else objects.add(new OrderedObject(null, requirement, requirement.getTime()));
                     }
                 }
@@ -542,7 +549,7 @@ public class CompareServiceImpl implements CompareService {
                     if (dependency.getDependencyType() != null && dependency.getStatus() != null
                             && dependency.getFromid() != null && dependency.getToid() != null
                             && dependency.getDependencyType().equals("similar")
-                            && (status.equals("accepted") || status.equals("rejected"))) {
+                            && (status.equals("accepted") || status.equals("rejected") || status.equals("deleted"))) {
                         objects.add(new OrderedObject(dependency, null, dependency.computeTime()));
                     }
                 }
@@ -555,17 +562,30 @@ public class CompareServiceImpl implements CompareService {
                         List<Dependency> aux = new ArrayList<>();
                         Dependency dependency = orderedObject.getDependency();
                         aux.add(dependency);
-                        if (dependency.getStatus().equals("accepted")) {
-                            clustersAlgorithm.addAcceptedDependencies(organization, aux, organizationModels);
-                        } else {
-                            clustersAlgorithm.addRejectedDependencies(organization, aux, organizationModels);
+                        String status = dependency.getStatus();
+                        switch (status) {
+                            case "accepted":
+                                clustersAlgorithm.addAcceptedDependencies(organization, aux, organizationModels);
+                                break;
+                            case "rejected":
+                                clustersAlgorithm.addRejectedDependencies(organization, aux, organizationModels);
+                                break;
+                            case "deleted":
+                                clustersAlgorithm.addDeletedDependencies(organization, aux, organizationModels);
+                                break;
                         }
                     } else {
                         List<Requirement> aux = new ArrayList<>();
                         Requirement requirement = orderedObject.getRequirement();
                         aux.add(requirement);
-                        clustersAlgorithm.addRequirementsToClusters(organization, aux, organizationModels);
-                        addRequirementsToModel(organizationModels, aux);
+                        String status = requirement.getStatus();
+                        if (status != null && status.equals("deleted")) {
+                            clustersAlgorithm.deleteRequirementsFromClusters(organization,aux,organizationModels);
+                            deleteRequirementsFromModel(organizationModels.getSimilarityModel(),aux);
+                        } else {
+                            clustersAlgorithm.addRequirementsToClusters(organization, aux, organizationModels);
+                            addRequirementsToModel(organizationModels, aux);
+                        }
                     }
                 }
                 databaseOperations.saveOrganizationModels(organization, organizationModels, true, false);

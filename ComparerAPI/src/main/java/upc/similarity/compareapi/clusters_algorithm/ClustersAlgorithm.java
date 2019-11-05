@@ -65,10 +65,18 @@ public interface ClustersAlgorithm {
     /**
      * Adds the input rejected dependencies to the clusters model
      * @param organization the name of the organization
-     * @param deletedDependencies the input rejected dependencies, they can be repeated
+     * @param rejectedDependencies the input rejected dependencies, they can be repeated
      * @param organizationModels the generated organization models, similarity model and the clusters model
      */
-    void addRejectedDependencies(String organization, List<Dependency> deletedDependencies, OrganizationModels organizationModels) throws InternalErrorException;
+    void addRejectedDependencies(String organization, List<Dependency> rejectedDependencies, OrganizationModels organizationModels) throws InternalErrorException;
+
+    /**
+     * Deletes the input dependencies from the clusters model
+     * @param organization the name of the organization
+     * @param deletedDependencies the input deleted dependencies, they can be repeated
+     * @param organizationModels the generated organization models, similarity model and the clusters model
+     */
+    void addDeletedDependencies(String organization, List<Dependency> deletedDependencies, OrganizationModels organizationModels) throws InternalErrorException;
 
     /**
      * Adds the input requirements to the clusters model
@@ -77,4 +85,12 @@ public interface ClustersAlgorithm {
      * @param organizationModels the generated organization models, similarity model and the clusters model
      */
     void addRequirementsToClusters(String organization, List<Requirement> addRequirements, OrganizationModels organizationModels) throws InternalErrorException;
+
+    /**
+     * Deletes the input requirements from the clusters model
+     * @param organization the name of the organization
+     * @param deleteRequirements the input requirements, they can't be repeated
+     * @param organizationModels the generated organization models, similarity model and the clusters model
+     */
+    void deleteRequirementsFromClusters(String organization, List<Requirement> deleteRequirements, OrganizationModels organizationModels) throws InternalErrorException;
 }

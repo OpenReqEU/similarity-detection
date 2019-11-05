@@ -3,10 +3,11 @@
         {"id":"UPC-1","text":"UAB","name":"","created_at":"0"},
         {"id":"UPC-2","text":"UB","name":"","created_at":"0"},
         {"id":"UPC-3","text":"UAB","name":"","created_at":"2"},
-        {"id":"UPC-4","text":"UAB","name":"","created_at":"0"},
+        {"id":"UPC-4","text":"UAB","name":"","created_at":"0","status":"deleted"},
         {"id":"UPC-5","text":"I love all of them, alone","name":"","created_at":"5"},
         {"id":"UPC-6","text":"just keep calm and work alone","name":"","created_at":"6"},
-        {"id":"UPC-9","text":"UAB","name":"","created_at":"1"}
+        {"id":"UPC-9","text":"UAB","name":"","created_at":"1"},
+        {"id":"UPC-10","text":"UAB","name":"","created_at":"13","status":"deleted"}
     ],
     "dependencies":[
         {"dependency_type":"similar","status":"accepted","fromid":"UPC-4","toid":"UPC-5","created_at":"9"},

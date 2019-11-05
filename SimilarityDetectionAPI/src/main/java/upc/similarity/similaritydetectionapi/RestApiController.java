@@ -339,7 +339,7 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/TreatAcceptedAndRejectedDependencies", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Updates the organization clusters with the input dependencies.", notes = "<p><i>Synchronous</i> method.</p><p>Given a set of <i>accepted</i> and <i>rejected</i> dependencies, updates the clusters " +
+    @ApiOperation(value = "Updates the organization clusters with the input dependencies.", notes = "<p><i>Synchronous</i> method.</p><p>Given a set of <i>accepted</i>, <i>rejected</i> and <i>deleted</i> dependencies, updates the clusters " +
             "and dependencies accordingly. </p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
@@ -359,9 +359,11 @@ public class RestApiController {
     @PostMapping(value = "/BatchProcess", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Updates the organization clusters with the input requirements and dependencies.", notes = "<p><i>Asynchronous</i> method.</p><p>Given a set of updates done in the requirements (see next list), updates the clusters accordingly.</p>" +
             "<p><ul>" +
-            "<li>New requirements: The input requirements that do not pertain to the organization's model are considered to be new requirements. The method stores the pre-processing of the new requirements, adds them to the tf-idf model, and puts the new requirements as clusters of one requirement.</li>" +
-            "<li>Updated requirements: The input requirements with a title or text different from the one stored in the database are considered updated requirements. The method updates their pre-processing in the database and updates the organization clusters accordingly.</li>" +
-            "<li>New dependencies: The input similarity dependencies that do not pertain to the organization's model are considered to be new dependencies. The method uses the accepted and rejected dependencies to update the organization clusters.</li>" +
+            "<li>Adds requirements: The input requirements that do not pertain to the organization's model are considered to be new requirements. The method stores the pre-processing of the new requirements, adds them to the tf-idf model, and puts the new requirements as clusters of one requirement.</li>" +
+            "<li>Deletes requirements: The input requirements with status equal to deleted that pertain to the organization's model are considered to be deleted requirements. The method deletes them from the organization models.</li>" +
+            "<li>Updates requirements: The input requirements with a title or text different from the one stored in the database are considered updated requirements. The method updates their pre-processing in the database and updates the organization clusters accordingly.</li>" +
+            "<li>Adds dependencies: The input similarity dependencies that do not pertain to the organization's model are considered to be new dependencies. The method uses the accepted and rejected dependencies to update the organization clusters.</li>" +
+            "<li>Deletes dependencies: The input similarity dependencies with status equal to deleted that do pertain to the organization's model are considered to be deleted dependencies. The method deletes any status or rejected dependency between the same requirements from inside the organization models.</li>" +
             "</ul></p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),

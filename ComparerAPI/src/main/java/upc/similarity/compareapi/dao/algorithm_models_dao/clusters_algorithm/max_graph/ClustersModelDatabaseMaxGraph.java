@@ -265,6 +265,21 @@ public class ClustersModelDatabaseMaxGraph implements ClustersModelDatabase {
         }
     }
 
+    public void deleteDependencies(String organizationId, String fromid, String toid, boolean useAuxiliaryTable) throws InternalErrorException {
+        String sql1 = "DELETE FROM dependencies WHERE ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
+        if (useAuxiliaryTable) sql1 = "DELETE FROM  aux_dependencies WHERE ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
+        try (Connection conn = getConnection(organizationId);
+             PreparedStatement ps = conn.prepareStatement(sql1)) {
+            ps.setString(1, fromid);
+            ps.setString(2, toid);
+            ps.setString(3, toid);
+            ps.setString(4, fromid);
+            ps.executeUpdate();
+        } catch (SQLException sql) {
+            throw treatSQLException(sql.getMessage(),"Error while deleting dependencies", organizationId);
+        }
+    }
+
     public void updateDependencyStatus(String organizationId, String fromid, String toid, String newStatus, int newClusterId, boolean useAuxiliaryTable) throws InternalErrorException {
         String sql1 = "UPDATE dependencies SET status = ?, clusterId = ? WHERE ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";
         if (useAuxiliaryTable) sql1 = "UPDATE aux_dependencies SET status = ?, clusterId = ? WHERE ((fromid = ? AND toid = ?) OR (fromid = ? AND toid = ?))";

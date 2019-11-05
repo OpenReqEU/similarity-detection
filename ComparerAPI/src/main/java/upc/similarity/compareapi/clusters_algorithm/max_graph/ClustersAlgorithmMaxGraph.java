@@ -184,27 +184,7 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
                             List<String> requirementIds = new ArrayList<>();
                             requirementIds.add(fromid);
                             requirementIds.add(toid);
-                            Clusters auxClusters = bfsClusters(reqDeps, clusterRequirements, requirementIds, new HashSet<>());
-                            HashMap<Integer, List<String>> candidateClusters = auxClusters.candidateClusters;
-                            if (candidateClusters.size() > 1) {
-                                boolean firstOne = true;
-                                for (Map.Entry<Integer, List<String>> entry : candidateClusters.entrySet()) {
-                                    List<String> auxClusterRequirements = entry.getValue();
-                                    if (firstOne) {
-                                        clusters.put(clusterId, auxClusterRequirements);
-                                        clustersChanged.add(clusterId);
-                                        firstOne = false;
-                                    } else {
-                                        ++lastClusterId;
-                                        clusters.put(lastClusterId, auxClusterRequirements);
-                                        clustersChanged.add(lastClusterId);
-                                        for (String req : auxClusterRequirements) {
-                                            reqCluster.put(req, lastClusterId);
-                                            databaseOperations.updateClusterDependencies(organization, req, lastClusterId, true);
-                                        }
-                                    }
-                                }
-                            }
+                            lastClusterId = recreateClusters(organization, clusters, clustersChanged, reqCluster, lastClusterId, clusterId, clusterRequirements, reqDeps, requirementIds);
                         }
                         if (status.equals("accepted") || status.equals("proposed")) {
                             databaseOperations.saveDependencyOrReplace(organization, new Dependency(fromid, toid, "rejected", score, -1), true);
@@ -213,6 +193,48 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
                     } catch (NotFoundException e) {
                         databaseOperations.saveDependencyOrReplace(organization, new Dependency(fromid, toid, "rejected", score, -1), true);
                         databaseOperations.saveDependencyOrReplace(organization, new Dependency(toid, fromid, "rejected", score, -1), true);
+                    }
+                }
+                clustersModelMaxGraph.setLastClusterId(lastClusterId);
+            }
+        } catch (ClassCastException e) {
+            throw new InternalErrorException("A max_graph method received a model that is not max_graph");
+        }
+    }
+
+    @Override
+    public void addDeletedDependencies(String organization, List<Dependency> deletedDependencies, OrganizationModels organizationModels) throws InternalErrorException {
+        try {
+            SimilarityModel similarityModel = organizationModels.getSimilarityModel();
+            ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) organizationModels.getClustersModel();
+            Map<Integer, List<String>> clusters = clustersModelMaxGraph.getClusters();
+            Set<Integer> clustersChanged = clustersModelMaxGraph.getClustersChanged();
+            Map<String,Integer> reqCluster = clustersModelMaxGraph.getReqCluster();
+            int lastClusterId = clustersModelMaxGraph.getLastClusterId();
+
+            for (Dependency dependency : deletedDependencies) {
+                String fromid = dependency.getFromid();
+                String toid = dependency.getToid();
+                if (fromid != null && toid != null && similarityModel.containsRequirement(fromid) && similarityModel.containsRequirement(toid)) {
+                    try {
+                        Dependency aux = databaseOperations.getDependency(organization, fromid, toid, true);
+                        String status = aux.getStatus();
+                        int clusterId = aux.getClusterId();
+                        if (status.equals("accepted")) {
+                            List<String> clusterRequirements = clusters.get(clusterId);
+                            databaseOperations.deleteDependencies(organization,fromid,toid,true);
+                            List<Dependency> dependencies = databaseOperations.getClusterDependencies(organization, clusterId, true);
+                            HashMap<String, List<String>> reqDeps = createReqDeps(clusterRequirements, dependencies);
+                            List<String> requirementIds = new ArrayList<>();
+                            requirementIds.add(fromid);
+                            requirementIds.add(toid);
+                            lastClusterId = recreateClusters(organization, clusters, clustersChanged, reqCluster, lastClusterId, clusterId, clusterRequirements, reqDeps, requirementIds);
+                        }
+                        else if (status.equals("rejected")) {
+                            databaseOperations.deleteDependencies(organization,fromid,toid,true);
+                        }
+                    } catch (NotFoundException e) {
+                        //empty
                     }
                 }
                 clustersModelMaxGraph.setLastClusterId(lastClusterId);
@@ -245,6 +267,23 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
                 clustersChanged.add(lastClusterId);
             }
             clustersModelMaxGraph.setLastClusterId(lastClusterId);
+        } catch (ClassCastException e) {
+            throw new InternalErrorException("A max_graph method received a model that is not max_graph");
+        }
+    }
+
+    @Override
+    public void deleteRequirementsFromClusters(String organization, List<Requirement> deleteRequirements, OrganizationModels organizationModels) throws InternalErrorException {
+        try {
+            SimilarityModel similarityModel = organizationModels.getSimilarityModel();
+            ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) organizationModels.getClustersModel();
+            Set<Integer> clustersChanged = clustersModelMaxGraph.getClustersChanged();
+            Map<String,Integer> reqCluster = clustersModelMaxGraph.getReqCluster();
+            for (Requirement requirement : deleteRequirements) {
+                if (similarityModel.containsRequirement(requirement.getId())) {
+                    deleteReqFromClusters(organization, requirement.getId(), clustersModelMaxGraph, clustersChanged, reqCluster);
+                }
+            }
         } catch (ClassCastException e) {
             throw new InternalErrorException("A max_graph method received a model that is not max_graph");
         }
@@ -295,6 +334,31 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
         reqCluster.remove(req);
         databaseOperations.deleteReqDependencies(organization, req, true);
         clustersModelMaxGraph.setLastClusterId(lastClusterId);
+    }
+
+    private int recreateClusters(String organization, Map<Integer, List<String>> clusters, Set<Integer> clustersChanged, Map<String, Integer> reqCluster, int lastClusterId, int clusterId, List<String> clusterRequirements, HashMap<String, List<String>> reqDeps, List<String> requirementIds) throws InternalErrorException {
+        Clusters auxClusters = bfsClusters(reqDeps, clusterRequirements, requirementIds, new HashSet<>());
+        HashMap<Integer, List<String>> candidateClusters = auxClusters.candidateClusters;
+        if (candidateClusters.size() > 1) {
+            boolean firstOne = true;
+            for (Map.Entry<Integer, List<String>> entry : candidateClusters.entrySet()) {
+                List<String> auxClusterRequirements = entry.getValue();
+                if (firstOne) {
+                    clusters.put(clusterId, auxClusterRequirements);
+                    clustersChanged.add(clusterId);
+                    firstOne = false;
+                } else {
+                    ++lastClusterId;
+                    clusters.put(lastClusterId, auxClusterRequirements);
+                    clustersChanged.add(lastClusterId);
+                    for (String req : auxClusterRequirements) {
+                        reqCluster.put(req, lastClusterId);
+                        databaseOperations.updateClusterDependencies(organization, req, lastClusterId, true);
+                    }
+                }
+            }
+        }
+        return lastClusterId;
     }
 
     private void updateProposedDependencies(String organization, OrganizationModels organizationModels, Set<Integer> clustersChanged, boolean useAuxiliaryTable) throws InternalErrorException {
