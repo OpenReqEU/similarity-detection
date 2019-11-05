@@ -1,8 +1,6 @@
 package upc.similarity.compareapi.entity.auxiliary;
 
-import javafx.util.Pair;
 import upc.similarity.compareapi.config.Constants;
-import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.OrganizationModels;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.entity.exception.InternalErrorException;

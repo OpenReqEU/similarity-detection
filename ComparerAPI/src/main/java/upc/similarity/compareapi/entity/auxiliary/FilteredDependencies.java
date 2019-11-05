@@ -1,6 +1,5 @@
 package upc.similarity.compareapi.entity.auxiliary;
 
-import javafx.util.Pair;
 import upc.similarity.compareapi.entity.Dependency;
 
 import java.util.*;
