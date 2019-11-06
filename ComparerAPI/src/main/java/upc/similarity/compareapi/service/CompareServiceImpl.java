@@ -370,9 +370,10 @@ public class CompareServiceImpl implements CompareService {
             if (!input.inputOk()) throw new BadRequestException("The input requirements array is empty");
             if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(FORBIDDEN_ERROR_MESSAGE);
 
-            List<Requirement> requirements = deleteDuplicates(input.getRequirements());
-            SimilarityModel similarityModel = generateModel(compare, requirements);
-            ClustersModel clustersModel = clustersAlgorithm.buildModel(requirements,input.getDependencies());
+            FilteredRequirements filteredRequirements = new FilteredRequirements(input.getRequirements(),null,true);
+            FilteredDependencies filteredDependencies = new FilteredDependencies(input.getDependencies(),filteredRequirements.getReqDepsToRemove(),false);
+            SimilarityModel similarityModel = generateModel(compare, filteredRequirements.getAllRequirements());
+            ClustersModel clustersModel = clustersAlgorithm.buildModel(filteredRequirements.getAllRequirements(),filteredDependencies.getAllDependencies());
             OrganizationModels organizationModels = new OrganizationModels(threshold, compare, true, similarityModel, clustersModel);
 
             getAccessToUpdate(organization);
@@ -400,9 +401,10 @@ public class CompareServiceImpl implements CompareService {
             if (!input.inputOk()) throw new BadRequestException("The input requirements array is empty");
             if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(FORBIDDEN_ERROR_MESSAGE);
 
-            List<Requirement> requirements = deleteDuplicates(input.getRequirements());
-            SimilarityModel similarityModel = generateModel(compare, requirements);
-            ClustersModel clustersModel = clustersAlgorithm.buildModel(requirements,input.getDependencies());
+            FilteredRequirements filteredRequirements = new FilteredRequirements(input.getRequirements(),null,true);
+            FilteredDependencies filteredDependencies = new FilteredDependencies(input.getDependencies(),filteredRequirements.getReqDepsToRemove(),false);
+            SimilarityModel similarityModel = generateModel(compare, filteredRequirements.getAllRequirements());
+            ClustersModel clustersModel = clustersAlgorithm.buildModel(filteredRequirements.getAllRequirements(),filteredDependencies.getAllDependencies());
             OrganizationModels organizationModels = new OrganizationModels(threshold, compare, true, similarityModel, clustersModel);
 
             getAccessToUpdate(organization);
@@ -415,7 +417,7 @@ public class CompareServiceImpl implements CompareService {
 
             ResponseDependencies responseDependencies = new DiskDependencies(organization,responseId);
             HashSet<String> repeated = new HashSet<>();
-            for (Requirement requirement : requirements) {
+            for (Requirement requirement : filteredRequirements.getAllRequirements()) {
                 String id = requirement.getId();
                 List<Dependency> dependencies = clustersAlgorithm.getReqAcceptedDependencies(organization, id);
                 List<Dependency> proposedDependencies = clustersAlgorithm.getReqProposedDependencies(organization, id);
@@ -484,7 +486,7 @@ public class CompareServiceImpl implements CompareService {
             try {
                 OrganizationModels organizationModels = databaseOperations.getOrganizationModels(organization, false);
                 if (!organizationModels.hasClusters()) throw new BadRequestException("The model does not have clusters");
-                FilteredDependencies filteredDependencies = new FilteredDependencies(dependencies,null);
+                FilteredDependencies filteredDependencies = new FilteredDependencies(dependencies,null,true);
                 clustersAlgorithm.startUpdateProcess(organization,organizationModels);
                 updateDependenciesBatch(organization, organizationModels, filteredDependencies);
                 clustersAlgorithm.finishUpdateProcess(organization,organizationModels);
@@ -508,8 +510,8 @@ public class CompareServiceImpl implements CompareService {
             try {
                 OrganizationModels organizationModels = databaseOperations.getOrganizationModels(organization, false);
                 if (!organizationModels.hasClusters()) throw new BadRequestException("The model does not have clusters");
-                FilteredRequirements filteredRequirements = new FilteredRequirements(input.getRequirements(),organizationModels);
-                FilteredDependencies filteredDependencies = new FilteredDependencies(input.getDependencies(),filteredRequirements.getReqDepsToRemove());
+                FilteredRequirements filteredRequirements = new FilteredRequirements(input.getRequirements(),organizationModels,true);
+                FilteredDependencies filteredDependencies = new FilteredDependencies(input.getDependencies(),filteredRequirements.getReqDepsToRemove(),true);
 
                 clustersAlgorithm.startUpdateProcess(organization,organizationModels);
                 updateRequirementsBatch(organization, organizationModels, filteredRequirements);

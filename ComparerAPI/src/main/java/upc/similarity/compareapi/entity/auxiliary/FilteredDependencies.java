@@ -6,16 +6,22 @@ import java.util.*;
 
 public class FilteredDependencies {
 
+    private List<Dependency> allDependencies;
     private List<Dependency> acceptedDependencies;
     private List<Dependency> rejectedDependencies;
     private List<Dependency> deletedDependencies;
 
-    public FilteredDependencies(List<Dependency> dependencies, Map<String, Pair<String,Long>> reqDepsToRemove) {
+    public FilteredDependencies(List<Dependency> dependencies, Map<String, Pair<String,Long>> reqDepsToRemove, boolean split) {
         Collection<Dependency> filteredDependencies = filterDependencies(dependencies,reqDepsToRemove);
         acceptedDependencies = new ArrayList<>();
         rejectedDependencies = new ArrayList<>();
         deletedDependencies = new ArrayList<>();
-        splitDependencies(filteredDependencies);
+        allDependencies = new ArrayList<>(filteredDependencies);
+        if (split) splitDependencies(filteredDependencies);
+    }
+
+    public List<Dependency> getAllDependencies() {
+        return allDependencies;
     }
 
     public List<Dependency> getAcceptedDependencies() {
@@ -50,6 +56,8 @@ public class FilteredDependencies {
                     if (b1) oldDependency = notRepeatedDeps.get(fromId+toId);
                     else oldDependency = notRepeatedDeps.get(toId+fromId);
                     if (oldDependency.computeTime() < dependency.computeTime()) {
+                        if (b1) notRepeatedDeps.remove(fromId+toId);
+                        else notRepeatedDeps.remove(toId+fromId);
                         notRepeatedDeps.put(fromId+toId,dependency);
                     }
                 } else notRepeatedDeps.put(fromId+toId,dependency);

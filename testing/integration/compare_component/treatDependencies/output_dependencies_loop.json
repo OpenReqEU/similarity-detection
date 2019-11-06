@@ -9,4 +9,7 @@
 {"toid":"UPC-7","score":0,"clusterId":-1,"fromid":"UPC-8","status":"rejected"},
 {"toid":"UPC-8","score":0,"clusterId":-1,"fromid":"UPC-7","status":"rejected"},
 {"toid":"UPC-2","score":0,"clusterId":-1,"fromid":"UPC-1","status":"rejected"},
-{"toid":"UPC-1","score":0,"clusterId":-1,"fromid":"UPC-2","status":"rejected"}]
+{"toid":"UPC-1","score":0,"clusterId":-1,"fromid":"UPC-2","status":"rejected"},
+{"toid":"UPC-4","score":0,"clusterId":-1,"fromid":"UPC-5","status":"rejected"},
+{"toid":"UPC-5","score":0,"clusterId":-1,"fromid":"UPC-4","status":"rejected"}]
+

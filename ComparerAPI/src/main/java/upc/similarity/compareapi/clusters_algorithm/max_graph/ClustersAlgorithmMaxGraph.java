@@ -46,24 +46,21 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
             }
         }
 
-        List<Dependency> acceptedDependencies = new ArrayList<>();
-        HashSet<String> notRepeated = new HashSet<>();
+        List<Dependency> modelDependencies = new ArrayList<>();
 
         for (Dependency dependency: dependencies) {
             if (validDependency(dependency)) {
                 String fromid = dependency.getFromid();
                 String toid = dependency.getToid();
-                if (reqCluster.containsKey(fromid) && reqCluster.containsKey(toid)) {
-                    if (!notRepeated.contains(fromid+toid) && !notRepeated.contains(toid+fromid)) {
-                        notRepeated.add(fromid+toid);
-                        dependency.setClusterId(reqCluster.get(fromid));
-                        acceptedDependencies.add(dependency);
-                    }
+                String status = dependency.getStatus();
+                modelDependencies.add(dependency);
+                if (status.equals("accepted") && reqCluster.containsKey(fromid) && reqCluster.containsKey(toid)) {
+                    dependency.setClusterId(reqCluster.get(fromid));
                 }
             }
         }
 
-        return new ClustersModelMaxGraph(countIds-1,clusters,duplicateDependencies(acceptedDependencies));
+        return new ClustersModelMaxGraph(countIds-1,clusters,duplicateDependencies(modelDependencies));
     }
 
     @Override
@@ -497,7 +494,7 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
 
     private int computeDependencies(List<Dependency> dependencies, Map<String,Integer> reqCluster, Map<Integer,List<String>> clusters, int countIds) {
         for (Dependency dependency: dependencies) {
-            if (validDependency(dependency)) {
+            if (validDependency(dependency) && dependency.getStatus().equals("accepted")) {
                 String fromid = dependency.getFromid();
                 String toid = dependency.getToid();
                 if (reqCluster.containsKey(fromid) && reqCluster.containsKey(toid)) {
@@ -510,7 +507,8 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
 
     private boolean validDependency(Dependency dependency) {
         String type = dependency.getDependencyType();
-        return (type != null && (type.equals("similar") || type.equals("duplicates")) && dependency.getStatus().equals("accepted"));
+        String status = dependency.getStatus();
+        return (type != null && status != null && (type.equals("similar") || type.equals("duplicates")) && (status.equals("accepted") || status.equals("rejected")));
     }
 
     private int mergeClusters(Map<Integer,List<String>> clusters, Map<String,Integer> reqCluster, String req1, String req2, int countIds) {

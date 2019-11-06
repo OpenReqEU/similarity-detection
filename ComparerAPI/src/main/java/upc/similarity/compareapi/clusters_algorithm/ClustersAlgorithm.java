@@ -11,8 +11,8 @@ public interface ClustersAlgorithm {
 
     /**
      * Builds a clusters model with the input requirements and dependencies
-     * @param requirements a list with the input requirements, they can't be repeated
-     * @param dependencies a list with the input dependencies, they can be repeated
+     * @param requirements a list with the input requirements, their id is unique
+     * @param dependencies a list with the input dependencies, their id is unique
      * @return the resulting clusters model
      */
     ClustersModel buildModel(List<Requirement> requirements, List<Dependency> dependencies) throws InternalErrorException;

@@ -11,17 +11,23 @@ import java.util.*;
 
 public class FilteredRequirements {
 
+    private List<Requirement> allRequirements;
     private List<Requirement> newRequirements;
     private List<Requirement> updatedRequirements;
     private List<Requirement> deletedRequirements;
     private Map<String, Pair<String,Long>> reqDepsToRemove;
 
-    public FilteredRequirements(List<Requirement> requirements, OrganizationModels organizationModels) throws InternalErrorException{
+    public FilteredRequirements(List<Requirement> requirements, OrganizationModels organizationModels, boolean split) throws InternalErrorException{
         Collection<Requirement> filteredRequirements = filterRequirements(requirements);
         newRequirements = new ArrayList<>();
         updatedRequirements = new ArrayList<>();
         deletedRequirements = new ArrayList<>();
-        splitRequirements(filteredRequirements,organizationModels);
+        allRequirements = new ArrayList<>(filteredRequirements);
+        if (split) splitRequirements(filteredRequirements,organizationModels);
+    }
+
+    public List<Requirement> getAllRequirements() {
+        return allRequirements;
     }
 
     public List<Requirement> getNewRequirements() {
@@ -61,7 +67,6 @@ public class FilteredRequirements {
     private void splitRequirements(Collection<Requirement> requirements, OrganizationModels organizationModels) throws InternalErrorException {
         reqDepsToRemove = new HashMap<>();
         PreprocessPipeline preprocessPipeline = Constants.getInstance().getPreprocessPipeline();
-        SimilarityModel similarityModel = organizationModels.getSimilarityModel();
         for (Requirement requirement: requirements) {
             String id = requirement.getId();
             String status = requirement.getStatus();
@@ -70,7 +75,7 @@ public class FilteredRequirements {
                 deletedRequirements.add(requirement);
                 reqDepsToRemove.put(id,new Pair<>("all",time));
             }
-            else if (similarityModel.containsRequirement(id)) {
+            else if (organizationModels != null && organizationModels.getSimilarityModel().containsRequirement(id)) {
                 if (requirementUpdated(requirement, preprocessPipeline, organizationModels)) {
                     updatedRequirements.add(requirement);
                     reqDepsToRemove.put(id,new Pair<>("before",time));

@@ -307,6 +307,21 @@ public class TestTfIdfMethods {
     }
 
     @Test
+    public void buildClustersWithRejected() throws Exception {
+        MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"buildClusters/input_rejected.json")));
+        this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "0")
+                .param("compare", "true").param("responseId", id+"")
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE))
+                .andExpect(status().isOk());
+        this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "buildClusters/output_build.json")));
+        ++id;
+        List<Dependency> dependencies = clustersModelDatabaseMaxGraph.getDependencies("UPC");
+        assertEquals(read_file_array(path+"buildClusters/output_dependencies_rejected.json"),listDependenciesToJson(dependencies).toString());
+        assertEquals(read_file_json(path+"buildClusters/output_model_rejected.json"), extractModel("UPC",true, false));
+    }
+
+    @Test
     public void buildClustersAndCompute() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"buildClustersAndCompute/input.json")));
         this.mockMvc.perform(multipart(url + "BuildClustersAndCompute").file(multipartFile).param("organization", "UPC").param("threshold", "0.2")

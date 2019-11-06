@@ -63,7 +63,7 @@
 	"threshold": 1.1,
 	"isCluster": true,
 	"clusters": [{
-		"clusterRequirements": ["UPC-1", "UPC-2"],
+		"clusterRequirements": ["UPC-2", "UPC-1"],
 		"clusterId": 0
 	}, {
 		"clusterRequirements": ["UPC-5"],

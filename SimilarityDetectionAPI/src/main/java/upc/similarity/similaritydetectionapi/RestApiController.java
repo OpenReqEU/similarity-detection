@@ -263,7 +263,7 @@ public class RestApiController {
     @CrossOrigin
     @PostMapping(value = "/BuildClusters", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Generates the clusters using the input requirements and dependencies.", notes = "<p><i>Asynchronous</i> method.</p><p>This method computes the clusters using the existing duplicates. These duplicates relations are defined by " +
-            "the dependencies with type equal to <i>similar</i> or <i>duplicates</i> and status equal to <i>accepted</i>. All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one " +
+            "the dependencies with type equal to <i>similar</i> or <i>duplicates</i> and status equal to <i>accepted</i>, <i>rejected</i> or <i>deleted</i> (the <i>created_at</i> and <i>modified_at</i> params are taken into account). All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one " +
             "requirement. All the requirements are pre-processed and stored in the database, together with their corresponding tf-idf model and the clusters information. The user can choose whether to use only the name of the requirements for constructing the tf-idf model," +
             " or to use also the text of the requirements. Finally, all the requirements are compared with all the requirements of other clusters of the organization, and those similarities with score greater than the established threshold for each requirement are stored in the database.</p>" +
             "<br><p>Each organization can only have one model at the same time. The service throws a forbidden exception if at the time of generating a new model the corresponding organization already has an existing one</p>", tags = "Similarity with clusters")
@@ -286,7 +286,7 @@ public class RestApiController {
     @CrossOrigin
     @PostMapping(value = "/BuildClustersAndCompute", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Generates the clusters using the input requirements and dependencies, and returns the similarity score between them.", notes =
-            "<p><i>Asynchronous</i> method.</p><p>This method computes the clusters using the existing duplicates. These duplicates relations are defined by the dependencies with type equal to <i>similar</i> or <i>duplicates</i> and type equal to <i>accepted</i>." +
+            "<p><i>Asynchronous</i> method.</p><p>This method computes the clusters using the existing duplicates. These duplicates relations are defined by the dependencies with type equal to <i>similar</i> or <i>duplicates</i> and type equal to <i>accepted</i>, <i>rejected</i> or <i>deleted</i> (the <i>created_at</i> and <i>modified_at</i> params are taken into account)." +
                     " All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the database, together with their corresponding " +
                     "tf-idf model and the clusters information. The user can choose whether to use only the name of the requirements for constructing the tf-idf model, or to use also the text of the requirements. Finally, all the requirements are compared with all the " +
                     "requirements of other clusters of the organization, and those similarities with score greater than the established threshold for each requirement are stored in the database. It returns for each requirement the highest similarity score for each cluster " +
@@ -340,7 +340,7 @@ public class RestApiController {
     @CrossOrigin
     @PostMapping(value = "/TreatAcceptedAndRejectedDependencies", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Updates the organization clusters with the input dependencies.", notes = "<p><i>Synchronous</i> method.</p><p>Given a set of <i>accepted</i>, <i>rejected</i> and <i>deleted</i> dependencies, updates the clusters " +
-            "and dependencies accordingly. </p>", tags = "Similarity with clusters")
+            "and dependencies accordingly. The method takes into account the params <i>created_at</i> and <i>modified_at</i>.</p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
@@ -357,7 +357,7 @@ public class RestApiController {
 
     @CrossOrigin
     @PostMapping(value = "/BatchProcess", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Updates the organization clusters with the input requirements and dependencies.", notes = "<p><i>Asynchronous</i> method.</p><p>Given a set of updates done in the requirements (see next list), updates the clusters accordingly.</p>" +
+    @ApiOperation(value = "Updates the organization clusters with the input requirements and dependencies.", notes = "<p><i>Asynchronous</i> method.</p><p>Given a set of updates done in the requirements (see next list), updates the clusters accordingly (the <i>created_at</i> and <i>modified_at</i> params are taken into account).</p>" +
             "<p><ul>" +
             "<li>Adds requirements: The input requirements that do not pertain to the organization's model are considered to be new requirements. The method stores the pre-processing of the new requirements, adds them to the tf-idf model, and puts the new requirements as clusters of one requirement.</li>" +
             "<li>Deletes requirements: The input requirements with status equal to deleted that pertain to the organization's model are considered to be deleted requirements. The method deletes them from the organization models.</li>" +
