@@ -33,7 +33,7 @@ public class DriverTfIdfSeparate {
     private static SimilarityModelTfIdfSeparate modelTfIdf;
 
     private static class State {
-        double cut_off_topics;
+        //double cut_off_topics;
         double importance_low;
         HashSet<String> alreadyTested;
         double score;
@@ -41,13 +41,13 @@ public class DriverTfIdfSeparate {
         double threshold;
         State(){}
         State(double cut_off_topics, double importance_low/*, int cutOffValue*/, double threshold) {
-            this.cut_off_topics = cut_off_topics;
+            //this.cut_off_topics = cut_off_topics;
             this.importance_low = importance_low;
             //this.cutOffValue = cutOffValue;
             this.threshold = threshold;
         }
         State(State state) {
-            this.cut_off_topics = state.cut_off_topics;
+            //this.cut_off_topics = state.cut_off_topics;
             this.importance_low = state.importance_low;
             //this.cutOffValue = state.cutOffValue;
             this.threshold = state.threshold;
@@ -55,7 +55,7 @@ public class DriverTfIdfSeparate {
             this.alreadyTested = state.alreadyTested;
         }
         String print() {
-            return "score -> " + score + "; cut_off_topics -> " + cut_off_topics + "; importance_low -> " + importance_low/* + "; cut_off_value -> " + cutOffValue*/ + "; threshold -> " + threshold;
+            return "score -> " + score /*+ "; cut_off_topics -> " + cut_off_topics*/ + "; importance_low -> " + importance_low/* + "; cut_off_value -> " + cutOffValue*/ + "; threshold -> " + threshold;
         }
     }
 
@@ -78,13 +78,12 @@ public class DriverTfIdfSeparate {
             System.out.println("Finished initialization");
 
             System.out.println("Started computation");
-            State bestState = new State();
-            bestState.score = 0;
+            State bestState = null;
 
             for (int i = 0; i < numberIter; ++i) {
                 System.out.println("Global iteration -> " + i);
                 State state = new State();
-                state.cut_off_topics = random.nextDouble();
+                //state.cut_off_topics = random.nextDouble();
                 state.importance_low = random.nextDouble();
                 state.threshold = random.nextDouble();
                 //state.cutOffValue = random.nextInt(10);
@@ -92,23 +91,22 @@ public class DriverTfIdfSeparate {
                 alreadyTested.add(create_unique_map_id(state));
                 state.alreadyTested = alreadyTested;
                 state.score = getAccuracy(state);
+                if (bestState == null) bestState = new State(state);
 
                 System.out.println("Start state: " + state.print());
 
                 boolean changed = true;
                 int cont = 0;
-                double last_score = state.score;
                 while (changed && (cont < 100) ) {
                     System.out.println("Iter number: " + cont);
-                    changed = testNeighbours(state);
-                    if (changed) {
-                        if (state.score < last_score) System.out.println("ERRORRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR");
-                        last_score = state.score;
-                    }
+                    State aux = testNeighbours(state);
+                    if (aux.score == state.score) {
+                        changed = false;
+                    } else state = aux;
                     ++cont;
                 }
                 System.out.println("Result state: " + state.print());
-                if (state.score > bestState.score) bestState = state;
+                bestState = getBestState(bestState,state);
             }
             System.out.println("Finished computation");
             System.out.println("Result state: " + bestState.print());
@@ -118,22 +116,23 @@ public class DriverTfIdfSeparate {
     }
 
     private static String create_unique_map_id(State state) {
-        return state.cut_off_topics+""+state.importance_low/*+""+state.cutOffValue*/+""+state.threshold;
+        return /*state.cut_off_topics+""+*/state.importance_low/*+""+state.cutOffValue*/+""+state.threshold;
     }
 
     private static State testState(State currentState, State maxState) throws Exception {
-        double auxScore = getAccuracy(currentState);
-        if (auxScore > maxState.score) {
-            currentState.score = auxScore;
-            return currentState;
-        } else return maxState;
+        currentState.score = getAccuracy(currentState);
+        return getBestState(maxState,currentState);
     }
 
-    private static boolean testNeighbours(State initialState) throws Exception {
+    private static State getBestState(State stateA, State stateB) {
+        return (stateA.score >= stateB.score) ? stateA : stateB;
+    }
+
+    private static State testNeighbours(State initialState) throws Exception {
         State maxState = new State(initialState);
         HashSet<String> alreadyTested = initialState.alreadyTested;
 
-        State auxState = new State(initialState);
+        /*State auxState = new State(initialState);
         auxState.cut_off_topics += 0.05;
         String id = create_unique_map_id(auxState);
         if (!alreadyTested.contains(id) && (auxState.cut_off_topics <= 1)) {
@@ -146,10 +145,10 @@ public class DriverTfIdfSeparate {
         if (!alreadyTested.contains(id) && (auxState.cut_off_topics >= 0)) {
             alreadyTested.add(id);
             maxState = testState(auxState,maxState);
-        }
-        auxState = new State(initialState);
+        }*/
+        State auxState = new State(initialState);
         auxState.importance_low += 0.05;
-        id = create_unique_map_id(auxState);
+        String id = create_unique_map_id(auxState);
         if (!alreadyTested.contains(id) && (auxState.importance_low <= 1)) {
             alreadyTested.add(id);
             maxState = testState(auxState,maxState);
@@ -189,12 +188,12 @@ public class DriverTfIdfSeparate {
             alreadyTested.add(id);
             maxState = testState(auxState,maxState);
         }
-        return  (maxState != initialState);
+        return maxState;
     }
 
     private static double getAccuracy(State state) throws Exception {
         //SimilarityModelTfIdf modelTfIdf = createModel(state.cutOffValue);
-        CosineSimilarityTfIdfSeparate cosineSimilarityTfIdfSeparate = new CosineSimilarityTfIdfSeparate(state.cut_off_topics,state.importance_low);
+        CosineSimilarityTfIdfSeparate cosineSimilarityTfIdfSeparate = new CosineSimilarityTfIdfSeparate(/*state.cut_off_topics,*/state.importance_low);
         int truePositive = 0;
         int falsePositive = 0;
         for (int i = 0; i < duplicateDependencies.length(); ++i) {
@@ -236,7 +235,7 @@ public class DriverTfIdfSeparate {
                 requirements.add(requirement);
             }
             PreprocessPipelineSeparate preprocessPipelineSeparate = new PreprocessPipelineSeparate();
-            SimilarityAlgorithmTfIdfSeparate similarityAlgorithmTfIdfSeparate = new SimilarityAlgorithmTfIdfSeparate(cutOffValue, false, false,0,0);
+            SimilarityAlgorithmTfIdfSeparate similarityAlgorithmTfIdfSeparate = new SimilarityAlgorithmTfIdfSeparate(cutOffValue, false, false,0);
             return similarityAlgorithmTfIdfSeparate.buildModel(preprocessPipelineSeparate.preprocessRequirements(true, requirements));
         } catch (Exception e) {
             e.printStackTrace();

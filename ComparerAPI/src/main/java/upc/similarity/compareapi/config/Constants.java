@@ -11,9 +11,11 @@ import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.S
 import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.tf_idf.SimilarityModelDatabaseTfIdf;
 import upc.similarity.compareapi.preprocess.PreprocessPipeline;
 import upc.similarity.compareapi.preprocess.PreprocessPipelineDefault;
+import upc.similarity.compareapi.preprocess.PreprocessPipelineSeparate;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
 import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityAlgorithmTfIdf;
 import upc.similarity.compareapi.similarity_algorithm.tf_idf_double.SimilarityAlgorithmTfIdfDouble;
+import upc.similarity.compareapi.similarity_algorithm.tf_idf_separate.SimilarityAlgorithmTfIdfSeparate;
 import upc.similarity.compareapi.util.Logger;
 
 import java.nio.file.Files;
@@ -71,6 +73,9 @@ public class Constants {
             case "default":
                 this.preprocessPipeline = new PreprocessPipelineDefault();
                 break;
+            case "separate":
+                this.preprocessPipeline = new PreprocessPipelineSeparate();
+                break;
             default:
                 Logger.getInstance().showErrorMessage("The preprocess pipeline specified in the configuration file does not exist.");
                 break;
@@ -114,9 +119,30 @@ public class Constants {
                     cutOffTopics = jsonObject.getDouble("cut_off_topics");
                     importanceLow = jsonObject.getDouble("importance_low");
                 } catch (Exception e) {
-                    Logger.getInstance().showErrorMessage("Error while reading tf_idf config file: " + e.getMessage());
+                    Logger.getInstance().showErrorMessage("Error while reading tf_idf_double config file: " + e.getMessage());
                 }
                 this.similarityAlgorithm = new SimilarityAlgorithmTfIdfDouble(cutOff,false,smoothing,topicThreshold,cutOffTopics,importanceLow);
+                this.similarityModelDatabase = new SimilarityModelDatabaseTfIdf();
+                break;
+            case "tf_idf_separate":
+                cutOff = 10;
+                smoothing = true;
+                cutOffTopics = 0.25;
+                importanceLow = 0.6;
+                try {
+                    Path path = Paths.get("../config_files/config_tfidf_separate.json");
+                    List<String> lines = Files.readAllLines(path);
+                    String file = "";
+                    for (String line : lines) file = file.concat(line);
+                    JSONObject jsonObject = new JSONObject(file);
+                    cutOff = jsonObject.getDouble("cut_off");
+                    smoothing = jsonObject.getBoolean("smoothing");
+                    cutOffTopics = jsonObject.getDouble("cut_off_topics");
+                    importanceLow = jsonObject.getDouble("importance_low");
+                } catch (Exception e) {
+                    Logger.getInstance().showErrorMessage("Error while reading tf_idf_separate config file: " + e.getMessage());
+                }
+                this.similarityAlgorithm = new SimilarityAlgorithmTfIdfSeparate(cutOff,false,smoothing,/*cutOffTopics,*/importanceLow);
                 this.similarityModelDatabase = new SimilarityModelDatabaseTfIdf();
                 break;
             default:

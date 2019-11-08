@@ -5,11 +5,11 @@ import static java.lang.StrictMath.sqrt;
 
 public class CosineSimilarityTfIdfSeparate {
 
-    private double cutOffTopics;
+    //private double cutOffTopics;
     private double importanceLow;
 
-    public CosineSimilarityTfIdfSeparate(double cutOffTopics, double importanceLow) {
-        this.cutOffTopics = cutOffTopics;
+    public CosineSimilarityTfIdfSeparate(/*double cutOffTopics,*/ double importanceLow) {
+        //this.cutOffTopics = cutOffTopics;
         this.importanceLow = importanceLow;
     }
 
@@ -29,7 +29,7 @@ public class CosineSimilarityTfIdfSeparate {
         Map<String,Double> lowWordsA = texts.get(a);
         Map<String,Double> lowWordsB = texts.get(b);
 
-        double result;
+        /*double result;
 
         double scoreTopics = computeSection(topicWordsA,topicWordsB);
         if (scoreTopics > cutOffTopics) {
@@ -38,7 +38,12 @@ public class CosineSimilarityTfIdfSeparate {
         } else {
             result = scoreTopics*(1-importanceLow);
         }
-        return result;
+        return result;*/
+
+        double scoreTopics = computeSection(topicWordsA,topicWordsB);
+        double scoreLow = computeSection(lowWordsA,lowWordsB);
+        return scoreTopics*(1-importanceLow) + scoreLow*importanceLow;
+
     }
 
     /*

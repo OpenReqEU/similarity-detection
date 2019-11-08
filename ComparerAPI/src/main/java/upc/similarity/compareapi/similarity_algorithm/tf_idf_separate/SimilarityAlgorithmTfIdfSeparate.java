@@ -20,11 +20,11 @@ public class SimilarityAlgorithmTfIdfSeparate implements SimilarityAlgorithm {
     private boolean cutOffDummy;
     private boolean smoothingActive;
 
-    public SimilarityAlgorithmTfIdfSeparate(double cutOffValue, boolean cutOffDummy, boolean smoothingActive, double cutOffTopics, double importanceLow) {
+    public SimilarityAlgorithmTfIdfSeparate(double cutOffValue, boolean cutOffDummy, boolean smoothingActive, /*double cutOffTopics,*/ double importanceLow) {
         this.cutOffValue = cutOffValue;
         this.cutOffDummy = cutOffDummy;
         this.smoothingActive = smoothingActive;
-        this.cosineSimilarityTfIdfSeparate = new CosineSimilarityTfIdfSeparate(cutOffTopics,importanceLow);
+        this.cosineSimilarityTfIdfSeparate = new CosineSimilarityTfIdfSeparate(/*cutOffTopics,*/importanceLow);
     }
 
     @Override
