@@ -1,6 +1,6 @@
 {
-    "preprocess_pipeline": "separate",
-    "similarity_algorithm": "tf_idf_separate",
+    "preprocess_pipeline": "wordnet",
+    "similarity_algorithm": "tf_idf",
     "clusters_algorithm": "max_graph",
     "database_path": "./data/",
     "max_dependencies_page": 20000,

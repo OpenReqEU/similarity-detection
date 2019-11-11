@@ -1,0 +1,38 @@
+<np> -> noun phrase
+<vp> -> verb phrase
+(cc) -> coordinating conjunction
+(cd) -> cardinal number
+(dt) -> determiner
+(ex) -> existential there
+(fw) -> foreign word
+(in) -> preposition or subordinating conjunction
+(jj) -> adjective
+(jjr) -> adjective, comparative
+(jjs) -> adjective, superlative
+(ls) -> list item marker
+(md) -> modal verb
+(nn) -> noun, singular or mass
+(nns) -> noun, plural
+(nnp) -> proper noun, singular
+(nnps) -> proper noun, plural
+(pdt) -> predeterminer
+(pos) -> possessive ending
+(prp) -> personal pronoun
+(prp$) -> possessive pronoun
+(rb) -> adverb
+(rbr) -> adverb, comparative
+(rbs) -> adverb, superlative
+(rp) -> particle
+(sym) -> symbol
+(to) -> to
+(uh) -> interjection
+(vb) -> verb, base form
+(vbd) -> verb, past tense
+(vbg) -> verb, gerund or present participle
+(vbn) -> verb, past participle
+(vbp) -> verb, non-3rd person singular present
+(vbz) -> verb, 3rd person singular present
+(wdt) -> wh-determiner
+(wp) -> wh-pronoun
+(wp$) -> possessive wh-pronoun
+(wrb) -> wh-adverb

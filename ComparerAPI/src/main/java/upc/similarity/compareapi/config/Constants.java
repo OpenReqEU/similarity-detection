@@ -12,6 +12,7 @@ import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.t
 import upc.similarity.compareapi.preprocess.PreprocessPipeline;
 import upc.similarity.compareapi.preprocess.PreprocessPipelineDefault;
 import upc.similarity.compareapi.preprocess.PreprocessPipelineSeparate;
+import upc.similarity.compareapi.preprocess.PreprocessPipelineWordnet;
 import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
 import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityAlgorithmTfIdf;
 import upc.similarity.compareapi.similarity_algorithm.tf_idf_double.SimilarityAlgorithmTfIdfDouble;
@@ -75,6 +76,9 @@ public class Constants {
                 break;
             case "separate":
                 this.preprocessPipeline = new PreprocessPipelineSeparate();
+                break;
+            case "wordnet":
+                this.preprocessPipeline = new PreprocessPipelineWordnet();
                 break;
             default:
                 Logger.getInstance().showErrorMessage("The preprocess pipeline specified in the configuration file does not exist.");
