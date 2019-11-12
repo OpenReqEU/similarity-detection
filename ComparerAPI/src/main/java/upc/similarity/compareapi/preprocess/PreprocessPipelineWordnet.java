@@ -80,24 +80,27 @@ public class PreprocessPipelineWordnet implements PreprocessPipeline {
     }
 
     private String getHypernym(String token, String tag) {
-        POS pos = POS.getPartOfSpeech(posTags.get(tag));
-        if (pos != null) {
-            IIndexWord idxWord = dictionary.getIndexWord(token, pos);
-            if (idxWord != null) {
-                List<IWordID> wordsIDs = idxWord.getWordIDs();
-                if (wordsIDs.size() > 0) {
-                    IWordID wordID = wordsIDs.get(0); // 1st meaning
-                    IWord word = dictionary.getWord(wordID);
-                    ISynset synset = word.getSynset();
+        Character charTag = posTags.get(tag);
+        if (charTag != null) {
+            POS pos = POS.getPartOfSpeech(charTag);
+            if (pos != null) {
+                IIndexWord idxWord = dictionary.getIndexWord(token, pos);
+                if (idxWord != null) {
+                    List<IWordID> wordsIDs = idxWord.getWordIDs();
+                    if (wordsIDs.size() > 0) {
+                        IWordID wordID = wordsIDs.get(0); // 1st meaning
+                        IWord word = dictionary.getWord(wordID);
+                        ISynset synset = word.getSynset();
 
-                    List<ISynsetID> hypernyms = synset.getRelatedSynsets(Pointer.HYPERNYM);
-                    if (hypernyms.size() > 0) {
-                        List<IWord> words;
-                        for (ISynsetID sid : hypernyms) {
-                            words = dictionary.getSynset(sid).getWords();
-                            Iterator<IWord> i = words.iterator();
-                            if (i.hasNext()) return i.next().getLemma(); // 1st hypernym
-                            else return null;
+                        List<ISynsetID> hypernyms = synset.getRelatedSynsets(Pointer.HYPERNYM);
+                        if (hypernyms.size() > 0) {
+                            List<IWord> words;
+                            for (ISynsetID sid : hypernyms) {
+                                words = dictionary.getSynset(sid).getWords();
+                                Iterator<IWord> i = words.iterator();
+                                if (i.hasNext()) return i.next().getLemma(); // 1st hypernym
+                                else return null;
+                            }
                         }
                     }
                 }

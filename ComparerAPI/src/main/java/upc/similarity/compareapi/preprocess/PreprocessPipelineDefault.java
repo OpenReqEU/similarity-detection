@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 public class PreprocessPipelineDefault implements PreprocessPipeline {
+    //TODO delete monosilabs
 
     @Override
     public Map<String, List<String>> preprocessRequirements(boolean compare, List<Requirement> requirements) throws InternalErrorException {
