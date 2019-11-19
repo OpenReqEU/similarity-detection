@@ -5,13 +5,13 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import upc.similarity.compareapi.clusters_algorithm.ClustersAlgorithm;
-import upc.similarity.compareapi.clusters_algorithm.ClustersModel;
+import upc.similarity.compareapi.algorithms.clusters_algorithm.ClustersAlgorithm;
+import upc.similarity.compareapi.algorithms.clusters_algorithm.ClustersModel;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.dao.DatabaseModel;
-import upc.similarity.compareapi.preprocess.PreprocessPipeline;
-import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
-import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
+import upc.similarity.compareapi.algorithms.preprocess.PreprocessPipeline;
+import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityModel;
+import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityAlgorithm;
 import upc.similarity.compareapi.util.Logger;
 import upc.similarity.compareapi.entity.*;
 import upc.similarity.compareapi.entity.auxiliary.*;
@@ -37,7 +37,6 @@ public class CompareServiceImpl implements CompareService {
     private PreprocessPipeline preprocessPipeline = Constants.getInstance().getPreprocessPipeline();
     private SimilarityAlgorithm similarityAlgorithm = Constants.getInstance().getSimilarityAlgorithm();
     private ClustersAlgorithm clustersAlgorithm = Constants.getInstance().getClustersAlgorithm();
-    private ConcurrentHashMap<String, Lock> organizationLocks = new ConcurrentHashMap<>();
     private int sleepTime = Constants.getInstance().getMaxWaitingTime();
     private DatabaseModel databaseOperations = Constants.getInstance().getDatabaseModel();
     private String syncErrorMessage = "Synchronization error";
@@ -48,6 +47,16 @@ public class CompareServiceImpl implements CompareService {
     /*
     Sync methods
      */
+
+    /**
+     * This map has the organization's name as the key and a boolean as the value. The value represents if the organization's model is being updated or not.
+     * This map is checked every time a thread wants to update the organization's model (batchProcess, buildClusters, addRequirements...) because if two threads
+     * are updating the model at the same time they are very likely to cause a lost update or some corrupted data in the database. However, threads who only
+     * want to read the model do not need to check the map. This is possible thanks to the "wal-mode" mode of the database that allows a user to read the database
+     * while another is writing. Nevertheless, since there is only one WAL file, there can only be one writer at a time. This can cause a problem when updating
+     * models from different organizations at the same time, because it can throw an exception like "the database is locked".
+     */
+    private ConcurrentHashMap<String, Lock> organizationLocks = new ConcurrentHashMap<>();
 
     //is public to be accessible by tests
     public void getAccessToUpdate(String organization) throws LockedOrganizationException, InternalErrorException {

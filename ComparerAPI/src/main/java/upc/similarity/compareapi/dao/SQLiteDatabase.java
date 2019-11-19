@@ -1,10 +1,10 @@
 package upc.similarity.compareapi.dao;
 
-import upc.similarity.compareapi.clusters_algorithm.ClustersModel;
+import upc.similarity.compareapi.algorithms.clusters_algorithm.ClustersModel;
 import upc.similarity.compareapi.dao.algorithm_models_dao.clusters_algorithm.ClustersModelDatabase;
 import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabase;
 import upc.similarity.compareapi.entity.*;
-import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
+import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityModel;
 import upc.similarity.compareapi.util.Logger;
 import upc.similarity.compareapi.entity.exception.InternalErrorException;
 import upc.similarity.compareapi.entity.exception.NotFinishedException;

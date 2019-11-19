@@ -1,4 +1,4 @@
-package upc.similarity.compareapi.clusters_algorithm;
+package upc.similarity.compareapi.algorithms.clusters_algorithm;
 
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.OrganizationModels;

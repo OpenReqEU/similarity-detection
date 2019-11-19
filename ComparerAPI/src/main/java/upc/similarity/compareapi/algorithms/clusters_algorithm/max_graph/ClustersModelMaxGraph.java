@@ -1,19 +1,47 @@
-package upc.similarity.compareapi.clusters_algorithm.max_graph;
+package upc.similarity.compareapi.algorithms.clusters_algorithm.max_graph;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import upc.similarity.compareapi.clusters_algorithm.ClustersModel;
+import upc.similarity.compareapi.algorithms.clusters_algorithm.ClustersModel;
 import upc.similarity.compareapi.entity.Dependency;
 
 import java.util.*;
 
 public class ClustersModelMaxGraph implements ClustersModel {
 
+    /**
+     * An integer that shows the las cluster identifier used. Necessary to
+     * maintain the cluster id as unique
+     */
     private int lastClusterId;
+
+    /**
+     * A map that represents the structure of each cluster in the model.
+     * It is implemented as a Map that saves the cluster identifier and
+     * an array of String values that represent the ids of the requirements
+     * included in the cluster
+     */
     private Map<Integer, List<String>> clusters;
+
+    /**
+     * A list with all the dependencies of the model (accepted, rejected and proposed).
+     * Each dependency contains its status and the requirements that form the link. If
+     * the dependency is accepted, it also contains the identifier of the cluster where
+     * it belongs. This attribute is only use when building the model, the service never
+     * loads all the dependencies of a previous created model (memory issue)
+     */
     private List<Dependency> dependencies;
 
+    /**
+     * A temporary map that shows the cluster id of each requirement of the model.
+     * This makes more efficient the different algorithms during the update process
+     */
     private Map<String, Integer> reqCluster;
+
+    /**
+     * A temporary set to save the ids of the clusters changed during the update process.
+     * Thanks to this we only recompute the dependencies of the clusters changed.
+     */
     private Set<Integer> clustersChanged;
 
     public ClustersModelMaxGraph(int lastClusterId, Map<Integer, List<String>> clusters) {

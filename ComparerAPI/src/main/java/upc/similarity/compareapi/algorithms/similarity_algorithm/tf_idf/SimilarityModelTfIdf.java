@@ -1,14 +1,25 @@
-package upc.similarity.compareapi.similarity_algorithm.tf_idf;
+package upc.similarity.compareapi.algorithms.similarity_algorithm.tf_idf;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
+import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityModel;
 
 import java.util.*;
 
 public class SimilarityModelTfIdf implements SimilarityModel {
 
+    /**
+     * A map with the tf-idf metric of all the words of each requirement. It is represented as a Map with a
+     * String key (requirement id) and a bag of words which are saved as objects with a String value (word id)
+     * and their corresponding tf-idf value (a double)
+     */
     private Map<String, Map<String, Double>> docs;
+
+    /**
+     * A map with the frequency of each word in the corpus. It is implemented as a Map with a String key (word id)
+     * and an Integer number which represents the number of requirements that contain this word. It is useful when
+     * updating the model with new requirements or deleting old ones.
+     */
     private Map<String, Integer> corpusFrequency;
 
     public SimilarityModelTfIdf(Map<String, Map<String, Double>> docs, Map<String, Integer> corpusFrequency) {

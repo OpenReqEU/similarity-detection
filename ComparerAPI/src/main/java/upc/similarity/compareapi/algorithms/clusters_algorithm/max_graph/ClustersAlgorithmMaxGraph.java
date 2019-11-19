@@ -1,7 +1,7 @@
-package upc.similarity.compareapi.clusters_algorithm.max_graph;
+package upc.similarity.compareapi.algorithms.clusters_algorithm.max_graph;
 
-import upc.similarity.compareapi.clusters_algorithm.ClustersAlgorithm;
-import upc.similarity.compareapi.clusters_algorithm.ClustersModel;
+import upc.similarity.compareapi.algorithms.clusters_algorithm.ClustersAlgorithm;
+import upc.similarity.compareapi.algorithms.clusters_algorithm.ClustersModel;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.dao.algorithm_models_dao.clusters_algorithm.max_graph.ClustersModelDatabaseMaxGraph;
 import upc.similarity.compareapi.entity.Dependency;
@@ -9,12 +9,20 @@ import upc.similarity.compareapi.entity.OrganizationModels;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.entity.exception.InternalErrorException;
 import upc.similarity.compareapi.entity.exception.NotFoundException;
-import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
-import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
+import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityAlgorithm;
+import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityModel;
 
 import java.util.*;
 
 public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
+
+    /**
+     * Consists of saving the user feedback as graphs where the nodes are requirements and the edges
+     * are accepted or rejected dependencies. It recommends proposed pairs of similar requirements to
+     * the user taking into account the tf-idf value of the previous similarity algorithm and the existing
+     * clusters (i.e., it returns similar requirements with a single requirement of a cluster, the one
+     * having the highest similarity score)
+     */
 
     private ClustersModelDatabaseMaxGraph databaseOperations;
 
@@ -22,18 +30,26 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
         this.databaseOperations = databaseOperations;
     }
 
+    /**
+     *  This method computes the clusters using the existing dependencies. All the requirements that do
+     *  not have duplicates relationships with other requirements are considered to be in a cluster
+     *  of just one requirement.
+     */
     @Override
-    public ClustersModel buildModel(List<Requirement> requirements, List<Dependency> dependencies) throws InternalErrorException {
+    public ClustersModel buildModel(List<Requirement> requirements, List<Dependency> dependencies) {
         HashMap<Integer,List<String>> clusters = new HashMap<>();
         HashMap<String, Integer> reqCluster = new HashMap<>();
         int countIds = 0;
 
+        //Initializes reqClusters
         for (Requirement requirement: requirements) {
             reqCluster.put(requirement.getId(),-1);
         }
 
+        //Merges clusters depending on the input accepted dependencies
         countIds = computeDependencies(dependencies, reqCluster, clusters, countIds);
 
+        // create the clusters of the lonely requirements
         for (Map.Entry<String, Integer> entry : reqCluster.entrySet()) {
             String requirementId = entry.getKey();
             int clusterId = entry.getValue();
@@ -48,6 +64,7 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
 
         List<Dependency> modelDependencies = new ArrayList<>();
 
+        //Updates the attribute clusterId of each accepted dependency
         for (Dependency dependency: dependencies) {
             if (validDependency(dependency)) {
                 String fromid = dependency.getFromid();
@@ -63,6 +80,11 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
         return new ClustersModelMaxGraph(countIds-1,clusters,duplicateDependencies(modelDependencies));
     }
 
+    /**
+     * Computes the proposed dependencies. It is done after the buildModel because it needs to access
+     * the pertinent organization model in the database. Doing this process now allows the reqClusters method to only do
+     * a select in the database.
+     */
     @Override
     public void updateModel(String organization, OrganizationModels organizationModels) throws InternalErrorException {
         try {
@@ -86,6 +108,9 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
         return databaseOperations.getReqDependencies(organization, requirementId, "accepted", false);
     }
 
+    /**
+     * Prepares the database and the memory structure to start the update process
+     */
     @Override
     public void startUpdateProcess(String organization, OrganizationModels organizationModels) throws InternalErrorException {
         try {
@@ -98,6 +123,9 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
         }
     }
 
+    /**
+     * Updates the proposed dependencies before finishing the update process
+     */
     @Override
     public void finishUpdateProcess(String organization, OrganizationModels organizationModels) throws InternalErrorException {
         try {
@@ -110,9 +138,15 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
         }
     }
 
+    /**
+     * - If the dependency already exists as proposed or rejected, changes the status of the dependency to accepted and merges clusters if necessary
+     * - If the dependency does not exists, creates a new accepted dependency and creates a new cluster with the two requirements and merges clusters if necessary
+     * - If the dependency was already accepted, does nothing
+     */
     @Override
     public void addAcceptedDependencies(String organization, List<Dependency> acceptedDependencies, OrganizationModels organizationModels) throws InternalErrorException {
         try {
+            //Initialization
             SimilarityModel similarityModel = organizationModels.getSimilarityModel();
             ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) organizationModels.getClustersModel();
             Map<Integer, List<String>> clusters = clustersModelMaxGraph.getClusters();
@@ -122,19 +156,23 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
             for (Dependency dependency : acceptedDependencies) {
                 String fromid = dependency.getFromid();
                 String toid = dependency.getToid();
+                //Checks if the two requirements are valid
                 if (fromid != null && toid != null && similarityModel.containsRequirement(fromid) && similarityModel.containsRequirement(toid)) {
+                    //Gets the old cluster ids
                     int oldId1 = reqCluster.get(fromid);
                     int oldId2 = reqCluster.get(toid);
                     boolean exists = false;
                     String status = "accepted";
                     try {
+                        //Gets the dependency between the two requirements from the database if exists
                         Dependency aux = databaseOperations.getDependency(organization, fromid, toid, true);
                         exists = true;
                         status = aux.getStatus();
                     } catch (NotFoundException e) {
-                        //empty
+                        //It does not exist
                     }
                     if (!exists || status.equals("proposed") || status.equals("rejected")) {
+                        //If the dependency doesn't exist or if it exists as proposed or rejected
                         mergeClusters(clusters, reqCluster, fromid, toid, clustersModelMaxGraph.getLastClusterId());
                         int newId = reqCluster.get(fromid);
                         clustersChanged.add(newId);
@@ -142,10 +180,8 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
                         if (oldId2 != -1) clustersChanged.add(oldId2);
                         databaseOperations.saveDependencyOrReplace(organization, new Dependency(fromid, toid, "accepted", dependency.getDependencyScore(), newId), true);
                         databaseOperations.saveDependencyOrReplace(organization, new Dependency(toid, fromid, "accepted", dependency.getDependencyScore(), newId), true);
-                        if (oldId1 != newId && oldId1 != -1)
-                            databaseOperations.updateClusterDependencies(organization, oldId1, newId, true);
-                        if (oldId2 != newId && oldId2 != -1)
-                            databaseOperations.updateClusterDependencies(organization, oldId2, newId, true);
+                        if (oldId1 != newId && oldId1 != -1) databaseOperations.updateClusterDependencies(organization, oldId1, newId, true);
+                        if (oldId2 != newId && oldId2 != -1) databaseOperations.updateClusterDependencies(organization, oldId2, newId, true);
                     }
                 }
             }
@@ -154,9 +190,15 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
         }
     }
 
+    /**
+     * - If the dependency already exists as proposed or accepted, changes the status of the dependency to rejected and splits clusters if necessary
+     * - If the dependency does not exists, creates a new rejected dependency
+     * - If the dependency was already rejected, does nothing
+     */
     @Override
     public void addRejectedDependencies(String organization, List<Dependency> deletedDependencies, OrganizationModels organizationModels) throws InternalErrorException {
         try {
+            //Initialization
             SimilarityModel similarityModel = organizationModels.getSimilarityModel();
             ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) organizationModels.getClustersModel();
             Map<Integer, List<String>> clusters = clustersModelMaxGraph.getClusters();
@@ -167,13 +209,16 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
             for (Dependency dependency : deletedDependencies) {
                 String fromid = dependency.getFromid();
                 String toid = dependency.getToid();
+                //Checks if the two requirements are valid
                 if (fromid != null && toid != null && similarityModel.containsRequirement(fromid) && similarityModel.containsRequirement(toid)) {
                     double score = dependency.getDependencyScore();
                     try {
+                        //Gets the dependency between the two requirements from the database if exists
                         Dependency aux = databaseOperations.getDependency(organization, fromid, toid, true);
                         String status = aux.getStatus();
                         int clusterId = aux.getClusterId();
                         if (status.equals("accepted")) {
+                            //Splits the corresponding clusters if necessary
                             List<String> clusterRequirements = clusters.get(clusterId);
                             databaseOperations.updateDependencyStatus(organization, fromid, toid, "rejected", -1, true);
                             List<Dependency> dependencies = databaseOperations.getClusterDependencies(organization, clusterId, true);
@@ -184,10 +229,12 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
                             lastClusterId = recreateClusters(organization, clusters, clustersChanged, reqCluster, lastClusterId, clusterId, clusterRequirements, reqDeps, requirementIds);
                         }
                         if (status.equals("accepted") || status.equals("proposed")) {
+                            //Updates the dependency status
                             databaseOperations.saveDependencyOrReplace(organization, new Dependency(fromid, toid, "rejected", score, -1), true);
                             databaseOperations.saveDependencyOrReplace(organization, new Dependency(toid, fromid, "rejected", score, -1), true);
                         }
                     } catch (NotFoundException e) {
+                        //The dependency does not exist
                         databaseOperations.saveDependencyOrReplace(organization, new Dependency(fromid, toid, "rejected", score, -1), true);
                         databaseOperations.saveDependencyOrReplace(organization, new Dependency(toid, fromid, "rejected", score, -1), true);
                     }
@@ -199,9 +246,14 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
         }
     }
 
+    /**
+     * - If the dependency already exists, deletes it and updates the clusters accordingly
+     * - If the dependency does not exists, does nothing
+     */
     @Override
     public void addDeletedDependencies(String organization, List<Dependency> deletedDependencies, OrganizationModels organizationModels) throws InternalErrorException {
         try {
+            //Initialization
             SimilarityModel similarityModel = organizationModels.getSimilarityModel();
             ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) organizationModels.getClustersModel();
             Map<Integer, List<String>> clusters = clustersModelMaxGraph.getClusters();
@@ -212,12 +264,14 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
             for (Dependency dependency : deletedDependencies) {
                 String fromid = dependency.getFromid();
                 String toid = dependency.getToid();
+                //Checks if the two requirements are valid
                 if (fromid != null && toid != null && similarityModel.containsRequirement(fromid) && similarityModel.containsRequirement(toid)) {
                     try {
                         Dependency aux = databaseOperations.getDependency(organization, fromid, toid, true);
                         String status = aux.getStatus();
                         int clusterId = aux.getClusterId();
                         if (status.equals("accepted")) {
+                            //Splits the corresponding clusters if necessary
                             List<String> clusterRequirements = clusters.get(clusterId);
                             databaseOperations.deleteDependencies(organization,fromid,toid,true);
                             List<Dependency> dependencies = databaseOperations.getClusterDependencies(organization, clusterId, true);
@@ -228,10 +282,11 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
                             lastClusterId = recreateClusters(organization, clusters, clustersChanged, reqCluster, lastClusterId, clusterId, clusterRequirements, reqDeps, requirementIds);
                         }
                         else if (status.equals("rejected")) {
+                            //Deletes the dependency
                             databaseOperations.deleteDependencies(organization,fromid,toid,true);
                         }
                     } catch (NotFoundException e) {
-                        //empty
+                        //The dependency does not exist
                     }
                 }
                 clustersModelMaxGraph.setLastClusterId(lastClusterId);
@@ -241,18 +296,26 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
         }
     }
 
+    /**
+     * Adds the input requirements to the cluster model. It creates a new cluster with each requirement. If the requirement
+     * was inside the cluster model, the method deletes it first.
+     */
     @Override
     public void addRequirementsToClusters(String organization, List<Requirement> addRequirements, OrganizationModels organizationModels) throws InternalErrorException {
         try {
+            //Initialization
             SimilarityModel similarityModel = organizationModels.getSimilarityModel();
             ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) organizationModels.getClustersModel();
             Set<Integer> clustersChanged = clustersModelMaxGraph.getClustersChanged();
             Map<String,Integer> reqCluster = clustersModelMaxGraph.getReqCluster();
+
+            //Deletes the requirement that were inside the model
             for (Requirement requirement : addRequirements) {
                 if (similarityModel.containsRequirement(requirement.getId())) {
                     deleteReqFromClusters(organization, requirement.getId(), clustersModelMaxGraph, clustersChanged, reqCluster);
                 }
             }
+            //Creates a new cluster for each input requirement
             int lastClusterId = clustersModelMaxGraph.getLastClusterId();
             Map<Integer, List<String>> clusters = clustersModelMaxGraph.getClusters();
             for (Requirement requirement : addRequirements) {
@@ -269,13 +332,20 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
         }
     }
 
+    /**
+     * Deletes the input requirements from the cluster model. If the requirement was inside a cluster with more than one requirement, the
+     * method splits the cluster if necessary.
+     */
     @Override
     public void deleteRequirementsFromClusters(String organization, List<Requirement> deleteRequirements, OrganizationModels organizationModels) throws InternalErrorException {
         try {
+            //Initialization
             SimilarityModel similarityModel = organizationModels.getSimilarityModel();
             ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) organizationModels.getClustersModel();
             Set<Integer> clustersChanged = clustersModelMaxGraph.getClustersChanged();
             Map<String,Integer> reqCluster = clustersModelMaxGraph.getReqCluster();
+
+            //Deletes the input requirements
             for (Requirement requirement : deleteRequirements) {
                 if (similarityModel.containsRequirement(requirement.getId())) {
                     deleteReqFromClusters(organization, requirement.getId(), clustersModelMaxGraph, clustersChanged, reqCluster);
@@ -292,13 +362,17 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
      */
 
     private void deleteReqFromClusters(String organization, String req, ClustersModelMaxGraph clustersModelMaxGraph, Set<Integer> clustersChanged, Map<String,Integer> reqCluster) throws InternalErrorException {
+        //Deletes one requirement from the cluster model
         Map<Integer,List<String>> clusters = clustersModelMaxGraph.getClusters();
         int lastClusterId = clustersModelMaxGraph.getLastClusterId();
 
         int clusterId = reqCluster.get(req);
         List<String> clusterRequirements = clusters.get(clusterId);
         clustersChanged.add(clusterId);
+
+        //Checks number of requirements in the cluster
         if (clusterRequirements.size() > 1) {
+            //Checks if it is necessary to split the cluster
             List<Dependency> dependencies = databaseOperations.getClusterDependencies(organization, clusterId, true);
             HashMap<String, List<String>> reqDeps = createReqDeps(clusterRequirements, dependencies);
             List<String> candidateReqs = new ArrayList<>(reqDeps.get(req));
@@ -307,7 +381,7 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
             Clusters aux = bfsClusters(reqDeps, clusterRequirements, candidateReqs, avoidReqs);
             clusterRequirements.remove(req);
             HashMap<Integer, List<String>> candidateClusters = aux.candidateClusters;
-            //updating clusters
+            //Updates clusters accordingly
             if (candidateClusters.size() > 1) {
                 boolean firstOne = true;
                 for (Map.Entry<Integer, List<String>> entry : candidateClusters.entrySet()) {
@@ -374,23 +448,30 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
     }
 
     private void computeProposedDependencies(String organization, Set<String> requirements, Set<Integer> clustersIds, OrganizationModels organizationModels, boolean useAuxiliaryTable) throws InternalErrorException {
+        //Recomputes the proposed dependencies between all the requirements of the cluster model and the input clusters
         try {
+            //Initialization
             SimilarityModel similarityModel = organizationModels.getSimilarityModel();
             SimilarityAlgorithm similarityAlgorithm = Constants.getInstance().getSimilarityAlgorithm();
             ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) organizationModels.getClustersModel();
             Map<Integer, List<String>> clusters = clustersModelMaxGraph.getClusters();
             Set<String> rejectedDependencies = loadDependenciesByStatus(organization, "rejected", useAuxiliaryTable);
             List<Dependency> proposedDependencies = new ArrayList<>();
+
+            //Loops for each requirement
             int cont = 0;
             int maxDeps = Constants.getInstance().getMaxDepsForPage();
-            //TODO this is causing n*n efficiency, can be improved saving the result of the pairs and only compute half of the matrix (less memory efficiency)
             for (String req1 : requirements) {
+                //Loops for each input cluster
                 for (int clusterId : clustersIds) {
                     List<String> clusterRequirements = clusters.get(clusterId);
                     double maxScore = organizationModels.getThreshold();
                     String maxReq = null;
+                    //Loops for each requirement inside the cluster
                     for (String req2 : clusterRequirements) {
+                        //Checks they are not equal nor a rejected dependency
                         if (!rejectedDependencies.contains(req1 + req2) && !req1.equals(req2)) {
+                            //Computes the similarity score and updates the maxScore if it is higher
                             double score = similarityAlgorithm.computeSimilarity(similarityModel, req1, req2);
                             if (score >= maxScore) {
                                 maxScore = score;
@@ -399,6 +480,7 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
                         }
                     }
                     if (maxReq != null) {
+                        //Updates the found dependency
                         ++cont;
                         proposedDependencies.add(new Dependency(req1, maxReq, "proposed", maxScore, clusterId));
                         if (cont >= maxDeps) {
@@ -425,6 +507,7 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
     }
 
     private Set<String> loadDependenciesByStatus(String organization, String status, boolean useAuxiliaryTable) throws InternalErrorException {
+        //Loads the dependencies from the database with the input status
         Set<String> result = new HashSet<>();
         if (Constants.getInstance().getDatabaseModel().existsOrganization(organization)) {
             List<Dependency> dependencies = databaseOperations.getDependenciesByStatus(organization, status, useAuxiliaryTable);
@@ -439,11 +522,16 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
     }
 
     private Clusters bfsClusters(HashMap<String,List<String>> reqDeps, List<String> clusterRequirements, List<String> requirementIds, HashSet<String> avoidReqs) {
+        //Recreates a cluster according to its connectivity
+
+        //Initialization
         HashMap<Integer,List<String>> candidateClusters = new HashMap<>();
         HashSet<String> processedReqs = new HashSet<>();
         HashMap<String,Integer> reqCluster = new HashMap<>();
         PriorityQueue<String> priorityQueue = new PriorityQueue<>();
         int countIds = 0;
+
+        //Puts each requirement in a different cluster
         for (String requirement: clusterRequirements) {
             reqCluster.put(requirement, -1);
         }
@@ -455,6 +543,8 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
             priorityQueue.add(requirement);
             ++countIds;
         }
+
+        //Does a bfs until all requirements are checked or all of them are inside the same cluster
         while(!priorityQueue.isEmpty() && candidateClusters.size() > 1) {
             String requirement = priorityQueue.poll();
             if (!processedReqs.contains(requirement)) {
@@ -512,6 +602,7 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
     }
 
     private int mergeClusters(Map<Integer,List<String>> clusters, Map<String,Integer> reqCluster, String req1, String req2, int countIds) {
+        //Merges the clusters of the two input requirements if possible
         int clusterReq1 = reqCluster.get(req1);
         int clusterReq2 = reqCluster.get(req2);
         if (clusterReq1 == -1 && clusterReq2 == -1) {
@@ -544,7 +635,6 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
         return countIds;
     }
 
-    //TODO maybe change this
     private List<Dependency> duplicateDependencies(List<Dependency> dependencies) {
         List<Dependency> result = new ArrayList<>();
         for (Dependency dependency: dependencies) {

@@ -1,4 +1,4 @@
-package upc.similarity.compareapi.similarity_algorithm.tf_idf;
+package upc.similarity.compareapi.algorithms.similarity_algorithm.tf_idf;
 
 import java.util.HashSet;
 import java.util.Map;

@@ -1,19 +1,19 @@
 package upc.similarity.compareapi.config;
 
 import org.json.JSONObject;
-import upc.similarity.compareapi.clusters_algorithm.ClustersAlgorithm;
-import upc.similarity.compareapi.clusters_algorithm.max_graph.ClustersAlgorithmMaxGraph;
+import upc.similarity.compareapi.algorithms.clusters_algorithm.ClustersAlgorithm;
+import upc.similarity.compareapi.algorithms.clusters_algorithm.max_graph.ClustersAlgorithmMaxGraph;
 import upc.similarity.compareapi.dao.DatabaseModel;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.dao.algorithm_models_dao.clusters_algorithm.ClustersModelDatabase;
 import upc.similarity.compareapi.dao.algorithm_models_dao.clusters_algorithm.max_graph.ClustersModelDatabaseMaxGraph;
 import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabase;
 import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.tf_idf.SimilarityModelDatabaseTfIdf;
-import upc.similarity.compareapi.preprocess.PreprocessPipeline;
-import upc.similarity.compareapi.preprocess.PreprocessPipelineDefault;
-import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
-import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityAlgorithmTfIdf;
-import upc.similarity.compareapi.similarity_algorithm.tf_idf_double.SimilarityAlgorithmTfIdfDouble;
+import upc.similarity.compareapi.algorithms.preprocess.PreprocessPipeline;
+import upc.similarity.compareapi.algorithms.preprocess.PreprocessPipelineDefault;
+import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityAlgorithm;
+import upc.similarity.compareapi.algorithms.similarity_algorithm.tf_idf.SimilarityAlgorithmTfIdf;
+import upc.similarity.compareapi.algorithms.similarity_algorithm.tf_idf_double.SimilarityAlgorithmTfIdfDouble;
 import upc.similarity.compareapi.util.Logger;
 
 import java.nio.file.Files;

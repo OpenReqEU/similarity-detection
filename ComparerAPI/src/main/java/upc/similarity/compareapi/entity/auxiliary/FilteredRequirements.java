@@ -4,8 +4,7 @@ import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.entity.OrganizationModels;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.entity.exception.InternalErrorException;
-import upc.similarity.compareapi.preprocess.PreprocessPipeline;
-import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
+import upc.similarity.compareapi.algorithms.preprocess.PreprocessPipeline;
 
 import java.util.*;
 

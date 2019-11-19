@@ -1,9 +1,9 @@
-package upc.similarity.compareapi.similarity_algorithm.tf_idf;
+package upc.similarity.compareapi.algorithms.similarity_algorithm.tf_idf;
 
 import upc.similarity.compareapi.entity.exception.InternalErrorException;
 import upc.similarity.compareapi.util.Logger;
-import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
-import upc.similarity.compareapi.similarity_algorithm.SimilarityAlgorithm;
+import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityModel;
+import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityAlgorithm;
 
 import java.util.*;
 
@@ -22,7 +22,8 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
 
 
     @Override
-    public SimilarityModel buildModel(Map<String, List<String>> requirements) {
+    public SimilarityModelTfIdf buildModel(Map<String, List<String>> requirements) {
+        //Initialization
         double cutOffParameter = computeCutOffParameter(requirements.size());
         boolean smoothing = (requirements.size() < 100);
         Logger.getInstance().showInfoMessage("Cutoff: " + cutOffParameter);
@@ -31,10 +32,12 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
         Map<String, Integer> frequencyValues = new HashMap<>();
         List<Map<String, Integer>> tfValues = new ArrayList<>();
 
+        //Computes frequencies of each word in all requirements and in each requirement
         for(Map.Entry<String,List<String>> requirement : requirements.entrySet()) {
             tfValues.add(tf(requirement.getValue(),frequencyValues));
         }
 
+        //Computes the tf_idf vectors of each requirement
         int i = 0;
         for (Map.Entry<String,List<String>> requirement : requirements.entrySet()) {
             HashMap<String, Double> aux = new HashMap<>();
@@ -65,6 +68,7 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
     @Override
     public void addRequirements(SimilarityModel similarityModel, Map<String,List<String>> requirements) throws InternalErrorException {
         try {
+            //Initialization
             SimilarityModelTfIdf modelTfIdf = (SimilarityModelTfIdf) similarityModel;
             Map<String, Integer> newCorpusFrequency = modelTfIdf.getCorpusFrequency();
             Map<String, Integer> oldCorpusFrequency = cloneCorpusFrequency(newCorpusFrequency);
@@ -75,17 +79,17 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
             double cutOffParameter = computeCutOffParameter(finalSize);
             boolean smoothing = (finalSize < 100);
 
-            //tf new requirements
+            //Computes frequencies of the new requirements and updates the total frequencies of each word in all the requirements
             List<Map<String, Integer>> wordBagArray = new ArrayList<>();
             for (Map.Entry<String, List<String>> requirement : requirements.entrySet()) {
                 List<String> tokens = requirement.getValue();
                 wordBagArray.add(tf(tokens, newCorpusFrequency));
             }
 
-            //idf old requirements
+            //Recomputes the idf values of the old requirements
             recomputeIdfValues(docs, oldCorpusFrequency, newCorpusFrequency, oldSize, finalSize);
 
-            //idf new requirements
+            //Computes the tf_idf vectors of the new requirements
             int i = 0;
             for (Map.Entry<String, List<String>> requirement : requirements.entrySet()) {
                 String id = requirement.getKey();
@@ -108,6 +112,7 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
     @Override
     public void deleteRequirements(SimilarityModel similarityModel, List<String> requirements) throws InternalErrorException {
         try {
+            //Initialization
             SimilarityModelTfIdf modelTfIdf = (SimilarityModelTfIdf) similarityModel;
             Map<String, Map<String, Double>> docs = modelTfIdf.getDocs();
             Map<String, Integer> newCorpusFrequency = modelTfIdf.getCorpusFrequency();
@@ -117,9 +122,11 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
             int newSize = oldSize;
 
             for (String id : requirements) {
+                //Checks if the requirement is valid
                 if (docs.containsKey(id)) { //problem: if the requirement had this word before applying cutoff parameter
                     --newSize;
                     Map<String, Double> words = docs.get(id);
+                    //Updates the total frequencies of each word
                     for (String word : words.keySet()) {
                         int value = newCorpusFrequency.get(word);
                         if (value == 1) newCorpusFrequency.remove(word);

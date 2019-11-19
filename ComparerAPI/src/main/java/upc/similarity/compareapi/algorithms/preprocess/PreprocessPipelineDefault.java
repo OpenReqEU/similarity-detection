@@ -1,4 +1,4 @@
-package upc.similarity.compareapi.preprocess;
+package upc.similarity.compareapi.algorithms.preprocess;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;

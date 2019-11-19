@@ -1,8 +1,8 @@
 package upc.similarity.compareapi.dao.algorithm_models_dao.clusters_algorithm.max_graph;
 
 import org.json.JSONArray;
-import upc.similarity.compareapi.clusters_algorithm.ClustersModel;
-import upc.similarity.compareapi.clusters_algorithm.max_graph.ClustersModelMaxGraph;
+import upc.similarity.compareapi.algorithms.clusters_algorithm.ClustersModel;
+import upc.similarity.compareapi.algorithms.clusters_algorithm.max_graph.ClustersModelMaxGraph;
 import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.dao.SQLiteDatabase;
 import upc.similarity.compareapi.dao.algorithm_models_dao.clusters_algorithm.ClustersModelDatabase;

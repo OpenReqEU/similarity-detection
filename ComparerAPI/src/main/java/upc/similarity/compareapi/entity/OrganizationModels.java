@@ -1,15 +1,23 @@
 package upc.similarity.compareapi.entity;
 
-import upc.similarity.compareapi.clusters_algorithm.ClustersModel;
-import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
-
-import java.util.List;
-import java.util.Map;
+import upc.similarity.compareapi.algorithms.clusters_algorithm.ClustersModel;
+import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityModel;
 
 public class OrganizationModels {
 
+    /**
+     * A double that shows the threshold used, only necessary in with clusters methods
+     */
     private double threshold;
+
+    /**
+     * A boolean that shows if the model has been constructed using title + text (true) or only title (false)
+     */
     private boolean compare;
+
+    /**
+     * A boolean that shows if the model has or does not have clusters
+     */
     private boolean withClusters;
 
     private SimilarityModel similarityModel;

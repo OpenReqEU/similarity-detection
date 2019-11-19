@@ -1,6 +1,6 @@
-package upc.similarity.compareapi.similarity_algorithm.tf_idf_double;
+package upc.similarity.compareapi.algorithms.similarity_algorithm.tf_idf_double;
 
-import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityModelTfIdf;
+import upc.similarity.compareapi.algorithms.similarity_algorithm.tf_idf.SimilarityModelTfIdf;
 
 import java.util.*;
 

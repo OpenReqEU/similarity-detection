@@ -135,14 +135,17 @@ There are two things to take into account. The first one is the ACID properties,
 
 - Preprocess Pipeline: It is composed of the following 6 steps:
     - Text cleaning (own preprocess step done with regex)
-    - Tokenizer (from apache lucene library)
-    - Lowercase (from apache lucene library)
-    - Stop words removal (from apache lucene library)
-    - Stemmer (from porter stem library)
-    - Bi-grams discovering (from apache lucene library)
+        - Substitute code fragments with a clause
+        - Delete strange characters
+        - Delete punctuation symbols
+    - Tokenizer ([from apache lucene library](https://lucene.apache.org/core/))
+    - Lowercase ([from apache lucene library](https://lucene.apache.org/core/))
+    - Stop words removal ([from apache lucene library](https://lucene.apache.org/core/))
+    - Stemmer ([from apache lucene library](https://lucene.apache.org/core/))
+    - Bi-grams discovering ([from apache lucene library](https://lucene.apache.org/core/))
 
 - Similarity Algorithm: There are two tf idf modalities:
-    - tf_idf (default): it is implemented as the well known *term frequency–inverse document frequency* algorithm. The similarity score is computed with the cosine similarity measure. The configurable parameters are:
+    - tf_idf (default):  It is implemented as the well known term frequency–inverse document frequency algorithm. Apart from saving the tf-idf vector of each requirement, the service also saves the number of appearances in the input requirements of each word. Thanks to that, we are able to add or delete requirements without needing to reconstruct the entirety of the model. It has been modified to allow adding new requirements or deleting old ones. Whenever the input requirements are less than one hundred the smoothing technique is incorporated to return logical recommendations. The similarity score between two requirements is computed with the cosine similarity measure among their tf-idf vectors. The configurable parameters are:
         - *cut_off*: A double number. Determines the minimum tfidf word value accepted. It is used to delete the words that appear in the majority of the input requirements. Realize that increasing the value of this variable reduces the number of words used in the comparison between requirements (maybe decreasing the accuracy) and reduces the time consumed to compute the model and compute the similarity scores.
         - *smoothing*: A boolean value. Determines if the smoothing should be used. The smoothing consists of disabling the cut_off filter in the input models with less than 100 requirements and increasing the words value in a determined constant number. This can be used to compute the similarity in a little group of requirements. However, it is not recommended to use the tfIdf algorithm with little sets of requirements.
     - tf_idf_double: it is implemented as the prior algorithm except for the similarity score computation. It is first computed the score between the words with greater tfidf value (the topics) and if they are similar it is then computed the score between the words with lower values (the matter at hand). In this way, the requirements which have the same topic and talk about the same issue have a higher score than the requirements which only have the same topic. The configurable parameters are:
@@ -152,7 +155,7 @@ There are two things to take into account. The first one is the ACID properties,
         - *cut_off_topics*: A double number between 0 and 1. Determines the threshold of the topic comparison. When two requirements have a score above this threshold when comparing their topic words it is considered that they have the same topic. 
         - *importance_low*: A double number between 0 and 1. It is a percentage that determines the importance of the words with low tf_idf value against the topic words.
 
-- Clusters Algorithm: Consists of saving the user feedback as graphs where the nodes are the organization requirements and the edges are the accepted dependencies. It recommends proposed dependencies to the user that can be accepted or rejected.
+- Clusters Algorithm: Consists of saving the user feedback as graphs where the nodes are requirements and the edges are accepted or rejected dependencies. It recommends proposed pairs of similar requirements to the user taking into account the tf-idf value of the previous similarity algorithm and the existing clusters (i.e., it returns similar requirements with a single requirement of a cluster, the one having the highest similarity score). The user can accept or reject the proposed dependencies. This information is collected by the service in batches and used in preceding recommendations.
 
 ### Configuration files
 

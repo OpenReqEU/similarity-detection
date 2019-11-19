@@ -1,4 +1,4 @@
-package upc.similarity.compareapi.similarity_algorithm;
+package upc.similarity.compareapi.algorithms.similarity_algorithm;
 
 import upc.similarity.compareapi.entity.exception.InternalErrorException;
 

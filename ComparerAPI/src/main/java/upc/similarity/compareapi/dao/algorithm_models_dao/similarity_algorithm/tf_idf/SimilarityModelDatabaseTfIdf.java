@@ -4,8 +4,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import upc.similarity.compareapi.dao.algorithm_models_dao.similarity_algorithm.SimilarityModelDatabase;
 import upc.similarity.compareapi.entity.exception.InternalErrorException;
-import upc.similarity.compareapi.similarity_algorithm.SimilarityModel;
-import upc.similarity.compareapi.similarity_algorithm.tf_idf.SimilarityModelTfIdf;
+import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityModel;
+import upc.similarity.compareapi.algorithms.similarity_algorithm.tf_idf.SimilarityModelTfIdf;
 
 import java.sql.*;
 import java.util.HashMap;

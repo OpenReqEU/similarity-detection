@@ -1,6 +1,6 @@
 package upc.similarity.compareapi.dao.algorithm_models_dao.clusters_algorithm;
 
-import upc.similarity.compareapi.clusters_algorithm.ClustersModel;
+import upc.similarity.compareapi.algorithms.clusters_algorithm.ClustersModel;
 import upc.similarity.compareapi.entity.exception.InternalErrorException;
 
 import java.sql.Connection;
