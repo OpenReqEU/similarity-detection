@@ -420,7 +420,7 @@ public class SimilarityServiceImpl implements SimilarityService {
 
     private Path writeMultipartFile(String filename, MultipartFile multipartFile) throws InternalErrorException {
         try {
-            Path p = Paths.get("../testing/output/multipart_files/" + filename);
+            Path p = Paths.get("../auxiliary_files/multipart_files/" + filename);
             Files.createFile(p);
             multipartFile.transferTo(p);
             return p;

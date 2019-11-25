@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import io.swagger.annotations.ApiOperation;
-import org.json.JSONObject;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(value="/upload")
 public class FileUploadService {
 
-	private static final String UPLOAD_FOLDER = "../testing/output/test_result";
+	private static final String UPLOAD_FILE = "../auxiliary_files/test_result";
 
 	@CrossOrigin
 	@PostMapping(value = "/PostResult", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -23,7 +22,7 @@ public class FileUploadService {
     }
 
 	private void write_to_file(String data){
-		try (FileOutputStream outputStream = new FileOutputStream(UPLOAD_FOLDER)) {
+		try (FileOutputStream outputStream = new FileOutputStream(UPLOAD_FILE)) {
 			byte[] strToBytes = data.getBytes();
 			outputStream.write(strToBytes);
 		} catch (Exception e) {
@@ -42,7 +41,7 @@ public class FileUploadService {
 		String data = null;
 
 		try {
-			Path path = Paths.get(UPLOAD_FOLDER);
+			Path path = Paths.get(UPLOAD_FILE);
 			data = Files.readAllLines(path).get(0);
 		} catch (Exception e) {
 			e.printStackTrace();

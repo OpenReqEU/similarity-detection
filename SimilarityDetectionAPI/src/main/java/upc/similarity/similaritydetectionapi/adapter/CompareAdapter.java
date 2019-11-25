@@ -118,12 +118,17 @@ public class CompareAdapter extends ComponentAdapter{
 
     @Override
     public void buildClusters(String responseId, String organization, boolean compare, double threshold, Path p) throws ComponentException {
-
         try {
-            InputStream inputStream = new FileInputStream(p.toFile());
-            connectionComponentPostMultipart(URL + "BuildClusters?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, inputStream);
-            Files.delete(p);
-        }  catch (IOException e) {
+            try {
+                InputStream inputStream = new FileInputStream(p.toFile());
+                connectionComponentPostMultipart(URL + "BuildClusters?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, inputStream);
+                Files.delete(p);
+            } catch (ComponentException e) {
+                Files.delete(p);
+                throw e;
+            }
+        } catch (IOException e) {
+            Control.getInstance().showErrorMessage(e.getMessage());
             throw new InternalErrorException("Error while deleting multipart file");
         }
     }

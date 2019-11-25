@@ -633,7 +633,7 @@ public class CompareServiceImpl implements CompareService {
             logger.showErrorMessage(e.getMessage());
             throw new InternalErrorException("Error while converting input json file");
         } catch (ParseException e) {
-            logger.showInfoMessage(e.getMessage());
+            logger.showInfoMessage(e.toString());
             throw new BadRequestException("The input json file is not well build");
         }
     }

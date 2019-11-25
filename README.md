@@ -69,7 +69,7 @@ The service is divided into two independent components: SimilarityDetectionAPI(p
 - ComparerAPI/data: directory where the data files are located
 - TestingRestSercice: example of client
 - testing: directory with input and output examples used to test
-- data: directory with the database files
+- auxiliary_files: directory used for saving the files of the auxiliary client and temporary saving the input multipart files
 - config_files: directory where the configuration files are stored
 - LICENSE: license
 
