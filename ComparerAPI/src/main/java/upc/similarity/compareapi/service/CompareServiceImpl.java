@@ -1,5 +1,7 @@
 package upc.similarity.compareapi.service;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -626,15 +628,14 @@ public class CompareServiceImpl implements CompareService {
 
     private Clusters parseMultipartFileToClusters(MultipartFile file) throws BadRequestException, InternalErrorException {
         try(InputStream inputStream = new BufferedInputStream(file.getInputStream())) {
-            JSONParser jsonParser = new JSONParser();
-            JSONObject jsonObject = (JSONObject) jsonParser.parse(new InputStreamReader(inputStream, StandardCharsets.US_ASCII));
-            return new Clusters(jsonObject);
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.readValue(inputStream, Clusters.class);
+        } catch (JsonParseException e) {
+            logger.showInfoMessage(e.getMessage());
+            throw new BadRequestException("The input json file is not well build");
         } catch (IOException e) {
             logger.showErrorMessage(e.getMessage());
             throw new InternalErrorException("Error while converting input json file");
-        } catch (ParseException e) {
-            logger.showInfoMessage(e.toString());
-            throw new BadRequestException("The input json file is not well build");
         }
     }
 

@@ -26,29 +26,6 @@ public class Requirement implements Serializable {
 
     public Requirement() {}
 
-    public Requirement(JSONObject jsonObject) throws BadRequestException {
-        try {
-            this.id = (String) jsonObject.get("id");
-            this.name = (String) jsonObject.get("name");
-            this.text = (String) jsonObject.get("text");
-            Object aux = jsonObject.get("created_at");
-            if (aux instanceof Long) this.createdAt = (Long) aux;
-            else {
-                String createdAtAux = (String) aux;
-                this.createdAt = (aux == null) ? 0 : Long.parseLong(createdAtAux);
-            }
-            aux = jsonObject.get("modified_at");
-            if (aux instanceof Long) this.modifiedAt = (Long) aux;
-            else {
-                String modifiedAtAux = (String) aux;
-                this.modifiedAt = (modifiedAtAux == null) ? 0 : Long.parseLong(modifiedAtAux);
-            }
-            this.status = (String) jsonObject.get("status");
-        } catch (Exception e) {
-            throw new BadRequestException("A requirement is not well written: " + e.getMessage());
-        }
-    }
-
     /*
     Get
      */
