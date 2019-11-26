@@ -1,0 +1,11 @@
+{
+    "requirements":[
+        {"id":"UPC-1","text":"UAB","name":"","requirementParts":[{"id":"UPC-1-1","name":"Components","text":"System"}]},
+        {"id":"UPC-2","text":"nothing","name":"","requirementParts":[{"id":"UPC-2-1","name":"Components","text":"System"}]},
+        {"id":"UPC-3","text":"UAB ALONE","name":"","requirementParts":[{"id":"UPC-3-1","name":"Components","text":"System"}]},
+        {"id":"UPC-4","text":"UAB LION","name":"","requirementParts":[{"id":"UPC-4-1","name":"Components","text":"Another"}]},
+        {"id":"UPC-5","text":"UAB MEH","name":"","requirementParts":[{"id":"UPC-5-1","name":"Another","text":"System"}]},
+        {"id":"UPC-6","text":"nothing","name":""},
+        {"id":"UPC-7","text":"UAB CATEGORY","name":"","requirementParts":[]}
+    ]
+}

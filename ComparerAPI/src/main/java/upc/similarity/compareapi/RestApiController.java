@@ -168,11 +168,12 @@ public class RestApiController {
     @PostMapping(value = "/BuildClusters")
     public ResponseEntity buildClusters(@RequestParam("organization") String organization,
                                         @RequestParam("compare") boolean compare,
+                                        @RequestParam("useComponent") boolean useComponent,
                                         @RequestParam("threshold") double threshold,
                                         @RequestParam("responseId") String responseId,
                                         @RequestParam("file") MultipartFile file) {
         try {
-            compareService.buildClusters(responseId, compare, threshold, organization, file);
+            compareService.buildClusters(responseId, compare, useComponent, threshold, organization, file);
             return new ResponseEntity<>(null, HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
@@ -182,12 +183,13 @@ public class RestApiController {
     @PostMapping(value = "/BuildClustersAndCompute")
     public ResponseEntity buildClustersAndCompute(@RequestParam("organization") String organization,
                                                   @RequestParam("compare") boolean compare,
+                                                  @RequestParam("useComponent") boolean useComponent,
                                                   @RequestParam("responseId") String responseId,
                                                   @RequestParam("threshold") double threshold,
                                                   @RequestParam("maxNumber") int maxNumber,
                                                   @RequestParam("file") MultipartFile file) {
         try {
-            compareService.buildClustersAndCompute(responseId,compare,organization,threshold,maxNumber, file);
+            compareService.buildClustersAndCompute(responseId,compare, useComponent, organization,threshold,maxNumber, file);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));

@@ -1,12 +1,8 @@
 package upc.similarity.compareapi.entity.input;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
 import upc.similarity.compareapi.entity.Dependency;
 import upc.similarity.compareapi.entity.Requirement;
-import upc.similarity.compareapi.entity.exception.BadRequestException;
-import upc.similarity.compareapi.entity.exception.InternalErrorException;
 
 import java.io.Serializable;
 import java.util.ArrayList;

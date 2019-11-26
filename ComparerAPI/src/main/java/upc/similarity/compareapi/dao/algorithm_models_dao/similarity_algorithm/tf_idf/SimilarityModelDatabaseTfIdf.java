@@ -26,9 +26,20 @@ public class SimilarityModelDatabaseTfIdf implements SimilarityModelDatabase {
                 + " definition text \n"
                 + ");";
 
+        String sql3 = "CREATE TABLE req_component (\n"
+                + " id varchar PRIMARY KEY, \n"
+                + " component varchar \n"
+                + ");";
+
+        String sql4 = "CREATE TABLE requirements_info (\n"
+                + " useComponent integer \n"
+                + ");";
+
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql1);
             stmt.execute(sql2);
+            stmt.execute(sql3);
+            stmt.execute(sql4);
         }
     }
 
@@ -37,10 +48,14 @@ public class SimilarityModelDatabaseTfIdf implements SimilarityModelDatabase {
 
         String sql1 = "DELETE FROM docs";
         String sql2 = "DELETE FROM corpus";
+        String sql3 = "DELETE FROM req_component";
+        String sql4 = "DELETE FROM requirements_info";
 
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql1);
             stmt.execute(sql2);
+            stmt.execute(sql3);
+            stmt.execute(sql4);
         }
     }
 
@@ -50,6 +65,8 @@ public class SimilarityModelDatabaseTfIdf implements SimilarityModelDatabase {
             SimilarityModelTfIdf similarityModelTfIdf = (SimilarityModelTfIdf) similarityModel;
             saveDocs(similarityModelTfIdf.getDocs(), conn);
             saveCorpusFrequency(similarityModelTfIdf.getCorpusFrequency(), conn);
+            saveReqComponent(similarityModelTfIdf.getReqComponent(), conn);
+            saveRequirementsInfo(similarityModelTfIdf.isUseComponent(), conn);
         } catch (ClassCastException e) {
             throw new InternalErrorException("A tfIdf method received a model that is not tfIdf");
         }
@@ -58,9 +75,11 @@ public class SimilarityModelDatabaseTfIdf implements SimilarityModelDatabase {
     @Override
     public SimilarityModel getModel(boolean readOnly, Connection conn) throws SQLException {
         Map<String,Map<String,Double>> docs = loadDocs(conn);
+        Map<String,String> reqComponent = loadReqComponent(conn);
+        boolean useComponent = loadRequirementsInfo(conn);
         Map<String,Integer> corpusFrequency = null;
         if (!readOnly) corpusFrequency = loadCorpusFrequency(conn);
-        return new SimilarityModelTfIdf(docs,corpusFrequency);
+        return new SimilarityModelTfIdf(docs,corpusFrequency,reqComponent,useComponent);
     }
 
     @Override
@@ -80,16 +99,13 @@ public class SimilarityModelDatabaseTfIdf implements SimilarityModelDatabase {
      */
 
     private void saveDocs(Map<String, Map<String, Double>> docs, Connection conn) throws SQLException {
-
-        Iterator it = docs.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-            String key = (String) pair.getKey();
-            Map<String, Double> words = (Map<String, Double>) pair.getValue();
+        for (Map.Entry<String, Map<String, Double>> entry : docs.entrySet()) {
+            String key = entry.getKey();
+            Map<String, Double> words = entry.getValue();
             String sql = "INSERT INTO docs(id, definition) VALUES (?,?)";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1,key);
-                ps.setString(2,wordsConversionToJson(words).toString());
+                ps.setString(1, key);
+                ps.setString(2, wordsConversionToJson(words).toString());
                 ps.execute();
             }
         }
@@ -97,19 +113,16 @@ public class SimilarityModelDatabaseTfIdf implements SimilarityModelDatabase {
 
     private JSONArray wordsConversionToJson(Map<String, Double> map) {
         JSONArray result = new JSONArray();
-        Iterator it = map.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
+        for (Map.Entry<String, Double> entry : map.entrySet()) {
             JSONObject aux = new JSONObject();
-            aux.put("id",pair.getKey());
-            aux.put("value",pair.getValue());
+            aux.put("id", entry.getKey());
+            aux.put("value", entry.getValue());
             result.put(aux);
         }
         return result;
     }
 
     private void saveCorpusFrequency(Map<String, Integer> corpusFrequency, Connection conn) throws SQLException {
-
         String sql = "INSERT INTO corpus(definition) VALUES (?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1,corpusFrequencyToJson(corpusFrequency));
@@ -119,33 +132,49 @@ public class SimilarityModelDatabaseTfIdf implements SimilarityModelDatabase {
 
     private String corpusFrequencyToJson(Map<String, Integer> corpusFrequency) {
         JSONArray result = new JSONArray();
-        Iterator it = corpusFrequency.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
+        for (Map.Entry<String, Integer> entry : corpusFrequency.entrySet()) {
             JSONObject aux = new JSONObject();
-            aux.put("id",pair.getKey());
-            aux.put("value",pair.getValue());
+            aux.put("id", entry.getKey());
+            aux.put("value", entry.getValue());
             result.put(aux);
         }
         return result.toString();
     }
 
+    private void saveReqComponent(Map<String, String> reqComponent, Connection conn) throws SQLException {
+        for (Map.Entry<String, String> entry : reqComponent.entrySet()) {
+            String key = entry.getKey();
+            String component = entry.getValue();
+            String sql = "INSERT INTO req_component(id, component) VALUES (?,?)";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, key);
+                ps.setString(2, component);
+                ps.execute();
+            }
+        }
+    }
+
+    private void saveRequirementsInfo(boolean useComponent, Connection conn) throws SQLException {
+        String sql = "INSERT INTO requirements_info(useComponent) VALUES (?)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            int value = 0;
+            if (useComponent) value = 1;
+            ps.setInt(1, value);
+            ps.execute();
+        }
+    }
+
     private Map<String, Map<String, Double>> loadDocs(Connection conn) throws SQLException {
-
         Map<String, Map<String, Double>> result = new HashMap<>();
-
         String sql = "SELECT* FROM docs";
-
         try (Statement stmt  = conn.createStatement();
              ResultSet rs    = stmt.executeQuery(sql)){
-
             while (rs.next()) {
                 String key = rs.getString("id");
                 String definition = rs.getString("definition");
                 result.put(key,docsConversionToMap(definition));
             }
         }
-
         return result;
     }
 
@@ -162,20 +191,15 @@ public class SimilarityModelDatabaseTfIdf implements SimilarityModelDatabase {
     }
 
     private Map<String, Integer> loadCorpusFrequency(Connection conn) throws SQLException {
-
         Map<String, Integer> result;
-
         String sql = "SELECT* FROM corpus";
-
         try (Statement stmt  = conn.createStatement();
              ResultSet rs    = stmt.executeQuery(sql)){
-
             if (rs.next()) {
                 String corpus = rs.getString("definition");
                 result = corpusToMap(corpus);
             } else throw new SQLException("Error loading corpus from the database");
         }
-
         return result;
     }
 
@@ -189,5 +213,29 @@ public class SimilarityModelDatabaseTfIdf implements SimilarityModelDatabase {
             result.put(id, value);
         }
         return result;
+    }
+
+    private Map<String, String> loadReqComponent(Connection conn) throws SQLException {
+        Map<String, String> result = new HashMap<>();
+        String sql = "SELECT* FROM req_component";
+        try (Statement stmt  = conn.createStatement();
+             ResultSet rs    = stmt.executeQuery(sql)){
+            while (rs.next()) {
+                String key = rs.getString("id");
+                String component = rs.getString("component");
+                result.put(key,component);
+            }
+        }
+        return result;
+    }
+
+    private boolean loadRequirementsInfo(Connection conn) throws SQLException {
+        String sql = "SELECT* FROM requirements_info";
+        try (Statement stmt  = conn.createStatement();
+             ResultSet rs    = stmt.executeQuery(sql)){
+            rs.next();
+            int value = rs.getInt("useComponent");
+            return value == 1;
+        }
     }
 }

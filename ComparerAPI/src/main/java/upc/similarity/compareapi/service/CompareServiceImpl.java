@@ -1,10 +1,8 @@
 package upc.similarity.compareapi.service;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import upc.similarity.compareapi.algorithms.clusters_algorithm.ClustersAlgorithm;
@@ -24,7 +22,6 @@ import upc.similarity.compareapi.entity.output.Dependencies;
 import upc.similarity.compareapi.entity.exception.*;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -120,7 +117,7 @@ public class CompareServiceImpl implements CompareService {
         try {
             databaseOperations.saveResponse(organization,responseId,"BuildModel");
             if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(FORBIDDEN_ERROR_MESSAGE);
-            SimilarityModel similarityModel = generateModel(compare, deleteDuplicates(requirements));
+            SimilarityModel similarityModel = generateModel(compare, false, deleteDuplicates(requirements));
             OrganizationModels organizationModels = new OrganizationModels(0,compare,false, similarityModel);
             getAccessToUpdate(organization);
             try {
@@ -143,7 +140,7 @@ public class CompareServiceImpl implements CompareService {
         try {
             databaseOperations.saveResponse(organization, responseId, "BuildModelAndCompute");
             if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(FORBIDDEN_ERROR_MESSAGE);
-            SimilarityModel similarityModel = generateModel(compare, deleteDuplicates(requirements));
+            SimilarityModel similarityModel = generateModel(compare, false, deleteDuplicates(requirements));
             OrganizationModels organizationModels = new OrganizationModels(0, compare, false, similarityModel);
             List<String> requirementsIds = new ArrayList<>();
             for (Requirement requirement : requirements) {
@@ -373,7 +370,7 @@ public class CompareServiceImpl implements CompareService {
      */
 
     @Override
-    public void buildClusters(String responseId, boolean compare, double threshold, String organization, MultipartFile file) throws ComponentException {
+    public void buildClusters(String responseId, boolean compare, boolean useComponent, double threshold, String organization, MultipartFile file) throws ComponentException {
         logger.showInfoMessage("BuildClusters: Start computing " + organization + " " + responseId);
         try {
             databaseOperations.saveResponse(organization, responseId, "BuildClusters");
@@ -383,7 +380,7 @@ public class CompareServiceImpl implements CompareService {
 
             FilteredRequirements filteredRequirements = new FilteredRequirements(input.getRequirements(),null,true);
             FilteredDependencies filteredDependencies = new FilteredDependencies(input.getDependencies(),filteredRequirements.getReqDepsToRemove(),false);
-            SimilarityModel similarityModel = generateModel(compare, filteredRequirements.getAllRequirements());
+            SimilarityModel similarityModel = generateModel(compare, useComponent, filteredRequirements.getAllRequirements());
             ClustersModel clustersModel = clustersAlgorithm.buildModel(filteredRequirements.getAllRequirements(),filteredDependencies.getAllDependencies());
             OrganizationModels organizationModels = new OrganizationModels(threshold, compare, true, similarityModel, clustersModel);
 
@@ -404,7 +401,7 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, int maxNumber, MultipartFile file) throws ComponentException {
+    public void buildClustersAndCompute(String responseId, boolean compare, boolean useComponent, String organization, double threshold, int maxNumber, MultipartFile file) throws ComponentException {
         logger.showInfoMessage("BuildClustersAndCompute: Start computing " + organization + " " + responseId);
         try {
             databaseOperations.saveResponse(organization, responseId, "BuildClustersAndCompute");
@@ -414,7 +411,7 @@ public class CompareServiceImpl implements CompareService {
 
             FilteredRequirements filteredRequirements = new FilteredRequirements(input.getRequirements(),null,true);
             FilteredDependencies filteredDependencies = new FilteredDependencies(input.getDependencies(),filteredRequirements.getReqDepsToRemove(),false);
-            SimilarityModel similarityModel = generateModel(compare, filteredRequirements.getAllRequirements());
+            SimilarityModel similarityModel = generateModel(compare, useComponent,filteredRequirements.getAllRequirements());
             ClustersModel clustersModel = clustersAlgorithm.buildModel(filteredRequirements.getAllRequirements(),filteredDependencies.getAllDependencies());
             OrganizationModels organizationModels = new OrganizationModels(threshold, compare, true, similarityModel, clustersModel);
 
@@ -630,7 +627,7 @@ public class CompareServiceImpl implements CompareService {
         try(InputStream inputStream = new BufferedInputStream(file.getInputStream())) {
             ObjectMapper objectMapper = new ObjectMapper();
             return objectMapper.readValue(inputStream, Clusters.class);
-        } catch (JsonParseException e) {
+        } catch (JsonParseException | JsonMappingException e) {
             logger.showInfoMessage(e.getMessage());
             throw new BadRequestException("The input json file is not well build");
         } catch (IOException e) {
@@ -712,14 +709,14 @@ public class CompareServiceImpl implements CompareService {
         return result;
     }
 
-    private SimilarityModel generateModel(boolean compare, List<Requirement> requirements) throws InternalErrorException {
-        return similarityAlgorithm.buildModel(preprocessPipeline.preprocessRequirements(compare,requirements));
+    private SimilarityModel generateModel(boolean compare, boolean useComponent, List<Requirement> requirements) throws InternalErrorException {
+        return similarityAlgorithm.buildModel(preprocessPipeline.preprocessRequirements(compare,requirements),requirements,useComponent);
     }
 
     private void addRequirementsToModel(OrganizationModels organizationModels, List<Requirement> requirements) throws InternalErrorException {
         SimilarityModel similarityModel = organizationModels.getSimilarityModel();
         deleteRequirementsFromModel(similarityModel,requirements);
-        similarityAlgorithm.addRequirements(similarityModel,preprocessPipeline.preprocessRequirements(organizationModels.isCompare(),requirements));
+        similarityAlgorithm.addRequirements(similarityModel,preprocessPipeline.preprocessRequirements(organizationModels.isCompare(),requirements),requirements);
     }
 
     private void deleteRequirementsFromModel(SimilarityModel similarityModel, List<Requirement> requirements) throws InternalErrorException {

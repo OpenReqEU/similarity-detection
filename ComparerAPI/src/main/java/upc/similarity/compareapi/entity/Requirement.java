@@ -1,14 +1,14 @@
 package upc.similarity.compareapi.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.json.simple.JSONObject;
-import upc.similarity.compareapi.entity.exception.BadRequestException;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import upc.similarity.compareapi.entity.auxiliary.RequirementDeserializer;
 
 import java.io.Serializable;
 
 import static java.lang.Long.max;
 
-//Class used to represent requirements
+@JsonDeserialize(using = RequirementDeserializer.class)
 public class Requirement implements Serializable {
 
     @JsonProperty(value="id")
@@ -19,12 +19,24 @@ public class Requirement implements Serializable {
     private String text;
     @JsonProperty(value="created_at")
     private long createdAt;
-    @JsonProperty(value = "modifiedAt")
+    @JsonProperty(value = "modified_at")
     private long modifiedAt;
     @JsonProperty(value="status")
     private String status;
+    private String component;
 
     public Requirement() {}
+
+    public Requirement(String id, String name, String text, long createdAt, long modifiedAt, String status, String component) {
+        this.id = id;
+        this.name = name;
+        this.text = text;
+        this.createdAt = createdAt;
+        this.modifiedAt = modifiedAt;
+        this.status = status;
+        this.component = component;
+    }
+
 
     /*
     Get
@@ -58,6 +70,11 @@ public class Requirement implements Serializable {
         return max(createdAt,modifiedAt);
     }
 
+    public String getComponent() {
+        return component;
+    }
+
+
     /*
     Set
      */
@@ -84,6 +101,10 @@ public class Requirement implements Serializable {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public void setComponent(String component) {
+        this.component = component;
     }
 
     /*

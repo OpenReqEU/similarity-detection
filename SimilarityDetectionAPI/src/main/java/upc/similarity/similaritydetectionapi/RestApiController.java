@@ -272,12 +272,13 @@ public class RestApiController {
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity buildClusters(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                         @ApiParam(value="Use the text field of the requirements to construct the model", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
+                                        @ApiParam(value="Use the component attribute in the similarity comparison", required = false, example = "true") @RequestParam(value = "useComponent",required = false) boolean useComponent,
                                         @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the proposed dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                         @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
                                         @ApiParam(value="OpenReq JSON with requirements and dependencies", required = true) @RequestParam("file") MultipartFile file) {
         try {
             if(url != null) urlOk(url);
-            return new ResponseEntity<>(similarityService.buildClusters(url,organization,compare,threshold,file),HttpStatus.OK);
+            return new ResponseEntity<>(similarityService.buildClusters(url,organization,compare,useComponent,threshold,file),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }
@@ -299,6 +300,7 @@ public class RestApiController {
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity buildClustersAndCompute(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                                   @ApiParam(value="Use the text field of the requirements to construct the model", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
+                                                  @ApiParam(value="Use the component attribute in the similarity comparison", required = false, example = "true") @RequestParam(value = "useComponent",required = false) boolean useComponent,
                                                   @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the proposed dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                                   @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
                                                   @ApiParam(value="Max number of dependencies to return for each requirement", required = false, example = "10") @RequestParam(value = "maxNumber", required = false) Integer maxNumber,
@@ -306,7 +308,7 @@ public class RestApiController {
         try {
             if (maxNumber == null) maxNumber = -1;
             if(url != null) urlOk(url);
-            return new ResponseEntity<>(similarityService.buildClustersAndCompute(url, organization, compare, threshold, maxNumber, file),HttpStatus.OK);
+            return new ResponseEntity<>(similarityService.buildClustersAndCompute(url, organization, compare, useComponent, threshold, maxNumber, file),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }

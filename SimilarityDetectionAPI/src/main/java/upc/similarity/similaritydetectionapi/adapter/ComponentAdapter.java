@@ -55,9 +55,9 @@ public abstract class ComponentAdapter {
     Similarity with clusters
      */
 
-    public abstract void buildClusters(String responseId, String organization, boolean compare, double threshold, Path p) throws ComponentException;
+    public abstract void buildClusters(String responseId, String organization, boolean compare, boolean useComponent, double threshold, Path p) throws ComponentException;
 
-    public abstract void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, int maxNumber, Path p) throws ComponentException;
+    public abstract void buildClustersAndCompute(String responseId, String organization, boolean compare, boolean useComponent, double threshold, int maxNumber, Path p) throws ComponentException;
 
     public abstract String simReqClusters(String organization, int maxValue, List<String> requirements) throws ComponentException;
 
@@ -132,7 +132,7 @@ public abstract class ComponentAdapter {
 
     protected abstract void checkExceptions(int status, String response) throws ComponentException;
 
-    protected JSONArray listRequirementsToJson(List<Requirement> requirements) {
+    protected JSONArray listRequirementsToJson(List<Requirement> requirements) throws InternalErrorException {
         JSONArray jsonRequirements = new JSONArray();
         for (Requirement req: requirements) {
             jsonRequirements.put(req.toJSON());

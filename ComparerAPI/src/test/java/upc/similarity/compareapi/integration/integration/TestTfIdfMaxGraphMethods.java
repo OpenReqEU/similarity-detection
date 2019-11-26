@@ -293,7 +293,7 @@ public class TestTfIdfMaxGraphMethods {
     public void buildClusters() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"buildClusters/input.json")));
         this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("responseId", id+"")
+                .param("compare", "true").param("responseId", id+"").param("useComponent","false")
                 .contentType(MediaType.MULTIPART_FORM_DATA_VALUE))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
@@ -308,7 +308,7 @@ public class TestTfIdfMaxGraphMethods {
     public void buildClustersWithRejected() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"buildClusters/input_rejected.json")));
         this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("responseId", id+"")
+                .param("compare", "true").param("responseId", id+"").param("useComponent","false")
                 .contentType(MediaType.MULTIPART_FORM_DATA_VALUE))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
@@ -323,7 +323,7 @@ public class TestTfIdfMaxGraphMethods {
     public void buildClustersAndCompute() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"buildClustersAndCompute/input.json")));
         this.mockMvc.perform(multipart(url + "BuildClustersAndCompute").file(multipartFile).param("organization", "UPC").param("threshold", "0.2")
-                .param("compare", "true").param("responseId", id+"").param("maxNumber", "-1"))
+                .param("compare", "true").param("responseId", id+"").param("maxNumber", "-1").param("useComponent","false"))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_json(path + "buildClustersAndCompute/output.json")));
@@ -337,7 +337,7 @@ public class TestTfIdfMaxGraphMethods {
     public void simReqClusters() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"simReqClusters/input_model.json")));
         this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("responseId", id+""))
+                .param("compare", "true").param("responseId", id+"").param("useComponent","false"))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("maxValue", "-1")
@@ -352,10 +352,22 @@ public class TestTfIdfMaxGraphMethods {
     }
 
     @Test
+    public void simReqClustersWithComponent() throws Exception {
+        MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"simReqClustersWithComponent/input_model.json")));
+        this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "0")
+                .param("compare", "true").param("responseId", id+"").param("useComponent","true"))
+                .andExpect(status().isOk());
+        ++id;
+        this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("maxValue", "-1")
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqClustersWithComponent/input_operation.json")))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "simReqClustersWithComponent/output_all.json")));
+    }
+
+    @Test
     public void simReqClustersReqNotExist() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"simReqClusters/input_model.json")));
         this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("responseId", id+""))
+                .param("compare", "true").param("responseId", id+"").param("useComponent","false"))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "SimReqClusters").param("organization", "UPC").param("maxValue", "-1")
@@ -367,7 +379,7 @@ public class TestTfIdfMaxGraphMethods {
     public void treatDependencies() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"treatDependencies/input_model.json")));
         this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "1.1")
-                .param("compare", "true").param("responseId", id+""))
+                .param("compare", "true").param("responseId", id+"").param("useComponent","false"))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "TreatAcceptedAndRejectedDependencies").param("organization", "UPC")
@@ -382,7 +394,7 @@ public class TestTfIdfMaxGraphMethods {
     public void treatDependenciesWithLoop() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"treatDependencies/input_model.json")));
         this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "1.1")
-                .param("compare", "true").param("responseId", id+""))
+                .param("compare", "true").param("responseId", id+"").param("useComponent","false"))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "TreatAcceptedAndRejectedDependencies").param("organization", "UPC")
@@ -397,7 +409,7 @@ public class TestTfIdfMaxGraphMethods {
     public void treatDependenciesWithProposed() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"treatDependencies/input_model.json")));
         this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("responseId", id+""))
+                .param("compare", "true").param("responseId", id+"").param("useComponent","false"))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "TreatAcceptedAndRejectedDependencies").param("organization", "UPC")
@@ -412,7 +424,7 @@ public class TestTfIdfMaxGraphMethods {
     public void batchProcess() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"batchProcess/input_model.json")));
         this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "1.1")
-                .param("compare", "true").param("responseId", id+""))
+                .param("compare", "true").param("responseId", id+"").param("useComponent","false"))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "BatchProcess").param("organization", "UPC").param("responseId", id+"")
@@ -428,7 +440,7 @@ public class TestTfIdfMaxGraphMethods {
     public void batchProcessLoop() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"batchProcess/input_model.json")));
         this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "1.1")
-                .param("compare", "true").param("responseId", id+""))
+                .param("compare", "true").param("responseId", id+"").param("useComponent","false"))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "BatchProcess").param("organization", "UPC").param("responseId", id+"")
@@ -444,7 +456,7 @@ public class TestTfIdfMaxGraphMethods {
     public void batchProcessWithProposed() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"batchProcess/input_model.json")));
         this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPC").param("threshold", "0")
-                .param("compare", "true").param("responseId", id+""))
+                .param("compare", "true").param("responseId", id+"").param("useComponent","false"))
                 .andExpect(status().isOk());
         ++id;
         this.mockMvc.perform(post(url + "BatchProcess").param("organization", "UPC").param("responseId", id+"")
@@ -466,7 +478,7 @@ public class TestTfIdfMaxGraphMethods {
         Time.getInstance().setClock(Clock.fixed(ofEpochMilli(0), ZoneId.systemDefault()));
         MockMultipartFile multipartFile = new MockMultipartFile("file", new FileInputStream(new File(path+"getOrganizationInfo/input_model_with.json")));
         this.mockMvc.perform(multipart(url + "BuildClusters").file(multipartFile).param("organization", "UPCTest").param("threshold", "0.12")
-                .param("compare", "true").param("responseId", "Test0"))
+                .param("compare", "true").param("responseId", "Test0").param("useComponent","false"))
                 .andExpect(status().isOk());
         Constants.getInstance().getDatabaseModel().saveResponse("UPCTest","Test3","TestMethod");
         Time.getInstance().setClock(Clock.fixed(ofEpochMilli(40), ZoneId.systemDefault()));

@@ -45,9 +45,9 @@ public interface CompareService {
     Similarity with clusters
      */
 
-    void buildClusters(String responseId, boolean compare, double threshold, String organization, MultipartFile file) throws ComponentException;
+    void buildClusters(String responseId, boolean compare, boolean useComponent, double threshold, String organization, MultipartFile file) throws ComponentException;
 
-    void buildClustersAndCompute(String responseId, boolean compare, String organization, double threshold, int maxNumber, MultipartFile file) throws ComponentException;
+    void buildClustersAndCompute(String responseId, boolean compare, boolean useComponent, String organization, double threshold, int maxNumber, MultipartFile file) throws ComponentException;
 
     Dependencies simReqClusters(String organization, List<String> requirements, int maxNumber) throws ComponentException;
 

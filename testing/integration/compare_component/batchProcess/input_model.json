@@ -7,9 +7,9 @@
         {"id":"UPC-5","text":"UB ALONE","name":""}
     ],
     "dependencies":[
-        {"dependency_type":"similar","status":"accepted","fromid":"UPC-1","toid":"UPC-2","created_at":"12"},
-        {"dependency_type":"similar","status":"accepted","fromid":"UPC-1","toid":"UPC-3","created_at":"1"},
-        {"dependency_type":"similar","status":"accepted","fromid":"UPC-2","toid":"UPC-3","created_at":"1"},
-        {"dependency_type":"similar","status":"accepted","fromid":"UPC-4","toid":"UPC-3","created_at":"12"}
+        {"dependency_type":"similar","status":"accepted","fromid":"UPC-1","toid":"UPC-2","created_at":12},
+        {"dependency_type":"similar","status":"accepted","fromid":"UPC-1","toid":"UPC-3","created_at":1},
+        {"dependency_type":"similar","status":"accepted","fromid":"UPC-2","toid":"UPC-3","created_at":1},
+        {"dependency_type":"similar","status":"accepted","fromid":"UPC-4","toid":"UPC-3","created_at":12}
     ]
 }

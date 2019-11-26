@@ -286,7 +286,7 @@ public class SimilarityServiceImpl implements SimilarityService {
      */
 
     @Override
-    public ResultId buildClusters(String url, String organization, boolean compare, double threshold, MultipartFile input) throws BadRequestException, InternalErrorException {
+    public ResultId buildClusters(String url, String organization, boolean compare, boolean useComponent, double threshold, MultipartFile input) throws BadRequestException, InternalErrorException {
 
         checkThreshold(threshold);
         ResultId id = getId();
@@ -296,7 +296,7 @@ public class SimilarityServiceImpl implements SimilarityService {
             ResultJson result = new ResultJson(id.getId(),"BuildClusters");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                componentAdapter.buildClusters(id.getId(),organization,compare,threshold,p);
+                componentAdapter.buildClusters(id.getId(),organization,compare,useComponent,threshold,p);
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -312,7 +312,7 @@ public class SimilarityServiceImpl implements SimilarityService {
 
 
     @Override
-    public ResultId buildClustersAndCompute(String url, String organization, boolean compare, double threshold, int maxNumber, MultipartFile input) throws BadRequestException, InternalErrorException {
+    public ResultId buildClustersAndCompute(String url, String organization, boolean compare, boolean useComponent, double threshold, int maxNumber, MultipartFile input) throws BadRequestException, InternalErrorException {
 
         checkThreshold(threshold);
         ResultId id = getId();
@@ -322,7 +322,7 @@ public class SimilarityServiceImpl implements SimilarityService {
             ResultJson result = new ResultJson(id.getId(),"BuildClustersAndCompute");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                componentAdapter.buildClustersAndCompute(id.getId(),organization,compare,threshold,maxNumber,p);
+                componentAdapter.buildClustersAndCompute(id.getId(),organization,compare,useComponent,threshold,maxNumber,p);
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());

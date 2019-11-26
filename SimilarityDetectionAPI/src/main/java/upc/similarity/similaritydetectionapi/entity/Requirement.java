@@ -1,14 +1,20 @@
 package upc.similarity.similaritydetectionapi.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import org.json.JSONObject;
+import upc.similarity.similaritydetectionapi.config.Control;
+import upc.similarity.similaritydetectionapi.exception.InternalErrorException;
 
 import java.io.Serializable;
+import java.util.List;
 
 @ApiModel(value = "Requirement", description = "A requirement with id and text")
 public class Requirement implements Serializable {
+
+    private static ObjectMapper mapper = new ObjectMapper();
 
     @ApiModelProperty(example = "UPC-98")
     @JsonProperty(value="id")
@@ -26,8 +32,11 @@ public class Requirement implements Serializable {
     @JsonProperty(value="created_at")
     private Long createdAt;
     @ApiModelProperty(example = "1354019441000")
-    @JsonProperty(value = "modifiedAt")
-    private long modifiedAt;
+    @JsonProperty(value = "modified_at")
+    private Long modifiedAt;
+    @ApiModelProperty(example = "[{\"id\":\"UPC-98-1\",\"name\":\"Components\",\"text\":\"Dependency-Detection\"}]")
+    @JsonProperty(value = "requirementParts")
+    private List<Object> requirementParts;
 
     public String getId() {
         return id;
@@ -49,14 +58,22 @@ public class Requirement implements Serializable {
         return createdAt;
     }
 
-    public JSONObject toJSON() {
-        JSONObject json = new JSONObject();
-        json.put("id",id);
-        json.put("name",name);
-        json.put("text",text);
-        json.put("status",status);
-        json.put("created_at",createdAt);
-        json.put("modified_at", modifiedAt);
-        return json;
+    public Long getModifiedAt() {
+        return modifiedAt;
+    }
+
+    public List<Object> getRequirementParts() {
+        return requirementParts;
+    }
+
+    public JSONObject toJSON() throws InternalErrorException {
+        String jsonInString = "";
+        try {
+            jsonInString = mapper.writeValueAsString(this);
+        } catch (Exception e) {
+            Control.getInstance().showErrorMessage(e.getMessage());
+            throw new InternalErrorException("Error while converting requirement to jsonObject");
+        }
+        return new JSONObject(jsonInString);
     }
 }

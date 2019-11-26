@@ -117,11 +117,11 @@ public class CompareAdapter extends ComponentAdapter{
      */
 
     @Override
-    public void buildClusters(String responseId, String organization, boolean compare, double threshold, Path p) throws ComponentException {
+    public void buildClusters(String responseId, String organization, boolean compare, boolean useComponent, double threshold, Path p) throws ComponentException {
         try {
             try {
                 InputStream inputStream = new FileInputStream(p.toFile());
-                connectionComponentPostMultipart(URL + "BuildClusters?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold, inputStream);
+                connectionComponentPostMultipart(URL + "BuildClusters?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold + "&useComponent=" + useComponent, inputStream);
                 Files.delete(p);
             } catch (ComponentException e) {
                 Files.delete(p);
@@ -134,11 +134,11 @@ public class CompareAdapter extends ComponentAdapter{
     }
 
     @Override
-    public void buildClustersAndCompute(String responseId, String organization, boolean compare, double threshold, int maxNumber, Path p) throws ComponentException {
+    public void buildClustersAndCompute(String responseId, String organization, boolean compare, boolean useComponent, double threshold, int maxNumber, Path p) throws ComponentException {
 
         try {
             InputStream inputStream = new FileInputStream(p.toFile());
-            connectionComponentPostMultipart(URL + "BuildClustersAndCompute?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold + "&maxNumber=" + maxNumber, inputStream);
+            connectionComponentPostMultipart(URL + "BuildClustersAndCompute?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold + "&maxNumber=" + maxNumber + "&useComponent=" + useComponent, inputStream);
             Files.delete(p);
         } catch (FileNotFoundException e) {
             Control.getInstance().showErrorMessage(e.getMessage());
