@@ -1,6 +1,5 @@
 package upc.similarity.compareapi.algorithms.similarity_algorithm.tf_idf_double;
 
-import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.entity.exception.InternalErrorException;
 import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityAlgorithm;
 import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityModel;
@@ -21,8 +20,8 @@ public class SimilarityAlgorithmTfIdfDouble implements SimilarityAlgorithm {
     }
 
     @Override
-    public SimilarityModel buildModel(Map<String, List<String>> requirements, List<Requirement> requirements_info, boolean useComponent) throws InternalErrorException {
-        return similarityAlgorithmTfIdf.buildModel(requirements,requirements_info,useComponent);
+    public SimilarityModel buildModel(Map<String, List<String>> requirements) throws InternalErrorException {
+        return similarityAlgorithmTfIdf.buildModel(requirements);
     }
 
     @Override
@@ -36,8 +35,8 @@ public class SimilarityAlgorithmTfIdfDouble implements SimilarityAlgorithm {
     }
 
     @Override
-    public void addRequirements(SimilarityModel similarityModel, Map<String, List<String>> requirements_tokens, List<Requirement> requirements_info) throws InternalErrorException {
-        similarityAlgorithmTfIdf.addRequirements(similarityModel,requirements_tokens,requirements_info);
+    public void addRequirements(SimilarityModel similarityModel, Map<String, List<String>> requirements_tokens) throws InternalErrorException {
+        similarityAlgorithmTfIdf.addRequirements(similarityModel,requirements_tokens);
     }
 
     @Override

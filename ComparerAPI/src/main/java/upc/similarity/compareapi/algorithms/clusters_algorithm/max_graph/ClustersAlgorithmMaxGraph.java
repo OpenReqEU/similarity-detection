@@ -11,6 +11,7 @@ import upc.similarity.compareapi.entity.exception.InternalErrorException;
 import upc.similarity.compareapi.entity.exception.NotFoundException;
 import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityAlgorithm;
 import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityModel;
+import upc.similarity.compareapi.service.RequirementsSimilarity;
 
 import java.util.*;
 
@@ -451,8 +452,7 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
         //Recomputes the proposed dependencies between all the requirements of the cluster model and the input clusters
         try {
             //Initialization
-            SimilarityModel similarityModel = organizationModels.getSimilarityModel();
-            SimilarityAlgorithm similarityAlgorithm = Constants.getInstance().getSimilarityAlgorithm();
+            RequirementsSimilarity requirementsSimilarity = Constants.getInstance().getRequirementsSimilarity();
             ClustersModelMaxGraph clustersModelMaxGraph = (ClustersModelMaxGraph) organizationModels.getClustersModel();
             Map<Integer, List<String>> clusters = clustersModelMaxGraph.getClusters();
             Set<String> rejectedDependencies = loadDependenciesByStatus(organization, "rejected", useAuxiliaryTable);
@@ -472,7 +472,7 @@ public class ClustersAlgorithmMaxGraph implements ClustersAlgorithm {
                         //Checks they are not equal nor a rejected dependency
                         if (!rejectedDependencies.contains(req1 + req2) && !req1.equals(req2)) {
                             //Computes the similarity score and updates the maxScore if it is higher
-                            double score = similarityAlgorithm.computeSimilarity(similarityModel, req1, req2);
+                            double score = requirementsSimilarity.computeSimilarity(organizationModels, req1, req2);
                             if (score >= maxScore) {
                                 maxScore = score;
                                 maxReq = req2;

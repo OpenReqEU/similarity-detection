@@ -37,20 +37,14 @@ public class TestConcurrency {
 
     private static int sleepTime;
     private static Constants constants = null;
-    private static PreprocessPipeline preprocessPipeline;
-    private static SimilarityAlgorithm similarityAlgorithm;
     private static SimilarityModelDatabase similarityModelDatabase;
-    private static ClustersAlgorithm clustersAlgorithm;
     private static ClustersModelDatabase clustersModelDatabase;
     private static DatabaseModel databaseModel;
 
     @BeforeClass
     public static void createTestDB() throws Exception {
         constants = Constants.getInstance();
-        preprocessPipeline = new PreprocessPipelineDefault();
-        similarityAlgorithm = constants.getSimilarityAlgorithm();
         similarityModelDatabase = constants.getSimilarityModelDatabase();
-        clustersAlgorithm = constants.getClustersAlgorithm();
         clustersModelDatabase = constants.getClustersModelDatabase();
         databaseModel = constants.getDatabaseModel();
         sleepTime = constants.getMaxWaitingTime();

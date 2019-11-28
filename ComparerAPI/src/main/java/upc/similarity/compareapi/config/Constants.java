@@ -14,6 +14,7 @@ import upc.similarity.compareapi.algorithms.preprocess.PreprocessPipelineDefault
 import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityAlgorithm;
 import upc.similarity.compareapi.algorithms.similarity_algorithm.tf_idf.SimilarityAlgorithmTfIdf;
 import upc.similarity.compareapi.algorithms.similarity_algorithm.tf_idf_double.SimilarityAlgorithmTfIdfDouble;
+import upc.similarity.compareapi.service.RequirementsSimilarity;
 import upc.similarity.compareapi.util.Logger;
 
 import java.nio.file.Files;
@@ -27,6 +28,7 @@ public class Constants {
     private Integer maxDepsForPage = null;
     private Integer maxWaitingTime = null;
     private PreprocessPipeline preprocessPipeline = null;
+    private RequirementsSimilarity requirementsSimilarity = null;
     private SimilarityAlgorithm similarityAlgorithm = null;
     private SimilarityModelDatabase similarityModelDatabase = null;
     private ClustersAlgorithm clustersAlgorithm = null;
@@ -64,6 +66,7 @@ public class Constants {
         } catch (ClassNotFoundException e) {
             Logger.getInstance().showErrorMessage("Error while loading database class");
         }
+        this.requirementsSimilarity = new RequirementsSimilarity(this.similarityAlgorithm);
     }
 
     private void selectPreprocessPipeline(String algorithmType) {
@@ -158,8 +161,8 @@ public class Constants {
         return preprocessPipeline;
     }
 
-    public SimilarityAlgorithm getSimilarityAlgorithm() {
-        return similarityAlgorithm;
+    public RequirementsSimilarity getRequirementsSimilarity() {
+        return requirementsSimilarity;
     }
 
     public SimilarityModelDatabase getSimilarityModelDatabase() {
@@ -223,6 +226,7 @@ public class Constants {
         this.maxDepsForPage = maxDepsForPage;
         this.maxWaitingTime = maxWaitingTime;
         this.similarityAlgorithm = similarityAlgorithm;
+        this.requirementsSimilarity = new RequirementsSimilarity(similarityAlgorithm);
         this.clustersAlgorithm = clustersAlgorithm;
         this.preprocessPipeline = preprocessPipeline;
         this.databaseModel = databaseModel;

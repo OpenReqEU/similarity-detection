@@ -11,7 +11,6 @@ import upc.similarity.compareapi.config.Constants;
 import upc.similarity.compareapi.dao.DatabaseModel;
 import upc.similarity.compareapi.algorithms.preprocess.PreprocessPipeline;
 import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityModel;
-import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityAlgorithm;
 import upc.similarity.compareapi.util.Logger;
 import upc.similarity.compareapi.entity.*;
 import upc.similarity.compareapi.entity.auxiliary.*;
@@ -34,7 +33,7 @@ public class CompareServiceImpl implements CompareService {
 
     private Logger logger = Logger.getInstance();
     private PreprocessPipeline preprocessPipeline = Constants.getInstance().getPreprocessPipeline();
-    private SimilarityAlgorithm similarityAlgorithm = Constants.getInstance().getSimilarityAlgorithm();
+    private RequirementsSimilarity requirementsSimilarity = Constants.getInstance().getRequirementsSimilarity();
     private ClustersAlgorithm clustersAlgorithm = Constants.getInstance().getClustersAlgorithm();
     private int sleepTime = Constants.getInstance().getMaxWaitingTime();
     private DatabaseModel databaseOperations = Constants.getInstance().getDatabaseModel();
@@ -117,8 +116,8 @@ public class CompareServiceImpl implements CompareService {
         try {
             databaseOperations.saveResponse(organization,responseId,"BuildModel");
             if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(FORBIDDEN_ERROR_MESSAGE);
-            SimilarityModel similarityModel = generateModel(compare, false, deleteDuplicates(requirements));
-            OrganizationModels organizationModels = new OrganizationModels(0,compare,false, similarityModel);
+            OrganizationModels organizationModels = generateModel(compare, false, deleteDuplicates(requirements));
+            organizationModels = new OrganizationModels(organizationModels,0,compare,false,false);
             getAccessToUpdate(organization);
             try {
                 databaseOperations.saveOrganizationModels(organization, organizationModels, true, false);
@@ -140,8 +139,8 @@ public class CompareServiceImpl implements CompareService {
         try {
             databaseOperations.saveResponse(organization, responseId, "BuildModelAndCompute");
             if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(FORBIDDEN_ERROR_MESSAGE);
-            SimilarityModel similarityModel = generateModel(compare, false, deleteDuplicates(requirements));
-            OrganizationModels organizationModels = new OrganizationModels(0, compare, false, similarityModel);
+            OrganizationModels organizationModels = generateModel(compare, false, deleteDuplicates(requirements));
+            organizationModels = new OrganizationModels(organizationModels,0,compare,false,false);
             List<String> requirementsIds = new ArrayList<>();
             for (Requirement requirement : requirements) {
                 requirementsIds.add(requirement.getId());
@@ -152,7 +151,7 @@ public class CompareServiceImpl implements CompareService {
             } finally {
                 releaseAccessToUpdate(organization);
             }
-            project(requirementsIds, organizationModels.getSimilarityModel(), threshold, responseId, organization, maxNumDeps);
+            project(requirementsIds, organizationModels, threshold, responseId, organization, maxNumDeps);
             databaseOperations.finishComputation(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
@@ -204,8 +203,7 @@ public class CompareServiceImpl implements CompareService {
                 OrganizationModels organizationModels = databaseOperations.getOrganizationModels(organization, false);
                 if (organizationModels.hasClusters()) throw new BadRequestException("The model has clusters. Use the similarity with clusters methods instead.");
                 List<Requirement> notDuplicatedRequirements = deleteDuplicates(requirements);
-                SimilarityModel similarityModel = organizationModels.getSimilarityModel();
-                deleteRequirementsFromModel(similarityModel, notDuplicatedRequirements);
+                deleteRequirementsFromModel(organizationModels, notDuplicatedRequirements);
                 databaseOperations.saveOrganizationModels(organization, organizationModels, true, false);
             } finally {
                 releaseAccessToUpdate(organization);
@@ -227,7 +225,7 @@ public class CompareServiceImpl implements CompareService {
             SimilarityModel similarityModel = organizationModels.getSimilarityModel();
             if (!similarityModel.containsRequirement(req1)) throw new NotFoundException("The requirement with id " + req1 + " is not present in the model loaded form the database");
             if (!similarityModel.containsRequirement(req2)) throw new NotFoundException("The requirement with id " + req2 + " is not present in the model loaded form the database");
-            double score = similarityAlgorithm.computeSimilarity(similarityModel, req1, req2);
+            double score = requirementsSimilarity.computeSimilarity(organizationModels, req1, req2);
             return new Dependency(score, req1, req2);
         } catch (ComponentException e) {
             throw treatComponentException(organization,null,false,e);
@@ -257,7 +255,7 @@ public class CompareServiceImpl implements CompareService {
                 if (!repeatedHash.contains(requirement)) projectRequirements.add(requirement);
             }
 
-            reqProject(requirementsToCompare, projectRequirements, similarityModel, threshold, organization, responseId, true, maxNumDeps);
+            reqProject(requirementsToCompare, projectRequirements, organizationModels, threshold, organization, responseId, true, maxNumDeps);
             databaseOperations.finishComputation(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
@@ -293,7 +291,7 @@ public class CompareServiceImpl implements CompareService {
                     if (!repeatedHash.contains(requirement)) projectRequirements.add(requirement);
                 }
 
-                reqProject(requirementsToCompare, projectRequirements, similarityModel, threshold, organization, responseId, true, maxNumDeps);
+                reqProject(requirementsToCompare, projectRequirements, organizationModels, threshold, organization, responseId, true, maxNumDeps);
                 databaseOperations.saveOrganizationModels(organization, organizationModels, true, false);
             } finally {
                 releaseAccessToUpdate(organization);
@@ -313,13 +311,13 @@ public class CompareServiceImpl implements CompareService {
 
         try {
             databaseOperations.saveResponse(organization, responseId, "SimReqProject");
-            SimilarityModel similarityModel = databaseOperations.getOrganizationModels(organization, true).getSimilarityModel();
+            OrganizationModels organizationModels = databaseOperations.getOrganizationModels(organization, true);
 
             for (String req : projectRequirements.getReqsToCompare()) {
                 if (projectRequirements.getProjectReqs().contains(req)) throw new BadRequestException("The requirement with id " + req + " is already inside the project");
             }
 
-            reqProject(projectRequirements.getReqsToCompare(), projectRequirements.getProjectReqs(), similarityModel, threshold, organization, responseId, true, maxNumDeps);
+            reqProject(projectRequirements.getReqsToCompare(), projectRequirements.getProjectReqs(), organizationModels, threshold, organization, responseId, true, maxNumDeps);
             databaseOperations.finishComputation(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
@@ -334,8 +332,8 @@ public class CompareServiceImpl implements CompareService {
         logger.showInfoMessage("SimProject: Start computing " + organization + " " + responseId);
         try {
             databaseOperations.saveResponse(organization, responseId, "SimProject");
-            SimilarityModel similarityModel = databaseOperations.getOrganizationModels(organization, true).getSimilarityModel();
-            project(projectRequirements, similarityModel, threshold, responseId, organization, maxNumDeps);
+            OrganizationModels organizationModels = databaseOperations.getOrganizationModels(organization, true);
+            project(projectRequirements, organizationModels, threshold, responseId, organization, maxNumDeps);
             databaseOperations.finishComputation(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
@@ -352,8 +350,8 @@ public class CompareServiceImpl implements CompareService {
             databaseOperations.saveResponse(organization, responseId, "SimProjectProject");
             List<String> project1NotRepeated = deleteListDuplicates(projects.getFirstProjectRequirements());
             List<String> project2NotRepeated = deleteListDuplicates(projects.getSecondProjectRequirements());
-            SimilarityModel similarityModel = databaseOperations.getOrganizationModels(organization, true).getSimilarityModel();
-            reqProject(project1NotRepeated, project2NotRepeated, similarityModel, threshold, organization, responseId, false, maxNumDeps);
+            OrganizationModels organizationModels = databaseOperations.getOrganizationModels(organization, true);
+            reqProject(project1NotRepeated, project2NotRepeated, organizationModels, threshold, organization, responseId, false, maxNumDeps);
             databaseOperations.finishComputation(organization, responseId);
         } catch (ComponentException e) {
             throw treatComponentException(organization,responseId,true,e);
@@ -380,9 +378,9 @@ public class CompareServiceImpl implements CompareService {
 
             FilteredRequirements filteredRequirements = new FilteredRequirements(input.getRequirements(),null,true);
             FilteredDependencies filteredDependencies = new FilteredDependencies(input.getDependencies(),filteredRequirements.getReqDepsToRemove(),false);
-            SimilarityModel similarityModel = generateModel(compare, useComponent, filteredRequirements.getAllRequirements());
+            OrganizationModels organizationModels = generateModel(compare, useComponent, filteredRequirements.getAllRequirements());
             ClustersModel clustersModel = clustersAlgorithm.buildModel(filteredRequirements.getAllRequirements(),filteredDependencies.getAllDependencies());
-            OrganizationModels organizationModels = new OrganizationModels(threshold, compare, true, similarityModel, clustersModel);
+            organizationModels = new OrganizationModels(organizationModels, threshold, compare, useComponent, true, clustersModel);
 
             getAccessToUpdate(organization);
             try {
@@ -411,9 +409,9 @@ public class CompareServiceImpl implements CompareService {
 
             FilteredRequirements filteredRequirements = new FilteredRequirements(input.getRequirements(),null,true);
             FilteredDependencies filteredDependencies = new FilteredDependencies(input.getDependencies(),filteredRequirements.getReqDepsToRemove(),false);
-            SimilarityModel similarityModel = generateModel(compare, useComponent,filteredRequirements.getAllRequirements());
+            OrganizationModels organizationModels = generateModel(compare, useComponent, filteredRequirements.getAllRequirements());
             ClustersModel clustersModel = clustersAlgorithm.buildModel(filteredRequirements.getAllRequirements(),filteredDependencies.getAllDependencies());
-            OrganizationModels organizationModels = new OrganizationModels(threshold, compare, true, similarityModel, clustersModel);
+            organizationModels = new OrganizationModels(organizationModels, threshold, compare, useComponent, true, clustersModel);
 
             getAccessToUpdate(organization);
             try {
@@ -616,7 +614,7 @@ public class CompareServiceImpl implements CompareService {
 
     private void updateRequirementsBatch(String organization, OrganizationModels organizationModels, FilteredRequirements filteredRequirements) throws InternalErrorException {
         clustersAlgorithm.deleteRequirementsFromClusters(organization,filteredRequirements.getDeletedRequirements(),organizationModels);
-        deleteRequirementsFromModel(organizationModels.getSimilarityModel(),filteredRequirements.getDeletedRequirements());
+        deleteRequirementsFromModel(organizationModels,filteredRequirements.getDeletedRequirements());
         clustersAlgorithm.addRequirementsToClusters(organization, filteredRequirements.getUpdatedRequirements(), organizationModels);
         addRequirementsToModel(organizationModels, filteredRequirements.getUpdatedRequirements());
         clustersAlgorithm.addRequirementsToClusters(organization, filteredRequirements.getNewRequirements(), organizationModels);
@@ -648,7 +646,8 @@ public class CompareServiceImpl implements CompareService {
         return organizationModels.getSimilarityModel().checkIfRequirementIsUpdated(requirement.getId(),preprocessedRequirement.get(requirement.getId()));
     }
 
-    private void reqProject(List<String> reqsToCompare, List<String> projectRequirements, SimilarityModel similarityModel, double threshold, String organization, String responseId, boolean include, int maxNumDeps) throws InternalErrorException {
+    private void reqProject(List<String> reqsToCompare, List<String> projectRequirements, OrganizationModels organizationModels, double threshold, String organization, String responseId, boolean include, int maxNumDeps) throws InternalErrorException {
+        SimilarityModel similarityModel = organizationModels.getSimilarityModel();
         boolean memoryDeps = maxNumDeps > 0;
         ResponseDependencies responseDependencies;
         if (memoryDeps) responseDependencies = new SizeFixedDependenciesQueue(organization,responseId,maxNumDeps,Comparator.comparing(Dependency::getDependencyScore).thenComparing(Dependency::getToid).thenComparing(Dependency::getFromid).reversed());
@@ -658,7 +657,7 @@ public class CompareServiceImpl implements CompareService {
             if (similarityModel.containsRequirement(req1)) {
                 for (String req2 : projectRequirements) {
                     if (!req1.equals(req2) && similarityModel.containsRequirement(req2)) {
-                        double score = similarityAlgorithm.computeSimilarity(similarityModel,req1,req2);
+                        double score = requirementsSimilarity.computeSimilarity(organizationModels,req1,req2);
                         if (score >= threshold) {
                             Dependency dependency = new Dependency(score, req1, req2);
                             responseDependencies.addDependency(dependency);
@@ -672,7 +671,8 @@ public class CompareServiceImpl implements CompareService {
     }
 
 
-    private void project(List<String> projectRequirements, SimilarityModel similarityModel, double threshold, String responseId, String organization, int maxNumDeps) throws InternalErrorException {
+    private void project(List<String> projectRequirements, OrganizationModels organizationModels, double threshold, String responseId, String organization, int maxNumDeps) throws InternalErrorException {
+        SimilarityModel similarityModel = organizationModels.getSimilarityModel();
         boolean memoryDeps = maxNumDeps > 0;
         ResponseDependencies responseDependencies;
         if (memoryDeps) responseDependencies = new SizeFixedDependenciesQueue(organization,responseId,maxNumDeps,Comparator.comparing(Dependency::getDependencyScore).thenComparing(Dependency::getToid).thenComparing(Dependency::getFromid).reversed());
@@ -684,7 +684,7 @@ public class CompareServiceImpl implements CompareService {
                 for (int j = i + 1; j < projectRequirements.size(); ++j) {
                     String req2 = projectRequirements.get(j);
                     if (!req2.equals(req1) && similarityModel.containsRequirement(req2)) {
-                        double score = similarityAlgorithm.computeSimilarity(similarityModel,req1,req2);
+                        double score = requirementsSimilarity.computeSimilarity(organizationModels,req1,req2);
                         if (score >= threshold) {
                             Dependency dependency = new Dependency(score, req1, req2);
                             responseDependencies.addDependency(dependency);
@@ -709,23 +709,23 @@ public class CompareServiceImpl implements CompareService {
         return result;
     }
 
-    private SimilarityModel generateModel(boolean compare, boolean useComponent, List<Requirement> requirements) throws InternalErrorException {
-        return similarityAlgorithm.buildModel(preprocessPipeline.preprocessRequirements(compare,requirements),requirements,useComponent);
+    private OrganizationModels generateModel(boolean compare, boolean useComponent, List<Requirement> requirements) throws InternalErrorException {
+        return requirementsSimilarity.buildModel(preprocessPipeline.preprocessRequirements(compare,requirements),requirements,useComponent);
     }
 
     private void addRequirementsToModel(OrganizationModels organizationModels, List<Requirement> requirements) throws InternalErrorException {
-        SimilarityModel similarityModel = organizationModels.getSimilarityModel();
-        deleteRequirementsFromModel(similarityModel,requirements);
-        similarityAlgorithm.addRequirements(similarityModel,preprocessPipeline.preprocessRequirements(organizationModels.isCompare(),requirements),requirements);
+        deleteRequirementsFromModel(organizationModels,requirements);
+        requirementsSimilarity.addRequirements(organizationModels,preprocessPipeline.preprocessRequirements(organizationModels.isCompare(),requirements),requirements);
     }
 
-    private void deleteRequirementsFromModel(SimilarityModel similarityModel, List<Requirement> requirements) throws InternalErrorException {
+    private void deleteRequirementsFromModel(OrganizationModels organizationModels, List<Requirement> requirements) throws InternalErrorException {
+        SimilarityModel similarityModel = organizationModels.getSimilarityModel();
         List<String> requirementIds = new ArrayList<>();
         for (Requirement requirement: requirements) {
             String id = requirement.getId();
-            if (similarityModel.containsRequirement(id))requirementIds.add(id);
+            if (similarityModel.containsRequirement(id)) requirementIds.add(id);
         }
-        if (!requirementIds.isEmpty()) similarityAlgorithm.deleteRequirements(similarityModel,requirementIds);
+        if (!requirementIds.isEmpty()) requirementsSimilarity.deleteRequirements(organizationModels,requirementIds);
     }
 
     private void generateEmptyResponse(String organization, String responseId) throws InternalErrorException {

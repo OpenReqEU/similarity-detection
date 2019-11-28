@@ -22,22 +22,9 @@ public class SimilarityModelTfIdf implements SimilarityModel {
      */
     private Map<String, Integer> corpusFrequency;
 
-    /**
-     * A map with the component of each requirement in the model. The component is taken into account during
-     * the similarity comparison step
-     */
-    private Map<String, String> reqComponent;
-
-    /**
-     * Boolean that tells whether to use the component attribute of the requirements during the comparison step
-     */
-    private boolean useComponent;
-
-    public SimilarityModelTfIdf(Map<String, Map<String, Double>> docs, Map<String, Integer> corpusFrequency, Map<String, String> reqComponent, boolean useComponent) {
+    public SimilarityModelTfIdf(Map<String, Map<String, Double>> docs, Map<String, Integer> corpusFrequency) {
         this.docs = docs;
         this.corpusFrequency = corpusFrequency;
-        this.reqComponent = reqComponent;
-        this.useComponent = useComponent;
     }
 
     @Override
@@ -69,14 +56,6 @@ public class SimilarityModelTfIdf implements SimilarityModel {
         return corpusFrequency;
     }
 
-    public Map<String, String> getReqComponent() {
-        return reqComponent;
-    }
-
-    public boolean isUseComponent() {
-        return useComponent;
-    }
-
     /*
     Set methods
      */
@@ -87,14 +66,6 @@ public class SimilarityModelTfIdf implements SimilarityModel {
 
     public void setCorpusFrequency(Map<String, Integer> corpusFrequency) {
         this.corpusFrequency = corpusFrequency;
-    }
-
-    public void setReqComponent(Map<String, String> reqComponent) {
-        this.reqComponent = reqComponent;
-    }
-
-    public void setUseComponent(boolean useComponent) {
-        this.useComponent = useComponent;
     }
 
     /*

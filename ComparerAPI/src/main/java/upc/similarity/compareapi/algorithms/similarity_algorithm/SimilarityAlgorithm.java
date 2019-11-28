@@ -11,11 +11,9 @@ public interface SimilarityAlgorithm {
     /**
      * Builds a model with the input requirements to be used in the future to compare the similarity between requirements
      * @param requirements_tokens a map with each requirement id as key and the preprocessed tokens as value
-     * @param requirements_info a list with each requirement information
-     * @param useComponent boolean that shows whether to use the component attribute in the score comparison
      * @return a model containing the similarity algorithm representation
      */
-    SimilarityModel buildModel(Map<String, List<String>> requirements_tokens, List<Requirement> requirements_info, boolean useComponent) throws InternalErrorException;
+    SimilarityModel buildModel(Map<String, List<String>> requirements_tokens) throws InternalErrorException;
 
     /**
      * Computes the similarity score between two requirements of the model
@@ -31,7 +29,7 @@ public interface SimilarityAlgorithm {
      * @param similarityModel algorithm model
      * @param requirements requirements to add, consists of a map with each requirement id as key and the preprocessed tokens as value. The input requirements are not inside the model
      */
-    void addRequirements(SimilarityModel similarityModel, Map<String, List<String>> requirements, List<Requirement> requirements_info) throws InternalErrorException;
+    void addRequirements(SimilarityModel similarityModel, Map<String, List<String>> requirements) throws InternalErrorException;
 
     /**
      * Deletes the input requirements from the input model

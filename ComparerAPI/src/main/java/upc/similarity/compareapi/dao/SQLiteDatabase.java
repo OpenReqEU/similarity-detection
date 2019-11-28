@@ -390,11 +390,12 @@ public class SQLiteDatabase implements DatabaseModel {
 
         double threshold = organizationModels.getThreshold();
         boolean compare = organizationModels.isCompare();
+        boolean useComponent = organizationModels.isUseComponent();
         boolean withClusters = organizationModels.hasClusters();
         SimilarityModel similarityModel = organizationModels.getSimilarityModel();
         ClustersModel clustersModel = organizationModels.getClustersModel();
 
-        String sql = "INSERT INTO info(id, threshold, compare, hasClusters) VALUES (?,?,?,?)";
+        String sql = "INSERT INTO info(id, threshold, compare, useComponent, hasClusters) VALUES (?,?,?,?,?)";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1,organization);
@@ -403,13 +404,30 @@ public class SQLiteDatabase implements DatabaseModel {
             if (compare) value = 1;
             ps.setInt(3, value);
             value = 0;
-            if (withClusters) value = 1;
+            if (useComponent) value = 1;
             ps.setInt(4, value);
+            value = 0;
+            if (withClusters) value = 1;
+            ps.setInt(5, value);
             ps.execute();
         }
+        saveRequirementsInfo(organizationModels.getReqComponent(),conn);
 
         if (saveSimilarityModel) similarityModelDatabase.saveModelInfo(similarityModel,conn);
         if (withClusters && saveClustersModel) clustersModelDatabase.saveModelInfo(clustersModel,conn);
+    }
+
+    private void saveRequirementsInfo(Map<String, String> reqComponent, Connection conn) throws SQLException {
+        for (Map.Entry<String, String> entry : reqComponent.entrySet()) {
+            String key = entry.getKey();
+            String component = entry.getValue();
+            String sql = "INSERT INTO requirements_info(id, component) VALUES (?,?)";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, key);
+                ps.setString(2, component);
+                ps.execute();
+            }
+        }
     }
 
 
@@ -569,7 +587,7 @@ public class SQLiteDatabase implements DatabaseModel {
 
     private OrganizationModels getOrganizationInfo(String organizationId, Connection conn) throws SQLException {
         OrganizationModels result = new OrganizationModels();
-        String sql = "SELECT threshold, compare, hasClusters FROM info WHERE id = ?";
+        String sql = "SELECT threshold, compare, useComponent, hasClusters FROM info WHERE id = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, organizationId);
 
@@ -577,8 +595,24 @@ public class SQLiteDatabase implements DatabaseModel {
                 if (rs.next()) {
                     result.setThreshold(rs.getDouble(1));
                     result.setCompare(rs.getBoolean(2));
-                    result.setHasCluster(rs.getBoolean(3));
+                    result.setUseComponent(rs.getBoolean(3));
+                    result.setHasCluster(rs.getBoolean(4));
                 }
+            }
+        }
+        result.setReqComponent(loadReqComponent(conn));
+        return result;
+    }
+
+    private Map<String, String> loadReqComponent(Connection conn) throws SQLException {
+        Map<String, String> result = new HashMap<>();
+        String sql = "SELECT* FROM requirements_info";
+        try (Statement stmt  = conn.createStatement();
+             ResultSet rs    = stmt.executeQuery(sql)){
+            while (rs.next()) {
+                String key = rs.getString("id");
+                String component = rs.getString("component");
+                result.put(key,component);
             }
         }
         return result;
@@ -651,11 +685,18 @@ public class SQLiteDatabase implements DatabaseModel {
                 + " id varchar PRIMARY KEY, \n"
                 + " threshold double, \n"
                 + " compare integer, \n"
+                + " useComponent integer, \n"
                 + " hasClusters integer"
+                + ");";
+
+        String sql2 = "CREATE TABLE requirements_info (\n"
+                + " id varchar PRIMARY KEY, \n"
+                + " component varchar \n"
                 + ");";
 
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql1);
+            stmt.execute(sql2);
         }
 
         similarityModelDatabase.createModelTables(conn);
@@ -665,9 +706,11 @@ public class SQLiteDatabase implements DatabaseModel {
     private void clearOrganizationTables(Connection conn) throws InternalErrorException, SQLException {
 
         String sql1 = "DELETE FROM info";
+        String sql2 = "DELETE FROM requirements_info";
 
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql1);
+            stmt.execute(sql2);
         }
 
         similarityModelDatabase.clearModelTables(conn);

@@ -1,6 +1,5 @@
 package upc.similarity.compareapi.algorithms.similarity_algorithm.tf_idf;
 
-import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.entity.exception.InternalErrorException;
 import upc.similarity.compareapi.util.Logger;
 import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityModel;
@@ -23,7 +22,7 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
 
 
     @Override
-    public SimilarityModelTfIdf buildModel(Map<String, List<String>> requirements, List<Requirement> requirements_info, boolean useComponent) {
+    public SimilarityModelTfIdf buildModel(Map<String, List<String>> requirements) {
         //Initialization
         double cutOffParameter = computeCutOffParameter(requirements.size());
         boolean smoothing = (requirements.size() < 100);
@@ -52,29 +51,14 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
             ++i;
         }
 
-        //Computes each requirement component
-        Map<String,String> reqComponent = new HashMap<>();
-        if (useComponent) {
-            for (Requirement requirement : requirements_info) {
-                reqComponent.put(requirement.getId(), requirement.getComponent());
-            }
-        }
-
-        return new SimilarityModelTfIdf(tfIdfValues,frequencyValues,reqComponent,useComponent);
+        return new SimilarityModelTfIdf(tfIdfValues,frequencyValues);
     }
 
     @Override
     public double computeSimilarity(SimilarityModel similarityModel, String requirementIdA, String requirementIdB) throws InternalErrorException {
         try {
             SimilarityModelTfIdf modelTfIdf = (SimilarityModelTfIdf) similarityModel;
-            Map<String,String> reqComponent = modelTfIdf.getReqComponent();
-            double value = cosineSimilarityTfIdf.compute(modelTfIdf, requirementIdA, requirementIdB);
-            if (modelTfIdf.isUseComponent()) {
-                String componentA = reqComponent.get(requirementIdA);
-                String componentB = reqComponent.get(requirementIdB);
-                if (componentA != null && componentB != null && !componentA.equals(componentB)) value *= 0.33;
-            }
-            return value;
+            return cosineSimilarityTfIdf.compute(modelTfIdf, requirementIdA, requirementIdB);
         } catch (ClassCastException e) {
             throw new InternalErrorException("Error while computing similarity with tf_idf algorithm without a tf_idf model");
         }
@@ -82,7 +66,7 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
 
 
     @Override
-    public void addRequirements(SimilarityModel similarityModel, Map<String,List<String>> requirements, List<Requirement> requirements_info) throws InternalErrorException {
+    public void addRequirements(SimilarityModel similarityModel, Map<String,List<String>> requirements) throws InternalErrorException {
         try {
             //Initialization
             SimilarityModelTfIdf modelTfIdf = (SimilarityModelTfIdf) similarityModel;
@@ -121,14 +105,6 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
                 ++i;
             }
 
-            //Computes reqComponent map for the new requirements
-            if (modelTfIdf.isUseComponent()) {
-                Map<String, String> reqComponent = modelTfIdf.getReqComponent();
-                for (Requirement requirement : requirements_info) {
-                    reqComponent.put(requirement.getId(), requirement.getComponent());
-                }
-            }
-
         } catch (ClassCastException e) {
             throw new InternalErrorException("Error while adding requirements with tf_idf algorithm without a tf_idf model");
         }
@@ -142,7 +118,6 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
             Map<String, Map<String, Double>> docs = modelTfIdf.getDocs();
             Map<String, Integer> newCorpusFrequency = modelTfIdf.getCorpusFrequency();
             Map<String, Integer> oldCorpusFrequency = cloneCorpusFrequency(newCorpusFrequency);
-            Map<String,String> reqComponent = modelTfIdf.getReqComponent();
 
             int oldSize = docs.size();
             int newSize = oldSize;
@@ -151,8 +126,6 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
             for (String id : requirements) {
                 //Checks if the requirement is valid
                 if (docs.containsKey(id)) { //problem: if the requirement had this word before applying cutoff parameter
-                    //Updates reqComponent map
-                    if (modelTfIdf.isUseComponent()) reqComponent.remove(id);
                     --newSize;
                     Map<String, Double> words = docs.get(id);
                     //Updates the total frequencies of each word
