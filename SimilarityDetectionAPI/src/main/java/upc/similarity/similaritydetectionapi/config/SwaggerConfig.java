@@ -14,6 +14,8 @@ import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 import upc.similarity.similaritydetectionapi.RestApiController;
 
+import java.util.HashSet;
+
 @Configuration
 @PropertySource("classpath:swagger.properties")
 @ComponentScan(basePackageClasses = RestApiController.class)
@@ -73,9 +75,13 @@ public class SwaggerConfig {
 
     @Bean
     public Docket api() {
+        HashSet<String> protocols = new HashSet<>();
+        protocols.add("https");
         return new Docket(DocumentationType.SWAGGER_2)
                 .useDefaultResponseMessages(false)
                 .apiInfo(apiInfo())
+                .host("api.openreq.eu/similarity-detection")
+                .protocols(protocols)
                 .pathMapping("/")
                 .select()
                 .paths(PathSelectors.regex("^((?!Test).)*$"))
