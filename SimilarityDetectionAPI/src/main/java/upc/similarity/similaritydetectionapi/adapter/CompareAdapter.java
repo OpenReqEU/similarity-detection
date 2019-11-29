@@ -23,19 +23,19 @@ public class CompareAdapter extends ComponentAdapter{
 
 
     @Override
-    public void buildModel(String responseId, String organization, boolean compare, List<Requirement> requirements) throws ComponentException {
+    public void buildModel(String responseId, String organization, boolean compare, boolean useComponent, List<Requirement> requirements) throws ComponentException {
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
 
-        connectionComponentPost(URL + "BuildModel?compare=" + compare + "&organization=" + organization + "&responseId=" + responseId, requirementsJson);
+        connectionComponentPost(URL + "BuildModel?compare=" + compare + "&organization=" + organization + "&responseId=" + responseId + "&useComponent=" + useComponent, requirementsJson);
     }
 
     @Override
-    public void buildModelAndCompute(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements, int maxNumDeps) throws ComponentException {
+    public void buildModelAndCompute(String responseId, String organization, boolean compare, boolean useComponent, double threshold, List<Requirement> requirements, int maxNumDeps) throws ComponentException {
 
         JSONArray requirementsJson = listRequirementsToJson(requirements);
 
-        connectionComponentPost(URL + "BuildModelAndCompute?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold + "&maxDeps=" + maxNumDeps, requirementsJson);
+        connectionComponentPost(URL + "BuildModelAndCompute?responseId=" + responseId + "&compare=" + compare + "&organization=" + organization + "&threshold=" + threshold + "&maxDeps=" + maxNumDeps + "&useComponent=" + useComponent, requirementsJson);
     }
 
     @Override

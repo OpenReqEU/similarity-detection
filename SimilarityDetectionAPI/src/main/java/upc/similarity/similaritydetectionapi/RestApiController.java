@@ -40,17 +40,19 @@ public class RestApiController {
     @ApiOperation(value = "Builds a tf-idf model with the input requirements.", notes = "<p><i>Asynchronous</i> method.</p><p>Builds a tf-idf model with the requirements specified in the JSON object. " +
             "The generated model is assigned to the specified organization and stored in an internal database. Each organization" +
             " only can have one model. The service throws a forbidden exception if at the time of generating a new model the corresponding organization already has" +
-            " an existing one. The user can choose whether to use only the name of the requirements for constructing the model, or to use also the text of the requirements.</p>", tags = "Similarity without clusters")
+            " an existing one. The user can choose whether to use only the name of the requirements for constructing the model, or to use also the text of the requirements. Also the user can choose whether" +
+            " to use the requirement component in the similarity step (the score between two requirements with different components and not null will be decreased).</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity buildModel(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                      @ApiParam(value="Use the text field of the requirements to construct the model", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
+                                     @ApiParam(value="Use the component attribute in the similarity comparison", required = false, example = "true") @RequestParam(value = "useComponent",required = false) boolean useComponent,
                                      @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
                                      @ApiParam(value="OpenReq JSON with requirements", required = true) @RequestBody RequirementsModel input) {
         try {
             if(url != null) urlOk(url);
-            return new ResponseEntity<>(similarityService.buildModel(url,organization,compare,input),HttpStatus.OK);
+            return new ResponseEntity<>(similarityService.buildModel(url,organization,compare,useComponent,input),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }
@@ -60,13 +62,15 @@ public class RestApiController {
     @PostMapping(value = "/BuildModelAndCompute", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Builds a tf-idf model with the input requirements and returns the similarity scores among all the possible pairs of requirements.", notes = "<p><i>Asynchronous</i> method.</p><p>Builds a tf-idf model with the requirements specified in the JSON object." +
             "The generated model is assigned to the specified organization and stored in an internal database. Each organization only can have one model. The service throws a forbidden exception if at the time of generating a new model the corresponding organization already has " +
-            "an existing one. The user can choose whether to use only the name of the requirements for constructing the model, or to use also the text of the requirements. </p><br><p>This method returns an array of dependencies containing the similarities that are greater than the " +
+            "an existing one. The user can choose whether to use only the name of the requirements for constructing the model, or to use also the text of the requirements. Also the user can choose whether to use the requirement component in the similarity step (the score between " +
+            "two requirements with different components and not null will be decreased).</p><br><p>This method returns an array of dependencies containing the similarities that are greater than the " +
             "established threshold between all possible pairs of requirements received as input. The method can be set to return the dependencies with the higher score thanks to the parameter named maxNumber (with a negative number or a zero in this parameter, the method works as explained before).</p>", tags = "Similarity without clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity buildModelAndCompute(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
                                                @ApiParam(value="Use the text field of the requirements to construct the model", required = false, example = "true") @RequestParam(value = "compare",required = false) boolean compare,
+                                               @ApiParam(value="Use the component attribute in the similarity comparison", required = false, example = "true") @RequestParam(value = "useComponent",required = false) boolean useComponent,
                                                @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                                @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
                                                @ApiParam(value="Max number of dependencies to return", required = false, example = "0") @RequestParam(value = "maxNumber", required = false) Integer maxNumber,
@@ -74,7 +78,7 @@ public class RestApiController {
         try {
             if(url != null) urlOk(url);
             if (maxNumber == null) maxNumber = 0;
-            return new ResponseEntity<>(similarityService.buildModelAndCompute(url,organization,compare,threshold,input,maxNumber),HttpStatus.OK);
+            return new ResponseEntity<>(similarityService.buildModelAndCompute(url,organization,compare,useComponent,threshold,input,maxNumber),HttpStatus.OK);
         } catch (ComponentException e) {
             return getComponentError(e);
         }
@@ -265,7 +269,7 @@ public class RestApiController {
     @ApiOperation(value = "Generates the clusters using the input requirements and dependencies.", notes = "<p><i>Asynchronous</i> method.</p><p>This method computes the clusters using the existing duplicates. These duplicates relations are defined by " +
             "the dependencies with type equal to <i>similar</i> or <i>duplicates</i> and status equal to <i>accepted</i>, <i>rejected</i> or <i>deleted</i> (the <i>created_at</i> and <i>modified_at</i> params are taken into account). All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one " +
             "requirement. All the requirements are pre-processed and stored in the database, together with their corresponding tf-idf model and the clusters information. The user can choose whether to use only the name of the requirements for constructing the tf-idf model," +
-            " or to use also the text of the requirements. Finally, all the requirements are compared with all the requirements of other clusters of the organization, and those similarities with score greater than the established threshold for each requirement are stored in the database.</p>" +
+            " or to use also the text of the requirements. Also the user can choose whether to use the requirement component in the similarity step (the score between two requirements with different components and not null will be decreased). Finally, all the requirements are compared with all the requirements of other clusters of the organization, and those similarities with score greater than the established threshold for each requirement are stored in the database.</p>" +
             "<br><p>Each organization can only have one model at the same time. The service throws a forbidden exception if at the time of generating a new model the corresponding organization already has an existing one</p>", tags = "Similarity with clusters")
     @ApiResponses(value = {@ApiResponse(code=200, message = "OK"),
             @ApiResponse(code=400, message = "Bad request"),
@@ -289,7 +293,8 @@ public class RestApiController {
     @ApiOperation(value = "Generates the clusters using the input requirements and dependencies, and returns the similarity score between them.", notes =
             "<p><i>Asynchronous</i> method.</p><p>This method computes the clusters using the existing duplicates. These duplicates relations are defined by the dependencies with type equal to <i>similar</i> or <i>duplicates</i> and type equal to <i>accepted</i>, <i>rejected</i> or <i>deleted</i> (the <i>created_at</i> and <i>modified_at</i> params are taken into account)." +
                     " All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the database, together with their corresponding " +
-                    "tf-idf model and the clusters information. The user can choose whether to use only the name of the requirements for constructing the tf-idf model, or to use also the text of the requirements. Finally, all the requirements are compared with all the " +
+                    "tf-idf model and the clusters information. The user can choose whether to use only the name of the requirements for constructing the tf-idf model, or to use also the text of the requirements. Also the user can choose whether to use the requirement component in" +
+                    " the similarity step (the score between two requirements with different components and not null will be decreased). Finally, all the requirements are compared with all the " +
                     "requirements of other clusters of the organization, and those similarities with score greater than the established threshold for each requirement are stored in the database. It returns for each requirement the highest similarity score for each cluster " +
                     "(only if they are greater than the established threshold). If the number of maximum dependencies to be returned is received as parameter (maxNumber), the method only returns the <i>maxNumber</i>" +
                     " of dependencies with highest score for each requirement. When <i>maxNumber</i> is equal to 0 only the accepted dependencies are returned and when maxNumber is lower than 0 or not specified, all the accepted and proposed" +

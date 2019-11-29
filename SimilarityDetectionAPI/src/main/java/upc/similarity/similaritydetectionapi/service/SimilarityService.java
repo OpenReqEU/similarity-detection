@@ -13,9 +13,9 @@ public interface SimilarityService {
     Main operations
      */
 
-    ResultId buildModel(String url, String organization, boolean compare, RequirementsModel input) throws BadRequestException, NotFoundException;
+    ResultId buildModel(String url, String organization, boolean compare, boolean useComponent, RequirementsModel input) throws BadRequestException, NotFoundException;
 
-    ResultId buildModelAndCompute(String url, String organization, boolean compare, double threshold, RequirementsModel input, int maxNumDeps) throws BadRequestException;
+    ResultId buildModelAndCompute(String url, String organization, boolean compare, boolean useComponent, double threshold, RequirementsModel input, int maxNumDeps) throws BadRequestException;
 
     ResultId addRequirements(String url, String organization, RequirementsModel input) throws BadRequestException;
 

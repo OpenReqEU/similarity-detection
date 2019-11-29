@@ -30,10 +30,11 @@ public class RestApiController {
     @PostMapping(value = "/BuildModel")
     public ResponseEntity buildModel(@RequestParam("organization") String organization,
                                      @RequestParam("compare") boolean compare,
+                                     @RequestParam("useComponent") boolean useComponent,
                                      @RequestParam("responseId") String responseId,
                                      @RequestBody List<Requirement> input) {
         try {
-            compareService.buildModel(responseId,compare,organization,input);
+            compareService.buildModel(responseId,compare,useComponent,organization,input);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));
@@ -43,12 +44,13 @@ public class RestApiController {
     @PostMapping(value = "/BuildModelAndCompute")
     public ResponseEntity buildModelAndCompute(@RequestParam("organization") String organization,
                                                @RequestParam("compare") boolean compare,
+                                               @RequestParam("useComponent") boolean useComponent,
                                                @RequestParam("responseId") String responseId,
                                                @RequestParam("threshold") double threshold,
                                                @RequestParam("maxDeps") int maxNumDeps,
                                                @RequestBody List<Requirement> input) {
         try {
-            compareService.buildModelAndCompute(responseId,compare,organization,threshold,input,maxNumDeps);
+            compareService.buildModelAndCompute(responseId,compare,useComponent,organization,threshold,input,maxNumDeps);
             return new ResponseEntity<>(null,HttpStatus.OK);
         } catch (ComponentException e) {
             return new ResponseEntity<>(e,HttpStatus.valueOf(e.getStatus()));

@@ -34,8 +34,8 @@ public class RequirementDeserializer extends StdDeserializer<Requirement> {
         String name = (nameAux == null) ? null : nameAux.asText();
         String text = (textAux == null) ? null : textAux.asText();
         String status = (statusAux == null) ? null : statusAux.asText();
-        long createdAt = (createdAtAux == null) ? 0 : createdAtAux.numberValue().longValue();
-        long modifiedAt = (modifiedAtAux == null) ? 0 : modifiedAtAux.numberValue().longValue();
+        long createdAt = (createdAtAux != null && createdAtAux.canConvertToLong()) ? createdAtAux.numberValue().longValue() : 0;
+        long modifiedAt = (modifiedAtAux != null && modifiedAtAux.canConvertToLong()) ? modifiedAtAux.numberValue().longValue() : 0;
         return new Requirement(id,name,text,createdAt,modifiedAt,status,component);
     }
 

@@ -34,7 +34,7 @@ public class SimilarityServiceImpl implements SimilarityService {
      */
 
     @Override
-    public ResultId buildModel(String url, String organization, boolean compare, RequirementsModel input) throws BadRequestException {
+    public ResultId buildModel(String url, String organization, boolean compare, boolean useComponent, RequirementsModel input) throws BadRequestException {
 
         checkInput(input);
         ResultId id = getId();
@@ -44,7 +44,7 @@ public class SimilarityServiceImpl implements SimilarityService {
             ResultJson result = new ResultJson(id.getId(),"BuildModel");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                componentAdapter.buildModel(id.getId(),organization,compare,input.getRequirements());
+                componentAdapter.buildModel(id.getId(),organization,compare,useComponent,input.getRequirements());
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());
@@ -109,7 +109,7 @@ public class SimilarityServiceImpl implements SimilarityService {
     }
 
     @Override
-    public ResultId buildModelAndCompute(String url, String organization, boolean compare, double threshold, RequirementsModel input, int maxNumDeps) throws BadRequestException {
+    public ResultId buildModelAndCompute(String url, String organization, boolean compare, boolean useComponent, double threshold, RequirementsModel input, int maxNumDeps) throws BadRequestException {
 
         checkInput(input);
         checkThreshold(threshold);
@@ -120,7 +120,7 @@ public class SimilarityServiceImpl implements SimilarityService {
             ResultJson result = new ResultJson(id.getId(),"AddReqsAndCompute");
             try {
                 ComponentAdapter componentAdapter = AdaptersController.getInstance().getAdapter(component);
-                componentAdapter.buildModelAndCompute(id.getId(),organization,compare,threshold,input.getRequirements(),maxNumDeps);
+                componentAdapter.buildModelAndCompute(id.getId(),organization,compare,useComponent,threshold,input.getRequirements(),maxNumDeps);
                 result.setCode(200);
             } catch (ComponentException e) {
                 result.setException(e.getStatus(),e.getError(),e.getMessage());
