@@ -9,7 +9,6 @@ import upc.similarity.compareapi.algorithms.similarity_algorithm.tf_idf.Similari
 
 import java.sql.*;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 public class SimilarityModelDatabaseTfIdf implements SimilarityModelDatabase {

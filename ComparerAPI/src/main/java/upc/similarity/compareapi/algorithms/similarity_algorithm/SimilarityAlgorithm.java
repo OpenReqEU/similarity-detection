@@ -1,6 +1,5 @@
 package upc.similarity.compareapi.algorithms.similarity_algorithm;
 
-import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.entity.exception.InternalErrorException;
 
 import java.util.List;
@@ -10,10 +9,10 @@ public interface SimilarityAlgorithm {
 
     /**
      * Builds a model with the input requirements to be used in the future to compare the similarity between requirements
-     * @param requirements_tokens a map with each requirement id as key and the preprocessed tokens as value
+     * @param requirementsTokens a map with each requirement id as key and the preprocessed tokens as value
      * @return a model containing the similarity algorithm representation
      */
-    SimilarityModel buildModel(Map<String, List<String>> requirements_tokens) throws InternalErrorException;
+    SimilarityModel buildModel(Map<String, List<String>> requirementsTokens) throws InternalErrorException;
 
     /**
      * Computes the similarity score between two requirements of the model
