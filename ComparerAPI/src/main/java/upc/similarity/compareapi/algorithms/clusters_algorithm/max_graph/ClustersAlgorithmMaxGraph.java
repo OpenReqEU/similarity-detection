@@ -9,7 +9,6 @@ import upc.similarity.compareapi.entity.OrganizationModels;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.entity.exception.InternalErrorException;
 import upc.similarity.compareapi.entity.exception.NotFoundException;
-import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityAlgorithm;
 import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityModel;
 import upc.similarity.compareapi.service.RequirementsSimilarity;
 

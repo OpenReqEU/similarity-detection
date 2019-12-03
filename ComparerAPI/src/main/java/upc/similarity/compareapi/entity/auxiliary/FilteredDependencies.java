@@ -114,6 +114,9 @@ public class FilteredDependencies {
                 case "deleted":
                     deletedDependencies.add(dependency);
                     break;
+                default:
+                    //empty
+                    break;
             }
         }
     }
