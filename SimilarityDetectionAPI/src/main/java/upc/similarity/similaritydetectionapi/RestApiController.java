@@ -152,7 +152,7 @@ public class RestApiController {
                                              @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
                                              @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                              @ApiParam(value="Max number of dependencies to return", required = false, example = "0") @RequestParam(value = "maxNumber", required = false) Integer maxNumber,
-                                             @ApiParam(value="OpenReq JSON with requirements", required = true, example = "UPC-1") @RequestParam("req") List<String> input) {
+                                             @ApiParam(value="Id of the requirements to compare", required = true, example = "UPC-1") @RequestParam("req") List<String> input) {
         try {
             if(url != null) urlOk(url);
             if (maxNumber == null) maxNumber = 0;
@@ -174,7 +174,7 @@ public class RestApiController {
                                                 @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
                                                 @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                                 @ApiParam(value="Max number of dependencies to return", required = false, example = "0") @RequestParam(value = "maxNumber", required = false) Integer maxNumber,
-                                                @ApiParam(value="OpenReq JSON with requirements", required = true) @RequestBody RequirementsModel input) {
+                                                @ApiParam(value="OpenReq JSON with the requirements to compare", required = true) @RequestBody RequirementsModel input) {
         try {
             if(url != null) urlOk(url);
             if (maxNumber == null) maxNumber = 0;
@@ -194,7 +194,7 @@ public class RestApiController {
             @ApiResponse(code=404, message = "Not found"),
             @ApiResponse(code=500, message = "Internal error")})
     public ResponseEntity simReqProject(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization,
-                                        @ApiParam(value="Id of the requirements to compare", required = true) @RequestParam("req") List<String> req,
+                                        @ApiParam(value="Id of the requirements to compare", required = true, example = "UPC-1") @RequestParam("req") List<String> req,
                                         @ApiParam(value="Id of the project to compare", required = true, example = "UPC-P1") @RequestParam("project") String project,
                                         @ApiParam(value="Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have", required = true, example = "0.1") @RequestParam("threshold") double threshold,
                                         @ApiParam(value="The url where the result of the operation will be returned", required = false, example = "http://localhost:9406/upload/PostResult") @RequestParam(value = "url", required = false) String url,
@@ -356,7 +356,7 @@ public class RestApiController {
 
         try {
             similarityService.treatDependencies(organization, input);
-            return new ResponseEntity<>(null, HttpStatus.OK);
+            return createEmptySuccessResponse();
         } catch (ComponentException e) {
             return getComponentError(e);
         }
@@ -434,7 +434,7 @@ public class RestApiController {
     public ResponseEntity deleteOrganizationResponses(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization) {
         try {
             similarityService.deleteOrganizationResponses(organization);
-            return new ResponseEntity<>(null, HttpStatus.OK);
+            return createEmptySuccessResponse();
         } catch (ComponentException e) {
             return getComponentError(e);
         }
@@ -451,7 +451,7 @@ public class RestApiController {
     public ResponseEntity clearOrganization(@ApiParam(value="Organization", required = true, example = "UPC") @RequestParam("organization") String organization) {
         try {
             similarityService.clearOrganization(organization);
-            return new ResponseEntity<>(null, HttpStatus.OK);
+            return createEmptySuccessResponse();
         } catch (ComponentException e) {
             return getComponentError(e);
         }
@@ -467,7 +467,7 @@ public class RestApiController {
     public ResponseEntity clearDatabase() {
         try {
             similarityService.clearDatabase();
-            return new ResponseEntity<>(null, HttpStatus.OK);
+            return createEmptySuccessResponse();
         } catch (ComponentException e) {
             return getComponentError(e);
         }
@@ -513,5 +513,12 @@ public class RestApiController {
         result.put("error", e.getError());
         result.put("message", e.getMessage());
         return new ResponseEntity<>(result, HttpStatus.valueOf(e.getStatus()));
+    }
+
+    private ResponseEntity createEmptySuccessResponse() {
+        LinkedHashMap<String, String> result = new LinkedHashMap<>();
+        result.put("status", "200");
+        result.put("message", "Success");
+        return new ResponseEntity<>(result, HttpStatus.valueOf(200));
     }
 }
