@@ -25,7 +25,7 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
     public SimilarityModelTfIdf buildModel(Map<String, List<String>> requirements) {
         //Initialization
         double cutOffParameter = computeCutOffParameter(requirements.size());
-        boolean smoothing = (requirements.size() < 100);
+        boolean smoothing = checkIfSmoothing(requirements.size());
         Logger.getInstance().showInfoMessage("Cutoff: " + cutOffParameter);
 
         Map<String,Map<String, Double>> tfIdfValues = new HashMap<>();
@@ -77,7 +77,7 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
             int oldSize = docs.size();
             int finalSize = oldSize + requirements.size();
             double cutOffParameter = computeCutOffParameter(finalSize);
-            boolean smoothing = (finalSize < 100);
+            boolean smoothing = checkIfSmoothing(finalSize);
 
             //Computes frequencies of the new requirements and updates the total frequencies of each word in all the requirements
             List<Map<String, Integer>> wordBagArray = new ArrayList<>();
@@ -87,7 +87,7 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
             }
 
             //Recomputes the idf values of the old requirements
-            recomputeIdfValues(docs, oldCorpusFrequency, newCorpusFrequency, oldSize, finalSize);
+            recomputeIdfValues(docs, oldCorpusFrequency, newCorpusFrequency, oldSize, finalSize, smoothing);
 
             //Computes the tf_idf vectors of the new requirements
             int i = 0;
@@ -121,6 +121,7 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
 
             int oldSize = docs.size();
             int newSize = oldSize;
+            boolean smoothing = checkIfSmoothing(newSize);
 
             //Updates tf_idf values
             for (String id : requirements) {
@@ -137,7 +138,7 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
                     docs.remove(id);
                 }
             }
-            recomputeIdfValues(docs, oldCorpusFrequency, newCorpusFrequency, oldSize, newSize);
+            recomputeIdfValues(docs, oldCorpusFrequency, newCorpusFrequency, oldSize, newSize, smoothing);
 
         } catch (ClassCastException e) {
             throw new InternalErrorException("Error while deleting requirements with tf_idf algorithm without a tf_idf model");
@@ -181,23 +182,32 @@ public class SimilarityAlgorithmTfIdf implements SimilarityAlgorithm {
     private double idf(int size, int frequency, boolean smoothing) {
         double value = Math.log(size / (frequency + 1.0));
         if (value < 0) value = 0;
-        return (smoothing && smoothingActive) ? (value + 0.1) : value;
+        return doSmoothing(smoothing,value);
     }
 
-    private void recomputeIdfValues(Map<String, Map<String, Double>> docs, Map<String, Integer> oldCorpusFrequency, Map<String, Integer> newCorpusFrequency, double oldSize, double newSize) {
+    private void recomputeIdfValues(Map<String, Map<String, Double>> docs, Map<String, Integer> oldCorpusFrequency, Map<String, Integer> newCorpusFrequency, double oldSize, double newSize, boolean smoothing) {
         for (Map.Entry<String, Map<String, Double>> requirement : docs.entrySet()) {
             Map<String, Double> words = requirement.getValue();
             for (Map.Entry<String, Double> word : words.entrySet()) { //problem: if the value was 0 (because corpus + 1 == totalSize) it will be always 0
                 String wordId = word.getKey();
                 double score = word.getValue();
-                double newScore = recomputeIdf(score, oldSize, oldCorpusFrequency.get(wordId), newSize, newCorpusFrequency.get(wordId));
+                double newScore = recomputeIdf(score, oldSize, oldCorpusFrequency.get(wordId), newSize, newCorpusFrequency.get(wordId),smoothing);
                 word.setValue(newScore);
             }
         }
     }
 
-    private double recomputeIdf(double oldValue, double oldSize, double oldCorpusFrequency, double newSize, double newCorpusFrequency) {
+    private double recomputeIdf(double oldValue, double oldSize, double oldCorpusFrequency, double newSize, double newCorpusFrequency, boolean smoothing) {
         double quocient = Math.log(oldSize/(oldCorpusFrequency+1));
-        return (quocient <= 0) ? 0 : (oldValue * Math.log(newSize/(newCorpusFrequency+1)))/quocient;
+        double value = (quocient <= 0) ? 0 : (oldValue * Math.log(newSize/(newCorpusFrequency+1)))/quocient;
+        return doSmoothing(smoothing,value);
+    }
+
+    private double doSmoothing(boolean smoothing, double value) {
+        return (smoothing && smoothingActive) ? (value + 0.1) : value;
+    }
+
+    private boolean checkIfSmoothing(int requirementsSize) {
+        return (requirementsSize < 100);
     }
 }
