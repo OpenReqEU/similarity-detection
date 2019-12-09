@@ -561,7 +561,7 @@ paths:
       parameters:
         - in: body
           name: input
-          description: OpenReq JSON with requirements
+          description: OpenReq JSON with the requirements to compare
           required: true
           schema:
             $ref: '#/definitions/Requirements'
@@ -821,7 +821,7 @@ paths:
           x-example: UPC
         - name: req
           in: query
-          description: OpenReq JSON with requirements
+          description: Id of the requirements to compare
           required: true
           type: array
           items:
