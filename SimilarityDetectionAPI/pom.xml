@@ -5,6 +5,7 @@
 
 	<groupId>upc.similarity</groupId>
 	<artifactId>similaritydetectionapi</artifactId>
+	<version>3.3</version>
 	<packaging>jar</packaging>
 
 	<name>similaritydetectionapi</name>
