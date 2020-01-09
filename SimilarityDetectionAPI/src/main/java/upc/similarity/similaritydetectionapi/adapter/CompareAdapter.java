@@ -14,7 +14,7 @@ import java.util.List;
 
 public class CompareAdapter extends ComponentAdapter{
 
-    private static final String URL = "http://localhost:9412/upc/Compare/";
+    private static final String URL = "http://localhost:9405/upc/Compare/";
 
 
     /*
