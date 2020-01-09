@@ -116,7 +116,14 @@ public class CompareServiceImpl implements CompareService {
         try {
             databaseOperations.saveResponse(organization,responseId,"BuildModel");
             if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(FORBIDDEN_ERROR_MESSAGE);
-            OrganizationModels organizationModels = generateModel(compare, useComponent, deleteDuplicates(requirements));
+
+            List<Requirement> notDuplicated = deleteDuplicates(requirements);
+            long start = System.nanoTime();
+            OrganizationModels organizationModels = generateModel(compare, useComponent, notDuplicated);
+            long finish = System.nanoTime();
+            long timeElapsed = finish - start;
+            logger.showInfoMessage("BuildModel time: " + timeElapsed + ", number reqs: " + notDuplicated.size());
+
             organizationModels = new OrganizationModels(organizationModels,0,compare,useComponent,false);
             getAccessToUpdate(organization);
             try {
@@ -225,7 +232,11 @@ public class CompareServiceImpl implements CompareService {
             SimilarityModel similarityModel = organizationModels.getSimilarityModel();
             if (!similarityModel.containsRequirement(req1)) throw new NotFoundException("The requirement with id " + req1 + " is not present in the model loaded form the database");
             if (!similarityModel.containsRequirement(req2)) throw new NotFoundException("The requirement with id " + req2 + " is not present in the model loaded form the database");
+            long start = System.nanoTime();
             double score = requirementsSimilarity.computeSimilarity(organizationModels, req1, req2);
+            long finish = System.nanoTime();
+            long timeElapsed = finish - start;
+            logger.showInfoMessage("-------------------- Comparison time1: " + timeElapsed);
             return new Dependency(score, req1, req2);
         } catch (ComponentException e) {
             throw treatComponentException(organization,null,false,e);
@@ -379,6 +390,7 @@ public class CompareServiceImpl implements CompareService {
             FilteredRequirements filteredRequirements = new FilteredRequirements(input.getRequirements(),null,true);
             FilteredDependencies filteredDependencies = new FilteredDependencies(input.getDependencies(),filteredRequirements.getReqDepsToRemove(),false);
             OrganizationModels organizationModels = generateModel(compare, useComponent, filteredRequirements.getAllRequirements());
+
             ClustersModel clustersModel = clustersAlgorithm.buildModel(filteredRequirements.getAllRequirements(),filteredDependencies.getAllDependencies());
             organizationModels = new OrganizationModels(organizationModels, threshold, compare, useComponent, true, clustersModel);
 

@@ -5,6 +5,7 @@ import upc.similarity.compareapi.algorithms.similarity_algorithm.SimilarityModel
 import upc.similarity.compareapi.entity.OrganizationModels;
 import upc.similarity.compareapi.entity.Requirement;
 import upc.similarity.compareapi.entity.exception.InternalErrorException;
+import upc.similarity.compareapi.util.Logger;
 
 import java.util.HashMap;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.Map;
 public class RequirementsSimilarity {
 
     private SimilarityAlgorithm similarityAlgorithm;
+    private Logger logger = Logger.getInstance();
 
     public RequirementsSimilarity(SimilarityAlgorithm similarityAlgorithm) {
         this.similarityAlgorithm = similarityAlgorithm;
@@ -33,6 +35,7 @@ public class RequirementsSimilarity {
     }
 
     public double computeSimilarity(OrganizationModels organizationModels, String requirementIdA, String requirementIdB) throws InternalErrorException {
+        long start = System.nanoTime();
         double score = similarityAlgorithm.computeSimilarity(organizationModels.getSimilarityModel(),requirementIdA,requirementIdB);
         if (organizationModels.isUseComponent()) {
             Map<String,String> reqComponent = organizationModels.getReqComponent();
@@ -40,6 +43,9 @@ public class RequirementsSimilarity {
             String componentB = reqComponent.get(requirementIdB);
             if (componentA != null && componentB != null && !componentA.equals(componentB)) score *= 0.33;
         }
+        long finish = System.nanoTime();
+        long timeElapsed = finish - start;
+        logger.showInfoMessage("-------------------- Comparison time2: " + timeElapsed);
         return score;
     }
 
