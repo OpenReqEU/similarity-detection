@@ -389,7 +389,13 @@ public class CompareServiceImpl implements CompareService {
 
             FilteredRequirements filteredRequirements = new FilteredRequirements(input.getRequirements(),null,true);
             FilteredDependencies filteredDependencies = new FilteredDependencies(input.getDependencies(),filteredRequirements.getReqDepsToRemove(),false);
+
+            long start = System.nanoTime();
             OrganizationModels organizationModels = generateModel(compare, useComponent, filteredRequirements.getAllRequirements());
+            long finish = System.nanoTime();
+            long timeElapsed = finish - start;
+            logger.showInfoMessage("BuildModel time: " + timeElapsed + ", number reqs: " + filteredRequirements.getAllRequirements().size());
+
 
             ClustersModel clustersModel = clustersAlgorithm.buildModel(filteredRequirements.getAllRequirements(),filteredDependencies.getAllDependencies());
             organizationModels = new OrganizationModels(organizationModels, threshold, compare, useComponent, true, clustersModel);
