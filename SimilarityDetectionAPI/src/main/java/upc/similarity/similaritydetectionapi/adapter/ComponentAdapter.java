@@ -30,9 +30,9 @@ public abstract class ComponentAdapter {
     Similarity without clusters
      */
 
-    public abstract void buildModel(String responseId, String organization, boolean compare, List<Requirement> requirements) throws ComponentException;
+    public abstract void buildModel(String responseId, String organization, boolean compare, boolean useComponent, List<Requirement> requirements) throws ComponentException;
 
-    public abstract void buildModelAndCompute(String responseId, String organization, boolean compare, double threshold, List<Requirement> requirements, int maxNumDeps) throws ComponentException;
+    public abstract void buildModelAndCompute(String responseId, String organization, boolean compare, boolean useComponent, double threshold, List<Requirement> requirements, int maxNumDeps) throws ComponentException;
 
     public abstract void addRequirements(String responseId, String organization, List<Requirement> requirements) throws ComponentException;
 

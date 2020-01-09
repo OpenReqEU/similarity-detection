@@ -20,9 +20,9 @@ public interface CompareService {
     Similarity without clusters
      */
 
-    void buildModel(String responseId, boolean compare, String organization, List<Requirement> requirements) throws ComponentException;
+    void buildModel(String responseId, boolean compare, boolean useComponent, String organization, List<Requirement> requirements) throws ComponentException;
 
-    void buildModelAndCompute(String responseId, boolean compare, String organization, double threshold, List<Requirement> requirements, int maxNumDeps) throws ComponentException;
+    void buildModelAndCompute(String responseId, boolean compare, boolean useComponent, String organization, double threshold, List<Requirement> requirements, int maxNumDeps) throws ComponentException;
 
     void addRequirements(String responseId, String organization, List<Requirement> requirements) throws ComponentException;
 

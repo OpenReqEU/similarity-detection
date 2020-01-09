@@ -111,13 +111,13 @@ public class CompareServiceImpl implements CompareService {
      */
 
     @Override
-    public void buildModel(String responseId, boolean compare, String organization, List<Requirement> requirements) throws ComponentException {
+    public void buildModel(String responseId, boolean compare, boolean useComponent, String organization, List<Requirement> requirements) throws ComponentException {
         logger.showInfoMessage("BuildModel: Start computing " + organization + " " + responseId);
         try {
             databaseOperations.saveResponse(organization,responseId,"BuildModel");
             if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(FORBIDDEN_ERROR_MESSAGE);
-            OrganizationModels organizationModels = generateModel(compare, false, deleteDuplicates(requirements));
-            organizationModels = new OrganizationModels(organizationModels,0,compare,false,false);
+            OrganizationModels organizationModels = generateModel(compare, useComponent, deleteDuplicates(requirements));
+            organizationModels = new OrganizationModels(organizationModels,0,compare,useComponent,false);
             getAccessToUpdate(organization);
             try {
                 databaseOperations.saveOrganizationModels(organization, organizationModels, true, false);
@@ -134,13 +134,13 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    public void buildModelAndCompute(String responseId, boolean compare, String organization, double threshold, List<Requirement> requirements, int maxNumDeps) throws ComponentException {
+    public void buildModelAndCompute(String responseId, boolean compare, boolean useComponent, String organization, double threshold, List<Requirement> requirements, int maxNumDeps) throws ComponentException {
         logger.showInfoMessage("BuildModelAndCompute: Start computing " + organization + " " + responseId);
         try {
             databaseOperations.saveResponse(organization, responseId, "BuildModelAndCompute");
             if (databaseOperations.existsOrganization(organization)) throw new ForbiddenException(FORBIDDEN_ERROR_MESSAGE);
-            OrganizationModels organizationModels = generateModel(compare, false, deleteDuplicates(requirements));
-            organizationModels = new OrganizationModels(organizationModels,0,compare,false,false);
+            OrganizationModels organizationModels = generateModel(compare, useComponent, deleteDuplicates(requirements));
+            organizationModels = new OrganizationModels(organizationModels,0,compare,useComponent,false);
             List<String> requirementsIds = new ArrayList<>();
             for (Requirement requirement : requirements) {
                 requirementsIds.add(requirement.getId());

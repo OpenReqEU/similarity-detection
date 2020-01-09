@@ -96,7 +96,7 @@ public class TestTfIdfMaxGraphMethods {
 
     @Test
     public void buildModel() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("useComponent","false")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"buildModel/input.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
@@ -106,11 +106,11 @@ public class TestTfIdfMaxGraphMethods {
 
     @Test
     public void buildModelForbidden() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("useComponent","false")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"buildModel/input.json")))
                 .andExpect(status().isOk());
         ++id;
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("useComponent","false")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"buildModel/input.json")))
                 .andExpect(status().isForbidden());
         ++id;
@@ -118,7 +118,7 @@ public class TestTfIdfMaxGraphMethods {
 
     @Test
     public void buildModelAndCompute() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModelAndCompute").param("organization", "UPC").param("threshold", "0").param("maxDeps", "0")
+        this.mockMvc.perform(post(url + "BuildModelAndCompute").param("useComponent","false").param("organization", "UPC").param("threshold", "0").param("maxDeps", "0")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"buildModelAndCompute/input.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetResponsePage").param("organization", "UPC").param("responseId", id+""))
@@ -128,7 +128,7 @@ public class TestTfIdfMaxGraphMethods {
 
     @Test
     public void addRequirements() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("useComponent","false")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"addRequirements/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
@@ -143,7 +143,7 @@ public class TestTfIdfMaxGraphMethods {
 
     @Test
     public void deleteRequirements() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("useComponent","false")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"deleteRequirements/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
@@ -158,7 +158,7 @@ public class TestTfIdfMaxGraphMethods {
 
     @Test
     public void simReqReq() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("useComponent","false")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqReq/input_model.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(post(url + "SimReqReq").param("organization", "UPC")
@@ -168,8 +168,31 @@ public class TestTfIdfMaxGraphMethods {
     }
 
     @Test
+    public void simReqReqWithComponent() throws Exception {
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("useComponent","true")
+                .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqReqWithComponent/input_model.json")))
+                .andExpect(status().isOk());
+        ++id;
+        this.mockMvc.perform(post(url + "SimReqReq").param("organization", "UPC")
+                .param("req1", "UPC-1").param("req2", "UPC-2"))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "simReqReqWithComponent/output_1-2.json")));
+        this.mockMvc.perform(post(url + "SimReqReq").param("organization", "UPC")
+                .param("req1", "UPC-1").param("req2", "UPC-3"))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "simReqReqWithComponent/output_1-3.json")));
+        this.mockMvc.perform(post(url + "SimReqReq").param("organization", "UPC")
+                .param("req1", "UPC-1").param("req2", "UPC-4"))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "simReqReqWithComponent/output_1-4.json")));
+        this.mockMvc.perform(post(url + "SimReqReq").param("organization", "UPC")
+                .param("req1", "UPC-1").param("req2", "UPC-5"))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "simReqReqWithComponent/output_1-5.json")));
+        this.mockMvc.perform(post(url + "SimReqReq").param("organization", "UPC")
+                .param("req1", "UPC-1").param("req2", "UPC-6"))
+                .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "simReqReqWithComponent/output_1-6.json")));
+    }
+
+    @Test
     public void simReqOrganization() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("useComponent","false")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqOrganization/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
@@ -189,7 +212,7 @@ public class TestTfIdfMaxGraphMethods {
 
     @Test
     public void simReqOrganizationMaxDeps() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("useComponent","false")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqOrganization/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
@@ -203,7 +226,7 @@ public class TestTfIdfMaxGraphMethods {
 
     @Test
     public void simNewReqOrganization() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("useComponent","false")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simNewReqOrganization/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
@@ -218,7 +241,7 @@ public class TestTfIdfMaxGraphMethods {
 
     @Test
     public void simReqProject() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("useComponent","false")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simReqProject/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
@@ -238,7 +261,7 @@ public class TestTfIdfMaxGraphMethods {
 
     @Test
     public void simProject() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("useComponent","false")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simProject/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
@@ -258,7 +281,7 @@ public class TestTfIdfMaxGraphMethods {
 
     @Test
     public void simProjectMaxDeps() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("useComponent","false")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simProject/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
@@ -272,7 +295,7 @@ public class TestTfIdfMaxGraphMethods {
 
     @Test
     public void simProjectProject() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("useComponent","false")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"simProjectProject/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
@@ -485,7 +508,7 @@ public class TestTfIdfMaxGraphMethods {
         this.mockMvc.perform(get(url + "GetOrganizationInfo").param("organization", "UPCTest"))
                 .andExpect(status().isOk()).andExpect(content().string(read_file_raw(path + "getOrganizationInfo/output_with_clusters.json")));
         this.mockMvc.perform(delete(url + "ClearOrganization").param("organization", "UPCTest"));
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPCTest")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPCTest").param("useComponent","false")
                 .param("compare", "false").param("responseId", "Test1").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"getOrganizationInfo/input_model_without.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(get(url + "GetOrganizationInfo").param("organization", "UPCTest"))
@@ -495,7 +518,7 @@ public class TestTfIdfMaxGraphMethods {
 
     @Test
     public void deleteOrganizationResponses() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("threshold", "0.0").param("useComponent","false")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"deleteResponses/input_model.json")))
                 .andExpect(status().isOk());
         ++id;
@@ -507,7 +530,7 @@ public class TestTfIdfMaxGraphMethods {
 
     @Test
     public void deleteOrganizationData() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("useComponent","false")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"deleteOrganizationData/input_model.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(post(url + "SimReqReq").param("organization", "UPC").param("req1", "UPC-1").param("req2","UPC-2"))
@@ -521,7 +544,7 @@ public class TestTfIdfMaxGraphMethods {
 
     @Test
     public void clearDatabase() throws Exception {
-        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC")
+        this.mockMvc.perform(post(url + "BuildModel").param("organization", "UPC").param("useComponent","false")
                 .param("compare", "true").param("responseId", id+"").contentType(MediaType.APPLICATION_JSON_VALUE).content(read_file_array(path+"clearDatabase/input_model.json")))
                 .andExpect(status().isOk());
         this.mockMvc.perform(delete(url + "ClearDatabase"))

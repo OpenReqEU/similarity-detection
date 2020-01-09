@@ -18,13 +18,13 @@ public class RequirementsSimilarity {
         this.similarityAlgorithm = similarityAlgorithm;
     }
 
-    public OrganizationModels buildModel(Map<String, List<String>> requirements_tokens, List<Requirement> requirements_info, boolean useComponent) throws InternalErrorException {
-        SimilarityModel similarityModel = similarityAlgorithm.buildModel(requirements_tokens);
+    public OrganizationModels buildModel(Map<String, List<String>> requirementsTokens, List<Requirement> requirementsInfo, boolean useComponent) throws InternalErrorException {
+        SimilarityModel similarityModel = similarityAlgorithm.buildModel(requirementsTokens);
 
         //Computes each requirement component
         Map<String,String> reqComponent = new HashMap<>();
         if (useComponent) {
-            for (Requirement requirement : requirements_info) {
+            for (Requirement requirement : requirementsInfo) {
                 reqComponent.put(requirement.getId(), requirement.getComponent());
             }
         }
@@ -43,13 +43,13 @@ public class RequirementsSimilarity {
         return score;
     }
 
-    public void addRequirements(OrganizationModels organizationModels, Map<String, List<String>> requirements_tokens, List<Requirement> requirements_info) throws InternalErrorException {
-        similarityAlgorithm.addRequirements(organizationModels.getSimilarityModel(),requirements_tokens);
+    public void addRequirements(OrganizationModels organizationModels, Map<String, List<String>> requirementsTokens, List<Requirement> requirementsInfo) throws InternalErrorException {
+        similarityAlgorithm.addRequirements(organizationModels.getSimilarityModel(),requirementsTokens);
 
         //Computes reqComponent map for the new requirements
         if (organizationModels.isUseComponent()) {
             Map<String, String> reqComponent = organizationModels.getReqComponent();
-            for (Requirement requirement : requirements_info) {
+            for (Requirement requirement : requirementsInfo) {
                 reqComponent.put(requirement.getId(), requirement.getComponent());
             }
         }

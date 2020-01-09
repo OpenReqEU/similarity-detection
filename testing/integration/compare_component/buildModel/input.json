@@ -1,12 +1,77 @@
-[
-    {"id":"UPC-1","text":"testing 5","name":"testing something"},
-    {"id":"UPC-2","text":"testing 6","name":"just testing the output"},
-    {"id":"UPC-3","text":"testing 7","name":"testing5"},
-    {"id":"UPC-4","text":"testing 8","name":"what is going on?"},
-    {"id":"UPC-5","text":"testing 8 fsd","name":"what is going on?"},
-    {"id":"UPC-6","text":"testing 8 but where","name":"what is going on?"},
-    {"id":"UPC-7","text":"testing 8 not complayng","name":"what is  yep  know going on?"},
-    {"id":"UPC-8","text":"testing 8 jut waiting for you","name":"what you were otuside the house is going on?"},
-    {"id":"UPC-9","text":"testing 8 not wondering","name":"what i was building the house is going on?"},
-    {"id":"UPC-10","text":"different","name":"nothing"}
-]
+[{
+	"requirementParts": [{
+		"name": "Components",
+		"id": "UPC-1-1",
+		"text": "System"
+	}],
+	"name": "",
+	"created_at": null,
+	"id": "UPC-1",
+	"text": "UAB",
+	"modified_at": null,
+	"status": null
+}, {
+	"requirementParts": [{
+		"name": "Components",
+		"id": "UPC-2-1",
+		"text": "System"
+	}],
+	"name": "",
+	"created_at": null,
+	"id": "UPC-2",
+	"text": "nothing",
+	"modified_at": null,
+	"status": null
+}, {
+	"requirementParts": [{
+		"name": "Components",
+		"id": "UPC-3-1",
+		"text": "System"
+	}],
+	"name": "",
+	"created_at": null,
+	"id": "UPC-3",
+	"text": "UAB ALONE",
+	"modified_at": null,
+	"status": null
+}, {
+	"requirementParts": [{
+		"name": "Components",
+		"id": "UPC-4-1",
+		"text": "Another"
+	}],
+	"name": "",
+	"created_at": null,
+	"id": "UPC-4",
+	"text": "UAB LION",
+	"modified_at": null,
+	"status": null
+}, {
+	"requirementParts": [{
+		"name": "Another",
+		"id": "UPC-5-1",
+		"text": "System"
+	}],
+	"name": "",
+	"created_at": null,
+	"id": "UPC-5",
+	"text": "UAB MEH",
+	"modified_at": null,
+	"status": null
+}, {
+	"requirementParts": null,
+	"name": "",
+	"created_at": null,
+	"id": "UPC-6",
+	"text": "nothing",
+	"modified_at": null,
+	"status": null
+}, {
+	"requirementParts": [],
+	"name": "",
+	"created_at": null,
+	"id": "UPC-7",
+	"text": "UAB CATEGORY",
+	"modified_at": null,
+	"status": null
+}]

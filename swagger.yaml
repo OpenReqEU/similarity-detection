@@ -1,8 +1,7 @@
 swagger: '2.0'
 info:
-  description: '<p>The component is based on tf-idf numerical statistics. The aim of the API is to calculate the similarity score between multiple pairs of requirements.</p><p>There are three types of operations (each method has a more extensive description in its own operation box): </p><ul><li><strong>Similarity without clusters</strong>: These methods work only with a set of input requirements. There are two types of operations. The ones that generate and update a tf-idf model with the input requirements, and the ones that use these tf-idf models to compute the similarity between the requirements; therefore, before using the operations, is necessary to create a tf-idf model first for the organization. Each tf-idf model is assigned to an organization and can be used infinite times. </li><ul><li>BuildModel: Pre-processes the input requirements, generates a tf-idf model and assings it to an specified organization.</li><li>BuildModelAndCompute: Pre-processes the input requirements, generates a tf-idf model with the input requirements and computes and returns the similarity score between all the possible pairs of requirements.</li><li>AddRequirements: Pre-processes the input requirements and adds them to an existing tf-idf model.</li><li>DeleteRequirements: Deletes the input requirements from an existing tf-idf model.</li><li>ReqReq: Compares two requirements.</li><li>ReqProject: Compares all the requirements in the input list with a set of requirements given in the input.</li><li>Project: Compares all possible pairs of requirements of an organization.</li><li>ReqOrganization: Compares a set of requirements with all the requirements of an organization.</li><li>NewReqOrganization: Pre-processes the input requirements and adds them to an organization''s tf-idf model. It also compares the input requirements with all the requirements of the organization.</li></ul><li><strong>Similarity with clusters</strong>: These methods work with a set of input requirements and dependencies. <u>The clusters are considered as graphs connected by similarity dependencies accepted by the user where the nodes are the requirements of the model</u>. We denominate orphans to the clusters with only one requirement. </li><ul><li>BuildClusters: Pre-processes the input requirements, generates a tf-idf model with the requirements information, the clusters architecture and the input similarity dependencies and assigns it to an specified organization. All the requirements are compared with all the requirements of other clusters of the organization, and the maximum score with each cluster for each requirement is stored in the database.</li><li>BuildClustersAndCompute: Pre-processes the input requirements, generates a tf-idf model with the requirements information, the clusters architecture and the input similarity dependencies and assings it to an specified organization. All the requirements are compared with all the requirements of other clusters of the organization, and the maximum score with each cluster for each requirement is stored in the database. The method returns the maximum similarity score between each requirement and all the requirements that make up each one of the existing clusters of the organization.</li><li>ReqClusters: Given a list of requirements ids, returns the maximum similarity score between each requirement and all the requirements that make up each of the existing clusters in the organization model.</li><li>BatchProcess: Given a set of updates done in the requirements, updates the clusters and dependencies accordingly.</li><li>TreatAcceptedAndRejectedDependencies: Given a set of accepted and rejected dependencies, updates the clusters and dependencies accordingly.</li></ul><li><strong>Auxiliary methods</strong>:</li><ul><li>GetResponse: Returns the output of the async methods</li><li>GetOrganizationInfo: Returns the main information of the specified organization including the current computations and the pending responses</li><li>DeleteOrganizationResponses: Deletes the organization responses from the database</
-li><li>ClearDatabase: Deletes all data from the database</li></ul></ul><p>All operations except <i>ReqReq</i>, <i>ReqClusters</i>, <i>TreatAcceptedAndRejectedDependencies</i> and the auxiliary methods are asynchronous. All these operations follow the same pattern:</p><ol><li>The client calls the operation with all necessary parameters</li><li>The service receives the request and checks the main conditions</li><li>The service returns if the client request has been accepted or not and closes the connection<ul><li>(httpStatus!=200) The request has not been accepted. The message body contains the exception cause.</li><li>(httpStatus==200) The request has been accepted. The similarity calculation runs in the background. The message body contains the request identifier, i.e., <em>{"id": "1548924677975_523"}</em></li></ul><li>When the calculation finishes (only if the request has been accepted) the service opens a connection with the server url specified as parameter (optional). It sends a JSON object that contains the outcome of the computation:<br><ul><li>(success) Example: {"code": 200,"id": "1557395889689_587","operation": "AddReqs"}.</li><li>(!success) Example: {"code": 400,"id": "1557396039530_583","error": "Bad request","message": "The requirement with id QM-3 is already inside the project","operation": "ReqProject"}.</li></ul><li>The result of the operation can be obtained through the GetResponse method.</li></li></ol><p>The service uses locks to control the concurrency of the different operations in each organization. To guarantee the ACID properties the methods which write or update data can''t be parallelized. For example, the BuildClusters and BatchProcess methods cannot be parallelized, one has to wait for the other before starting. The service has a small queue of about 5 minutes to solve the small deviations. However, if one method has to wait for more than 5 minutes it will return an error with code 423. This only happens with methods using the same organization. The methods like ReqClusters that only read data from the database are not affected.</p><p>The API uses UTF-8 charset. Also, it uses the OpenReq format for input JSONs (it is specified in the Models section).</p>'
-  version: '2.0'
+  description: '<p>The component is based on tf-idf numerical statistics. The aim of the API is to calculate the similarity score between multiple pairs of requirements.</p><p>There are three types of operations (each method has a more extensive description in its own operation box): </p><ul><li><strong>Similarity without clusters</strong>: These methods work only with a set of input requirements. There are two types of operations. The ones that generate and update a tf-idf model with the input requirements, and the ones that use these tf-idf models to compute the similarity between the requirements; therefore, before using the operations, is necessary to create a tf-idf model first for the organization. Each tf-idf model is assigned to an organization and can be used infinite times. </li><ul><li>BuildModel: Pre-processes the input requirements, generates a tf-idf model and assings it to an specified organization.</li><li>BuildModelAndCompute: Pre-processes the input requirements, generates a tf-idf model with the input requirements and computes and returns the similarity score between all the possible pairs of requirements.</li><li>AddRequirements: Pre-processes the input requirements and adds them to an existing tf-idf model.</li><li>DeleteRequirements: Deletes the input requirements from an existing tf-idf model.</li><li>ReqReq: Compares two requirements.</li><li>ReqProject: Compares all the requirements in the input list with a set of requirements given in the input.</li><li>Project: Compares all possible pairs of requirements of an organization.</li><li>ProjectProject: Compares each requirement of a project with all the requirements of another project.</li><li>ReqOrganization: Compares a set of requirements with all the requirements of an organization.</li><li>NewReqOrganization: Pre-processes the input requirements and adds them to an organization''s tf-idf model. It also compares the input requirements with all the requirements of the organization.</li></ul><li><strong>Similarity with clusters</strong>: These methods work with a set of input requirements and dependencies. <u>The clusters are considered as graphs connected by similarity dependencies accepted by the user where the nodes are the requirements of the model</u>. We denominate orphans to the clusters with only one requirement. </li><ul><li>BuildClusters: Pre-processes the input requirements, generates a tf-idf model with the requirements information, the clusters architecture and the input similarity dependencies and assigns it to an specified organization. All the requirements are compared with all the requirements of other clusters of the organization, and the maximum score with each cluster for each requirement is stored in the database.</li><li>BuildClustersAndCompute: Pre-processes the input requirements, generates a tf-idf model with the requirements information, the clusters architecture and the input similarity dependencies and assings it to an specified organization. All the requirements are compared with all the requirements of other clusters of the organization, and the maximum score with each cluster for each requirement is stored in the database. The method returns the maximum similarity score between each requirement and all the requirements that make up each one of the existing clusters of the organization.</li><li>ReqClusters: Given a list of requirements ids, returns the maximum similarity score between each requirement and all the requirements that make up each of the existing clusters in the organization model.</li><li>BatchProcess: Given a set of updates done in the requirements, updates the clusters and dependencies accordingly.</li><li>TreatAcceptedAndRejectedDependencies: Given a set of accepted and rejected dependencies, updates the clusters and dependencies accordingly.</li></ul><li><strong>Auxiliary methods</strong>:</li><ul><li>GetResponse: Returns the output of the async methods</li><li>GetOrganizationInfo: Returns the main information of the specified organization including the current computations and the pending responses</li><li>DeleteOrganizationResponses: Deletes the organization responses from the database</li><li>ClearDatabase: Deletes all data from the database</li></ul></ul><p>All operations except <i>ReqReq</i>, <i>ReqClusters</i>, <i>TreatAcceptedAndRejectedDependencies</i> and the auxiliary methods are asynchronous. All these operations follow the same pattern:</p><ol><li>The client calls the operation with all necessary parameters</li><li>The service receives the request and checks the main conditions</li><li>The service returns if the client request has been accepted or not and closes the connection<ul><li>(httpStatus!=200) The request has not been accepted. The message body contains the exception cause.</li><li>(httpStatus==200) The request has been accepted. The similarity calculation runs in the background. The message body contains the request identifier, i.e., <em>{"id": "1548924677975_523"}</em></li></ul><li>When the calculation finishes (only if the request has been accepted) the service opens a connection with the server url specified as parameter (optional). It sends a JSON object that contains the outcome of the computation:<br><ul><li>(success) Example: {"code": 200,"id": "1557395889689_587","operation": "AddReqs"}.</li><li>(!success) Example: {"code": 400,"id": "1557396039530_583","error": "Bad request","message": "The requirement with id QM-3 is already inside the project","operation": "ReqProject"}.</li></ul><li>The result of the operation can be obtained through the GetResponse method.</li></li></ol><p>The service uses locks to control the concurrency of the different operations in each organization. To guarantee the ACID properties the methods which write or update data can''t be parallelized. For example, the BuildClusters and BatchProcess methods cannot be parallelized, one has to wait for the other before starting. The service has a small queue of about 5 minutes to solve the small deviations. However, if one method has to wait for more than 5 minutes it will return an error with code 423. This only happens with methods using the same organization. The methods like ReqClusters that only read data from the database are not affected.</p><p>The API uses UTF-8 charset. Also, it uses the OpenReq format for input JSONs (it is specified in the Models section).</p>'
+  version: '3.3'
   title: SIMILARITY DETECTION COMPONENT
   contact:
     name: UPC-GESSI (OPENReq)
@@ -11,7 +10,7 @@ li><li>ClearDatabase: Deletes all data from the database</li></ul></ul><p>All op
     name: License
     url: 'https://www.eclipse.org/org/documents/epl-2.0/EPL-2.0.txt'
 host: api.openreq.eu
-basePath: /
+basePath: /similarity-detection
 tags:
   - name: rest-api-controller
     description: Rest Api Controller
@@ -69,7 +68,7 @@ paths:
       tags:
         - Similarity with clusters
       summary: Updates the organization clusters with the input requirements and dependencies.
-      description: '<p><i>Asynchronous</i> method.</p><p>Given a set of updates done in the requirements (see next list), updates the clusters accordingly.</p><p><ul><li>New requirements: The input requirements that do not pertain to the organization''s model are considered to be new requirements. The method stores the pre-processing of the new requirements, adds them to the tf-idf model, and puts the new requirements as clusters of one requirement.</li><li>Updated requirements: The input requirements with a title or text different from the one stored in the database are considered updated requirements. The method updates their pre-processing in the database and updates the organization clusters accordingly.</li><li>New dependencies: The input similarity dependencies that do not pertain to the organization''s model are considered to be new dependencies. The method uses the accepted and rejected dependencies to update the organization clusters.</li><li>Removed dependencies: The organization dependencies that do not appear in the input similarity dependencies are considered removed dependencies. The method updates them as rejected and changes the clusters accordingly.</li></ul></p>'
+      description: '<p><i>Asynchronous</i> method.</p><p>Given a set of updates done in the requirements (see next list), updates the clusters accordingly (the <i>created_at</i> and <i>modified_at</i> params are taken into account).</p><p><ul><li>Adds requirements: The input requirements that do not pertain to the organization''s model are considered to be new requirements. The method stores the pre-processing of the new requirements, adds them to the tf-idf model, and puts the new requirements as clusters of one requirement.</li><li>Deletes requirements: The input requirements with status equal to deleted that pertain to the organization''s model are considered to be deleted requirements. The method deletes them from the organization models.</li><li>Updates requirements: The input requirements with a title or text different from the one stored in the database are considered updated requirements. The method updates their pre-processing in the database and updates the organization clusters accordingly.</li><li>Adds dependencies: The input similarity dependencies that do not pertain to the organization''s model are considered to be new dependencies. The method uses the accepted and rejected dependencies to update the organization clusters.</li><li>Deletes dependencies: The input similarity dependencies with status equal to deleted that do pertain to the organization''s model are considered to be deleted dependencies. The method deletes any status or rejected dependency between the same requirements from inside the organization models.</li></ul></p>'
       operationId: batchProcessUsingPOST
       consumes:
         - application/json
@@ -111,39 +110,54 @@ paths:
       tags:
         - Similarity with clusters
       summary: Generates the clusters using the input requirements and dependencies.
-      description: '<p><i>Asynchronous</i> method.</p><p>This method computes the clusters using the existing duplicates. These duplicates relations are defined by the dependencies with type equal to <i>similar</i> or <i>duplicates</i> and status equal to <i>accepted</i>. All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the database, together with their corresponding tf-idf model and the clusters information. The user can choose whether to use only the name of the requirements for constructing the tf-idf model, or to use also the text of the requirements. Finally, all the requirements are compared with all the requirements of other clusters of the organization, and those similarities with score greater than the established threshold for each requirement are stored in the database.</p>'
+      description: '<p><i>Asynchronous</i> method.</p><p>This method computes the clusters using the existing duplicates. These duplicates relations are defined by the dependencies with type equal to <i>similar</i> or <i>duplicates</i> and status equal to <i>accepted</i>, <i>rejected</i> or <i>deleted</i> (the <i>created_at</i> and <i>modified_at</i> params are taken into account). All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the database, together with their corresponding tf-idf model and the clusters information. The user can choose whether to use only the name of the requirements for constructing the tf-idf model, or to use also the text of the requirements. Also the user can choose whether to use the requirement component in the similarity step (the score between two requirements with different components and not null will be decreased). Finally, all the requirements are compared with all the requirements of other clusters of the organization, and those similarities with score greater than the established threshold for each requirement are stored in the database.</p><br><p>Each organization can only have one model at the same time. The service throws a forbidden exception if at the time of generating a new model the corresponding organization already has an existing one</p>'
       operationId: buildClustersUsingPOST
       consumes:
         - multipart/form-data
       produces:
         - application/json
       parameters:
-        - in: formData
-          name: compare
+        - name: compare
+          in: query
           description: Use the text field of the requirements to construct the model
           required: false
           type: boolean
+          allowEmptyValue: false
+          x-example: true
         - name: file
           in: formData
           description: OpenReq JSON with requirements and dependencies
           required: true
           type: file
-        - in: formData
-          name: organization
+        - name: organization
+          in: query
           description: Organization
           required: true
           type: string
-        - in: formData
-          name: threshold
+          allowEmptyValue: false
+          x-example: UPC
+        - name: threshold
+          in: query
           description: Double between 0 and 1 that establishes the minimum similarity score that the proposed dependencies should have
           required: true
           type: number
           format: double
-        - in: formData
-          name: url
+          allowEmptyValue: false
+          x-example: 0.1
+        - name: url
+          in: query
           description: The url where the result of the operation will be returned
           required: false
           type: string
+          allowEmptyValue: false
+          x-example: 'http://localhost:9406/upload/PostResult'
+        - name: useComponent
+          in: query
+          description: Use the component attribute in the similarity comparison
+          required: false
+          type: boolean
+          allowEmptyValue: false
+          x-example: true
       responses:
         '200':
           description: OK
@@ -159,45 +173,62 @@ paths:
       tags:
         - Similarity with clusters
       summary: 'Generates the clusters using the input requirements and dependencies, and returns the similarity score between them.'
-      description: '<p><i>Asynchronous</i> method.</p><p>This method computes the clusters using the existing duplicates. These duplicates relations are defined by the dependencies with type equal to <i>similar</i> or <i>duplicates</i> and type equal to <i>accepted</i>. All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the database, together with their corresponding tf-idf model and the clusters information. The user can choose whether to use only the name of the requirements for constructing the tf-idf model, or to use also the text of the requirements. Finally, all the requirements are compared with all the requirements of other clusters of the organization, and those similarities with score greater than the established threshold for each requirement are stored in the database. It returns for each requirement the highest similarity score for each cluster (only if they are greater than the established threshold). If the number of maximum dependencies to be returned is received as parameter (maxNumber), the method only returns the <i>maxNumber</i> of dependencies with highest score for each requirement. When <i>maxNumber</i> is equal to 0 only the accepted dependencies are returned and when maxNumber is lower than 0 or not specified, all the accepted and proposed dependencies of each requirement are returned.</p>'
+      description: '<p><i>Asynchronous</i> method.</p><p>This method computes the clusters using the existing duplicates. These duplicates relations are defined by the dependencies with type equal to <i>similar</i> or <i>duplicates</i> and type equal to <i>accepted</i>, <i>rejected</i> or <i>deleted</i> (the <i>created_at</i> and <i>modified_at</i> params are taken into account). All the requirements that do not have duplicates relationships with other requirements are considered to be in a cluster of just one requirement. All the requirements are pre-processed and stored in the database, together with their corresponding tf-idf model and the clusters information. The user can choose whether to use only the name of the requirements for constructing the tf-idf model, or to use also the text of the requirements. Also the user can choose whether to use the requirement component in the similarity step (the score between two requirements with different components and not null will be decreased). Finally, all the requirements are compared with all the requirements of other clusters of the organization, and those similarities with score greater than the established threshold for each requirement are stored in the database. It returns for each requirement the highest similarity score for each cluster (only if they are greater than the established threshold). If the number of maximum dependencies to be returned is received as parameter (maxNumber), the method only returns the <i>maxNumber</i> of dependencies with highest score for each requirement. When <i>maxNumber</i> is equal to 0 only the accepted dependencies are returned and when maxNumber is lower than 0 or not specified, all the accepted and proposed dependencies of each requirement are returned.</p><br><p>Each organization can only have one model at the same time. The service throws a forbidden exception if at the time of generating a new model the corresponding organization already has an existing one</p>'
       operationId: buildClustersAndComputeUsingPOST
       consumes:
         - multipart/form-data
       produces:
         - application/json
       parameters:
-        - in: formData
-          name: compare
+        - name: compare
+          in: query
           description: Use the text field of the requirements to construct the model
           required: false
           type: boolean
+          allowEmptyValue: false
+          x-example: true
         - name: file
           in: formData
           description: OpenReq JSON with requirements and dependencies
           required: true
           type: file
-        - in: formData
-          name: maxNumber
+        - name: maxNumber
+          in: query
           description: Max number of dependencies to return for each requirement
           required: false
           type: integer
           format: int32
-        - in: formData
-          name: organization
+          allowEmptyValue: false
+          x-example: 10
+        - name: organization
+          in: query
           description: Organization
           required: true
           type: string
-        - in: formData
-          name: threshold
+          allowEmptyValue: false
+          x-example: UPC
+        - name: threshold
+          in: query
           description: Double between 0 and 1 that establishes the minimum similarity score that the proposed dependencies should have
           required: true
           type: number
           format: double
-        - in: formData
-          name: url
+          allowEmptyValue: false
+          x-example: 0.1
+        - name: url
+          in: query
           description: The url where the result of the operation will be returned
           required: false
           type: string
+          allowEmptyValue: false
+          x-example: 'http://localhost:9406/upload/PostResult'
+        - name: useComponent
+          in: query
+          description: Use the component attribute in the similarity comparison
+          required: false
+          type: boolean
+          allowEmptyValue: false
+          x-example: true
       responses:
         '200':
           description: OK
@@ -213,7 +244,7 @@ paths:
       tags:
         - Similarity without clusters
       summary: Builds a tf-idf model with the input requirements.
-      description: '<p><i>Asynchronous</i> method.</p><p>Builds a tf-idf model with the requirements specified in the JSON object. The generated model is assigned to the specified organization and stored in an internal database. Each organization can have only one model. If at the time of generating a new model the corresponding organization already has an existing model, it is replaced by the new one. The user can choose whether to use only the name of the requirements for constructing the model, or to use also the text of the requirements.</p>'
+      description: '<p><i>Asynchronous</i> method.</p><p>Builds a tf-idf model with the requirements specified in the JSON object. The generated model is assigned to the specified organization and stored in an internal database. Each organization only can have one model. The service throws a forbidden exception if at the time of generating a new model the corresponding organization already has an existing one. The user can choose whether to use only the name of the requirements for constructing the model, or to use also the text of the requirements. Also the user can choose whether to use the requirement component in the similarity step (the score between two requirements with different components and not null will be decreased).</p>'
       operationId: buildModelUsingPOST
       consumes:
         - application/json
@@ -247,6 +278,13 @@ paths:
           type: string
           allowEmptyValue: false
           x-example: 'http://localhost:9406/upload/PostResult'
+        - name: useComponent
+          in: query
+          description: Use the component attribute in the similarity comparison
+          required: false
+          type: boolean
+          allowEmptyValue: false
+          x-example: true
       responses:
         '200':
           description: OK
@@ -262,7 +300,7 @@ paths:
       tags:
         - Similarity without clusters
       summary: Builds a tf-idf model with the input requirements and returns the similarity scores among all the possible pairs of requirements.
-      description: '<p><i>Asynchronous</i> method.</p><p>Builds a tf-idf model with the requirements specified in the JSON object.The generated model is assigned to the specified organization and stored in an internal database. Each organization can have only one model. If at the time of generating a new model the corresponding organization already has an existing model, it is replaced by the new one. The user can choose whether to use only the name of the requirements for constructing the model, or to use also the text of the requirements. </p><br><p>This method returns an array of dependencies containing the similarities that are greater than the established threshold between all possible pairs of  requirements received as input.</p>'
+      description: '<p><i>Asynchronous</i> method.</p><p>Builds a tf-idf model with the requirements specified in the JSON object.The generated model is assigned to the specified organization and stored in an internal database. Each organization only can have one model. The service throws a forbidden exception if at the time of generating a new model the corresponding organization already has an existing one. The user can choose whether to use only the name of the requirements for constructing the model, or to use also the text of the requirements. Also the user can choose whether to use the requirement component in the similarity step (the score between two requirements with different components and not null will be decreased).</p><br><p>This method returns an array of dependencies containing the similarities that are greater than the established threshold between all possible pairs of requirements received as input. The method can be set to return the dependencies with the higher score thanks to the parameter named maxNumber (with a negative number or a zero in this parameter, the method works as explained before).</p>'
       operationId: buildModelAndComputeUsingPOST
       consumes:
         - application/json
@@ -282,6 +320,14 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/Requirements'
+        - name: maxNumber
+          in: query
+          description: Max number of dependencies to return
+          required: false
+          type: integer
+          format: int32
+          allowEmptyValue: false
+          x-example: 0
         - name: organization
           in: query
           description: Organization
@@ -304,6 +350,13 @@ paths:
           type: string
           allowEmptyValue: false
           x-example: 'http://localhost:9406/upload/PostResult'
+        - name: useComponent
+          in: query
+          description: Use the component attribute in the similarity comparison
+          required: false
+          type: boolean
+          allowEmptyValue: false
+          x-example: true
       responses:
         '200':
           description: OK
@@ -499,7 +552,7 @@ paths:
       tags:
         - Similarity without clusters
       summary: 'Similarity comparison between a set of input requirements and all the requirements of the specified organization. '
-      description: '<p><i>Asynchronous</i> method.</p><p>Adds the input requirements to the organization''s tf-idf model and returns an array of similarity dependencies with a score above the specified threshold between them and all the requirements of the specified organization Also the requirements of the input list are compared between each other. If any input requirement is already part of the organization''s model, it will be overwritten with the new information.</p>'
+      description: '<p><i>Asynchronous</i> method.</p><p>Adds the input requirements to the organization''s tf-idf model and returns an array of similarity dependencies with a score above the specified threshold between them and all the requirements of the specified organization Also the requirements of the input list are compared between each other. If any input requirement is already part of the organization''s model, it will be overwritten with the new information. The method can be set to return the dependencies with the higher score thanks to the parameter named maxNumber (with a negative number or a zero in this parameter, the method works as explained before).</p>'
       operationId: simNewReqOrganizationUsingPOST
       consumes:
         - application/json
@@ -508,10 +561,18 @@ paths:
       parameters:
         - in: body
           name: input
-          description: OpenReq JSON with requirements
+          description: OpenReq JSON with the requirements to compare
           required: true
           schema:
             $ref: '#/definitions/Requirements'
+        - name: maxNumber
+          in: query
+          description: Max number of dependencies to return
+          required: false
+          type: integer
+          format: int32
+          allowEmptyValue: false
+          x-example: 0
         - name: organization
           in: query
           description: Organization
@@ -549,7 +610,7 @@ paths:
       tags:
         - Similarity without clusters
       summary: Similarity comparison between the requirements of one project.
-      description: <p><i>Asynchronous</i> method.</p><p>Returns an array of similarity dependencies with a score above the specified threshold between all possible pairs of requirements from the project received as input. The similarity score is computed with the tf-idf model assigned to the specified organization. The input ids that do not belong to any organization requirement are ignored.</p>
+      description: '<p><i>Asynchronous</i> method.</p><p>Returns an array of similarity dependencies with a score above the specified threshold between all possible pairs of requirements from the project received as input. The similarity score is computed with the tf-idf model assigned to the specified organization. The input ids that do not belong to any organization requirement are ignored. The method can be set to return the dependencies with the higher score thanks to the parameter named maxNumber (with a negative number or a zero in this parameter, the method works as explained before).</p>'
       operationId: simProjectUsingPOST
       consumes:
         - application/json
@@ -562,6 +623,14 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/Projects'
+        - name: maxNumber
+          in: query
+          description: Max number of dependencies to return
+          required: false
+          type: integer
+          format: int32
+          allowEmptyValue: false
+          x-example: 0
         - name: organization
           in: query
           description: Organization
@@ -576,6 +645,80 @@ paths:
           type: string
           allowEmptyValue: false
           x-example: UPC-P1
+        - name: threshold
+          in: query
+          description: Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have
+          required: true
+          type: number
+          format: double
+          allowEmptyValue: false
+          x-example: 0.1
+        - name: url
+          in: query
+          description: The url where the result of the operation will be returned
+          required: false
+          type: string
+          allowEmptyValue: false
+          x-example: 'http://localhost:9406/upload/PostResult'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/ResponseEntity'
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+        '500':
+          description: Internal error
+      deprecated: false
+  /upc/similarity-detection/ProjectProject:
+    post:
+      tags:
+        - Similarity without clusters
+      summary: Similarity comparison between two projects.
+      description: '<p><i>Asynchronous</i> method.</p><p>Returns an array of similarity dependencies with a score above the specified threshold between each requirement of the first project and all the requirements of the second one. The similarity score is computed with the tf-idf model assigned to the indicated organization. The input ids that do not belong to any organization requirement are ignored. The method can be set to return the dependencies with the higher score thanks to the parameter named maxNumber (with a negative number or a zero in this parameter, the method works as explained before).</p>'
+      operationId: simProjectProjectUsingPOST
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: firstProject
+          in: query
+          description: Id of the first project to compare
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: UPC-P1
+        - in: body
+          name: input
+          description: OpenReq JSON with the input projects and their requirements
+          required: true
+          schema:
+            $ref: '#/definitions/Projects'
+        - name: maxNumber
+          in: query
+          description: Max number of dependencies to return
+          required: false
+          type: integer
+          format: int32
+          allowEmptyValue: false
+          x-example: 0
+        - name: organization
+          in: query
+          description: Organization
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: UPC
+        - name: secondProject
+          in: query
+          description: Id of the second project to compare
+          required: true
+          type: string
+          allowEmptyValue: false
+          x-example: UPC-P2
         - name: threshold
           in: query
           description: Double between 0 and 1 that establishes the minimum similarity score that the added dependencies should have
@@ -644,6 +787,8 @@ paths:
             $ref: '#/definitions/ResponseEntity'
         '400':
           description: Bad request
+        '404':
+          description: Not found
         '500':
           description: Internal error
       deprecated: false
@@ -652,13 +797,21 @@ paths:
       tags:
         - Similarity without clusters
       summary: 'Similarity comparison between a set of requirements and all the requirements of the specified organization. '
-      description: <p><i>Asynchronous</i> method.</p><p>Compares the existing organization's requirements that appear in the input array of ids with all the organization's requirements. Returns an array with all the similarity dependencies that are above the specified threshold. The input ids that do not belong to the requirements of the organization are ignored.</p>
+      description: '<p><i>Asynchronous</i> method.</p><p>Compares the existing organization''s requirements that appear in the input array of ids with all the organization''s requirements. Returns an array with all the similarity dependencies that are above the specified threshold. The input ids that do not belong to the requirements of the organization are ignored. The method can be set to return the dependencies with the higher score thanks to the parameter named maxNumber (with a negative number or a zero in this parameter, the method works as explained before).</p>'
       operationId: simReqOrganizationUsingPOST
       consumes:
         - application/json
       produces:
         - application/json
       parameters:
+        - name: maxNumber
+          in: query
+          description: Max number of dependencies to return
+          required: false
+          type: integer
+          format: int32
+          allowEmptyValue: false
+          x-example: 0
         - name: organization
           in: query
           description: Organization
@@ -668,7 +821,7 @@ paths:
           x-example: UPC
         - name: req
           in: query
-          description: OpenReq JSON with requirements
+          description: Id of the requirements to compare
           required: true
           type: array
           items:
@@ -705,7 +858,7 @@ paths:
       tags:
         - Similarity without clusters
       summary: Similarity comparison between a list of requirements and all the requirements of an specific project.
-      description: <p><i>Asynchronous</i> method.</p><p>Returns an array of similarity dependencies with a score above the specified threshold between the list of requirements and the project's requirements received as input. Also the requirements of the input list are compared between each other. The similarity score is computed with the tf-idf model assigned to the specified organization. The input ids that do not belong to any organization requirement are ignored.</p>
+      description: '<p><i>Asynchronous</i> method.</p><p>Returns an array of similarity dependencies with a score above the specified threshold between the list of requirements and the project''s requirements received as input. Also the requirements of the input list are compared between each other. The similarity score is computed with the tf-idf model assigned to the specified organization. The input ids that do not belong to any organization requirement are ignored. The method can be set to return the dependencies with the higher score thanks to the parameter named maxNumber (with a negative number or a zero in this parameter, the method works as explained before).</p>'
       operationId: simReqProjectUsingPOST
       consumes:
         - application/json
@@ -718,6 +871,14 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/Projects'
+        - name: maxNumber
+          in: query
+          description: Max number of dependencies to return
+          required: false
+          type: integer
+          format: int32
+          allowEmptyValue: false
+          x-example: 0
         - name: organization
           in: query
           description: Organization
@@ -816,7 +977,7 @@ paths:
       tags:
         - Similarity with clusters
       summary: Updates the organization clusters with the input dependencies.
-      description: '<p><i>Synchronous</i> method.</p><p>Given a set of <i>accepted</i> and <i>rejected</i> dependencies, updates the clusters and dependencies accordingly. </p>'
+      description: '<p><i>Synchronous</i> method.</p><p>Given a set of <i>accepted</i>, <i>rejected</i> and <i>deleted</i> dependencies, updates the clusters and dependencies accordingly. The method takes into account the params <i>created_at</i> and <i>modified_at</i>.</p>'
       operationId: treatAcceptedAndRejectedDependenciesUsingPOST
       consumes:
         - application/json
@@ -924,13 +1085,24 @@ definitions:
       id:
         type: string
         example: UPC-98
-      modifiedAt:
+      modified_at:
         type: integer
         format: int64
         example: 1354019441000
       name:
         type: string
         example: Check swagger version.
+      requirementParts:
+        type: array
+        example:
+          - id: UPC-98-1
+            name: Components
+            text: Dependency-Detection
+        items:
+          type: object
+      status:
+        type: string
+        example: empty
       text:
         type: string
         example: The swagger version is deprecated. Please update the service asap.

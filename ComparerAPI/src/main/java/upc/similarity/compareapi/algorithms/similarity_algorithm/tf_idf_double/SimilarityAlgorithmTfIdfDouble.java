@@ -35,8 +35,8 @@ public class SimilarityAlgorithmTfIdfDouble implements SimilarityAlgorithm {
     }
 
     @Override
-    public void addRequirements(SimilarityModel similarityModel, Map<String, List<String>> requirements_tokens) throws InternalErrorException {
-        similarityAlgorithmTfIdf.addRequirements(similarityModel,requirements_tokens);
+    public void addRequirements(SimilarityModel similarityModel, Map<String, List<String>> requirementsTokens) throws InternalErrorException {
+        similarityAlgorithmTfIdf.addRequirements(similarityModel,requirementsTokens);
     }
 
     @Override
